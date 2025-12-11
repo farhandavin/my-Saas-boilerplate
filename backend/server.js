@@ -44,6 +44,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           cancelAtPeriodEnd: false
         }
       });
+    }else{
+      console.log("bs [WH WARNING] Webhook diterima tapi tidak ada userId. (Ini wajar jika pakai 'stripe trigger')");
     }
   }
 
