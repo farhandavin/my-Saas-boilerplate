@@ -71,15 +71,19 @@ export default function Dashboard() {
 
   const handleCheckout = async () => {
     try {
+      // 👇 PERHATIKAN: Port harus 5001
       const res = await axios.post(
         "http://localhost:5001/api/payment/create-checkout-session",
         { userId: user.id }
       );
+      // Redirect ke Stripe
       window.location.href = res.data.url;
     } catch (err) {
+      console.error("Gagal checkout:", err);
       alert("Gagal membuat sesi pembayaran");
     }
   };
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
