@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -19,8 +19,7 @@ export default function Login() {
       // Simpan token di localStorage (Simpel untuk starter kit)
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-      alert("Login Berhasil!");
-      navigate("/dashboard");
+      navigate("/login");
     } catch (err) {
       alert(err.response?.data?.error || "Login Gagal");
     }
@@ -74,7 +73,7 @@ export default function Login() {
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            Sign In
+            Sign Up
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">

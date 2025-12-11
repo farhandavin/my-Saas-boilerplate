@@ -56,3 +56,24 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: 'Login failed' });
   }
 };
+
+exports.getUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({ 
+      where: { id: parseInt(id) } 
+    });
+    
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Kirim data user terbaru (tanpa password)
+    res.json({ 
+      id: user.id, 
+      name: user.name, 
+      email: user.email, 
+      plan: user.plan  // Ini yang paling penting!
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Gagal mengambil data user' });
+  }
+};
