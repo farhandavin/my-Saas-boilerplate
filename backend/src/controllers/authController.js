@@ -66,12 +66,13 @@ exports.getUser = async (req, res) => {
     
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    // Kirim data user terbaru (tanpa password)
     res.json({ 
       id: user.id, 
       name: user.name, 
       email: user.email, 
-      plan: user.plan  // Ini yang paling penting!
+      plan: user.plan,
+      // KIRIM INI KE FRONTEND
+      cancelAtPeriodEnd: user.cancelAtPeriodEnd 
     });
   } catch (error) {
     res.status(500).json({ error: 'Gagal mengambil data user' });

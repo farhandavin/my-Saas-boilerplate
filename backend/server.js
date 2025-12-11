@@ -20,56 +20,73 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   const sig = req.headers['stripe-signature'];
   let event;
 
-  console.log('\n🔔 [WH-1] Sinyal Webhook diterima dari Stripe...');
-  console.log('👀 [DEBUG] Panjang Body:', req.body.length);
-  console.log('🔑 [DEBUG] Webhook Secret di Server:', process.env.STRIPE_WEBHOOK_SECRET); 
-  // (Pastikan outputnya 'whsec_...' dan bukan undefined)
-  // -------------------------
-
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    console.log('🔐 [WH-2] Tanda tangan (Signature) Valid. Ini asli dari Stripe.');
   } catch (err) {
-    console.error(`❌ [WH-ERROR] Tanda tangan palsu atau salah config! Error: ${err.message}`);
+    console.error(`❌ [WH-ERROR] ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Cek Tipe Event
+  // 1. KASUS: USER BARU SAJA BAYAR (CHECKOUT SUKSES)
   if (event.type === 'checkout.session.completed') {
-    console.log('📦 [WH-3] Event terdeteksi: checkout.session.completed');
-    
     const session = event.data.object;
-    
-    // LOG ISI METADATA (Bagian paling krusial)
-    console.log('🧐 [WH-4] Memeriksa Metadata titipan...');
-    console.log('   >>> ISI METADATA:', JSON.stringify(session.metadata, null, 2));
+    const userId = parseInt(session.metadata?.userId);
 
-    const userIdString = session.metadata?.userId;
-
-    if (userIdString) {
-      const userId = parseInt(userIdString, 10);
-      console.log(`🔄 [WH-5] Metadata OK (ID: ${userId}). Mencoba update database...`);
-
-      try {
-        const updatedUser = await prisma.user.update({
-          where: { id: userId },
-          data: { plan: 'pro' }
-        });
-
-        console.log(`🎉 [WH-6] SUKSES BESAR!`);
-        console.log(`   >>> User: ${updatedUser.email}`);
-        console.log(`   >>> Plan Baru: ${updatedUser.plan}`);
-        console.log(`   >>> Waktu Update: ${new Date().toLocaleTimeString()}`);
-        
-      } catch (dbError) {
-        console.error(`❌ [WH-DB-ERROR] Gagal update database: ${dbError.message}`);
-      }
-    } else {
-      console.error("⚠️ [WH-FAIL] Metadata 'userId' KOSONG! Pastikan checkout dibuat dengan kode terbaru.");
+    if (userId) {
+      console.log(`💰 [WH] Checkout sukses untuk User ID: ${userId}`);
+      
+      // Simpan Subscription ID ke Database
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          plan: 'pro',
+          stripeSubscriptionId: session.subscription, // Simpan ID ini!
+          cancelAtPeriodEnd: false
+        }
+      });
     }
-  } else {
-    // Event lain (misal: payment_intent.created) tidak perlu dilog detail
-    // console.log(`ℹ️ [WH-IGNORE] Mengabaikan event: ${event.type}`);
+  }
+
+  // 2. KASUS: ADA PERUBAHAN LANGGANAN (CANCEL / RESUME)
+  // Stripe mengirim event ini saat kita request cancel/resume via API
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object;
+    
+    // Cari user berdasarkan subscription ID
+    const user = await prisma.user.findFirst({
+      where: { stripeSubscriptionId: subscription.id }
+    });
+
+    if (user) {
+      console.log(`cx [WH] Subscription Updated untuk ${user.email}`);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          // Update status apakah akan berhenti di akhir periode
+          cancelAtPeriodEnd: subscription.cancel_at_period_end 
+        }
+      });
+    }
+  }
+
+  // 3. KASUS: LANGGANAN BENAR-BENAR MATI (SUDAH LEWAT MASA AKTIF)
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+     const user = await prisma.user.findFirst({
+      where: { stripeSubscriptionId: subscription.id }
+    });
+
+    if (user) {
+      console.log(`zz [WH] Subscription EXPIRED untuk ${user.email}`);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          plan: 'free',
+          stripeSubscriptionId: null,
+          cancelAtPeriodEnd: false
+        }
+      });
+    }
   }
 
   res.json({ received: true });

@@ -8,11 +8,15 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("user") // 'admin' atau 'user'
-  plan      String   @default("free") // 'free', 'pro'
-  createdAt DateTime @default(now())
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  email                String   @unique
+  password             String
+  role                 String   @default("user")
+  plan                 String   @default("free")
+  createdAt            DateTime @default(now())
+  
+  // TAMBAHAN BARU
+  stripeSubscriptionId String?  // Menyimpan ID langganan (sub_...)
+  cancelAtPeriodEnd    Boolean  @default(false) // Status apakah user minta berhenti nanti?
 }
