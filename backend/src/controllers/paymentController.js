@@ -6,54 +6,32 @@ const prisma = new PrismaClient();
 exports.createCheckoutSession = async (req, res) => {
   const { userId } = req.body;
 
-  // [LOG LANGKAH 1]
-  console.log(`\n🔵 [1. PAYMENT-INIT] Request masuk untuk User ID: ${userId}`);
-
   if (!userId) {
-    console.error("❌ [ERROR] User ID tidak dikirim dari frontend!");
-    return res.status(400).json({ error: "User ID is required" });
+    return res.status(400).json({ error: "User ID wajib ada!" });
   }
 
   try {
-    // [LOG LANGKAH 2]
-    console.log(`🔍 [2. DB-CHECK] Mencari user di database...`);
-
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
     });
 
-    if (!user) {
-      console.error(`❌ [ERROR] User ID ${userId} tidak ditemukan di DB!`);
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // [LOG LANGKAH 3]
-    console.log(
-      `✅ [3. USER-FOUND] User ditemukan: ${user.email}. Membuat sesi Stripe...`
-    );
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Pro Plan Subscription",
-            },
-            unit_amount: 1000,
-            recurring: { interval: "month" },
-          },
+          price: "price_1Sd8YAJzGtKOsl3g0zrBASLm",
           quantity: 1,
         },
       ],
-      // [LOG LANGKAH 4 - PENTING]
-      // Metadata ini adalah "Surat Titipan" untuk Webhook nanti
-      metadata: {
+      // [KUNCI UTAMA] Menitipkan data User ID agar bisa dibaca Webhook
+     metadata: {
         userId: userId.toString(),
         source: "paymentController",
       },
+      // Penting: Masukkan juga ke subscription_data agar invoice subsequent juga punya metadata
       subscription_data: {
         metadata: {
           userId: userId.toString(),
@@ -63,13 +41,9 @@ exports.createCheckoutSession = async (req, res) => {
       cancel_url: `${process.env.FRONTEND_URL}/dashboard?payment=cancelled`,
     });
 
-    // [LOG LANGKAH 5]
-    console.log(`🚀 [4. STRIPE-READY] Link Checkout berhasil dibuat!`);
-    console.log(`🎫 [INFO] Session ID: ${session.id}`);
-
     res.json({ url: session.url });
   } catch (error) {
-    console.error("❌ [FATAL ERROR] Gagal membuat sesi:", error.message);
+    console.error("Stripe Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -131,6 +105,36 @@ exports.resumeSubscription = async (req, res) => {
 
     res.json({ message: "Langganan berhasil dilanjutkan!", subscription });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+exports.createPortalSession = async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || !user.stripeSubscriptionId) {
+      return res
+        .status(400)
+        .json({ error: "User tidak memiliki langganan aktif." });
+    }
+
+    // Kita butuh Customer ID Stripe.
+    // Catatan: Di implementasi Anda saat ini, Anda menyimpan Subscription ID, bukan Customer ID.
+    // Kita harus ambil subscription dari Stripe dulu untuk dapat Customer ID-nya.
+    const subscription = await stripe.subscriptions.retrieve(
+      user.stripeSubscriptionId
+    );
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: subscription.customer,
+      return_url: `${process.env.FRONTEND_URL}/dashboard`,
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (error) {
+    console.error("Gagal membuat portal session:", error);
     res.status(500).json({ error: error.message });
   }
 };
