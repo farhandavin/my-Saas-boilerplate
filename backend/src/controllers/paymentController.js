@@ -1,58 +1,74 @@
-const Stripe = require("stripe");
+const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 exports.createCheckoutSession = async (req, res) => {
   const { userId } = req.body;
 
-  console.log(`➡️  Menerima request checkout untuk User ID: ${userId}`);
+  // [LOG LANGKAH 1]
+  console.log(`\n🔵 [1. PAYMENT-INIT] Request masuk untuk User ID: ${userId}`);
+
+  if (!userId) {
+    console.error("❌ [ERROR] User ID tidak dikirim dari frontend!");
+    return res.status(400).json({ error: 'User ID is required' });
+  }
 
   try {
+    // [LOG LANGKAH 2]
+    console.log(`🔍 [2. DB-CHECK] Mencari user di database...`);
+    
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
+      where: { id: parseInt(userId) }
     });
 
-    // Validasi User
     if (!user) {
-      console.error("❌ User tidak ditemukan di Database!");
-      return res.status(404).json({ error: "User not found" });
+      console.error(`❌ [ERROR] User ID ${userId} tidak ditemukan di DB!`);
+      return res.status(404).json({ error: 'User not found' });
     }
+    
+    // [LOG LANGKAH 3]
+    console.log(`✅ [3. USER-FOUND] User ditemukan: ${user.email}. Membuat sesi Stripe...`);
 
-    // Buat Session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "subscription",
+      payment_method_types: ['card'],
+      mode: 'subscription',
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: 'usd',
             product_data: {
-              name: "Pro Plan Subscription",
+              name: 'Pro Plan Subscription',
             },
-            unit_amount: 1000,
-            recurring: { interval: "month" },
+            unit_amount: 1000, 
+            recurring: { interval: 'month' },
           },
           quantity: 1,
         },
       ],
-      // Metadata (KUNCI UTAMA AGAR PRO BERHASIL)
+      // [LOG LANGKAH 4 - PENTING]
+      // Metadata ini adalah "Surat Titipan" untuk Webhook nanti
       metadata: {
         userId: userId.toString(),
+        source: 'paymentController' 
       },
       subscription_data: {
         metadata: {
-          userId: userId.toString(),
-        },
+            userId: userId.toString()
+        }
       },
       success_url: `${process.env.FRONTEND_URL}/dashboard?payment=success`,
       cancel_url: `${process.env.FRONTEND_URL}/dashboard?payment=cancelled`,
     });
 
-    console.log(`✅ Link Checkout Berhasil Dibuat! Session ID: ${session.id}`);
+    // [LOG LANGKAH 5]
+    console.log(`🚀 [4. STRIPE-READY] Link Checkout berhasil dibuat!`);
+    console.log(`🎫 [INFO] Session ID: ${session.id}`);
+    
     res.json({ url: session.url });
+
   } catch (error) {
-    console.error("❌ Gagal membuat session:", error);
+    console.error("❌ [FATAL ERROR] Gagal membuat sesi:", error.message);
     res.status(500).json({ error: error.message });
   }
 };

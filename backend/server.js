@@ -13,50 +13,72 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors());
 
-// --- WEBHOOK HANDLER (Logika Update Database) ---
+// ==================================================================
+//  🕵️‍♂️ WEBHOOK DETECTIVE (Logging Super Lengkap)
+// ==================================================================
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
+  console.log('\n🔔 [WH-1] Sinyal Webhook diterima dari Stripe...');
+  console.log('👀 [DEBUG] Panjang Body:', req.body.length);
+  console.log('🔑 [DEBUG] Webhook Secret di Server:', process.env.STRIPE_WEBHOOK_SECRET); 
+  // (Pastikan outputnya 'whsec_...' dan bukan undefined)
+  // -------------------------
+
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    console.log('🔐 [WH-2] Tanda tangan (Signature) Valid. Ini asli dari Stripe.');
   } catch (err) {
-    console.error(`❌ Webhook Error: ${err.message}`);
+    console.error(`❌ [WH-ERROR] Tanda tangan palsu atau salah config! Error: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle Event Checkout
+  // Cek Tipe Event
   if (event.type === 'checkout.session.completed') {
+    console.log('📦 [WH-3] Event terdeteksi: checkout.session.completed');
+    
     const session = event.data.object;
     
-    // Log Apa Adanya dari Stripe (Debugging)
-    console.log("🔔 Event Checkout Masuk! Mengecek Metadata...");
-    console.log("📦 ISI METADATA:", JSON.stringify(session.metadata, null, 2));
+    // LOG ISI METADATA (Bagian paling krusial)
+    console.log('🧐 [WH-4] Memeriksa Metadata titipan...');
+    console.log('   >>> ISI METADATA:', JSON.stringify(session.metadata, null, 2));
 
-    const userId = session.metadata?.userId ? parseInt(session.metadata.userId) : null;
+    const userIdString = session.metadata?.userId;
 
-    if (userId) {
+    if (userIdString) {
+      const userId = parseInt(userIdString, 10);
+      console.log(`🔄 [WH-5] Metadata OK (ID: ${userId}). Mencoba update database...`);
+
       try {
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id: userId },
           data: { plan: 'pro' }
         });
-        console.log(`🎉 SUKSES BESAR: User ID ${userId} berhasil diubah jadi PRO di Database!`);
+
+        console.log(`🎉 [WH-6] SUKSES BESAR!`);
+        console.log(`   >>> User: ${updatedUser.email}`);
+        console.log(`   >>> Plan Baru: ${updatedUser.plan}`);
+        console.log(`   >>> Waktu Update: ${new Date().toLocaleTimeString()}`);
+        
       } catch (dbError) {
-        console.error(`❌ Gagal Update DB: ${dbError.message}`);
+        console.error(`❌ [WH-DB-ERROR] Gagal update database: ${dbError.message}`);
       }
     } else {
-      console.error("⚠️ Metadata userId KOSONG. Pastikan Anda checkout menggunakan link BARU, bukan link lama.");
+      console.error("⚠️ [WH-FAIL] Metadata 'userId' KOSONG! Pastikan checkout dibuat dengan kode terbaru.");
     }
+  } else {
+    // Event lain (misal: payment_intent.created) tidak perlu dilog detail
+    // console.log(`ℹ️ [WH-IGNORE] Mengabaikan event: ${event.type}`);
   }
 
   res.json({ received: true });
 });
+// ==================================================================
 
-// Middleware & Routes Biasa
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server Backend Berjalan di Port ${PORT}`));
+app.listen(PORT, () => console.log(`💻 Server Siap di Port ${PORT}. Menunggu aktivitas...`));
