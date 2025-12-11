@@ -16,7 +16,7 @@ export default function Dashboard() {
     if (user?.id) {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/auth/user/${user.id}`
+          `http://localhost:5001/api/auth/user/${user.id}`
         );
         const latestUser = res.data;
 
@@ -54,7 +54,7 @@ export default function Dashboard() {
     if (!confirm(`Apakah Anda yakin ingin ${actionText} langganan?`)) return;
 
     try {
-      await axios.post(`http://localhost:5000/api/payment/${action}`, {
+      await axios.post(`http://localhost:5001/api/payment/${action}`, {
         userId: user.id,
       });
 
@@ -72,7 +72,7 @@ export default function Dashboard() {
   const handleCheckout = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/payment/create-checkout-session",
+        "http://localhost:5001/api/payment/create-checkout-session",
         { userId: user.id }
       );
       window.location.href = res.data.url;

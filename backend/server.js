@@ -1,10 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const Stripe = require('stripe');
-const { PrismaClient } = require('@prisma/client');
-const authRoutes = require('./src/routes/authRoutes');
-const paymentRoutes = require('./src/routes/paymentRoutes');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const Stripe = require("stripe");
+const { PrismaClient } = require("@prisma/client");
+const authRoutes = require("./src/routes/authRoutes");
+const paymentRoutes = require("./src/routes/paymentRoutes");
 
 dotenv.config();
 const app = express();
@@ -16,88 +16,72 @@ app.use(cors());
 // ==================================================================
 //  🕵️‍♂️ WEBHOOK DETECTIVE (Logging Super Lengkap)
 // ==================================================================
+// --- GANTI BAGIAN WEBHOOK DI SERVER.JS DENGAN INI ---
+
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  
+  // 1. CEK APAKAH REQUEST MASUK?
+  console.log("\n🔔 [WEBHOOK HIT] Ada paket datang ke /api/webhook!");
+
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // 2. CEK VERIFIKASI
+    console.log("🔐 [SECURITY] Tanda tangan Stripe VALID.");
   } catch (err) {
-    console.error(`❌ [WH-ERROR] ${err.message}`);
+    console.error(`⚠️ [SECURITY FAIL] Tanda tangan PALSU/RUSAK: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 1. KASUS: USER BARU SAJA BAYAR (CHECKOUT SUKSES)
+  // 3. CEK TIPE EVENT YANG MASUK
+  console.log(`📦 [EVENT TYPE] Jenis Event: ${event.type}`);
+
+  // Handle Event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+    
+    console.log("➡️ Metadata Raw:", JSON.stringify(session.metadata, null, 2));
+    
+    // Ambil userId
     const userId = parseInt(session.metadata?.userId);
+    console.log(`➡️ UserId Hasil Parsing: ${userId} (Tipe: ${typeof userId})`);
 
     if (userId) {
-      console.log(`💰 [WH] Checkout sukses untuk User ID: ${userId}`);
-      
-      // Simpan Subscription ID ke Database
-      await prisma.user.update({
-        where: { id: userId },
-        data: { 
-          plan: 'pro',
-          stripeSubscriptionId: session.subscription, // Simpan ID ini!
-          cancelAtPeriodEnd: false
-        }
-      });
-    }else{
-      console.log("bs [WH WARNING] Webhook diterima tapi tidak ada userId. (Ini wajar jika pakai 'stripe trigger')");
+      console.log(`✅ [ACTION] User ID valid. Mencoba update DB...`);
+      try {
+        const updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: { 
+            plan: 'pro',
+            stripeSubscriptionId: session.subscription, 
+            cancelAtPeriodEnd: false
+          }
+        });
+        console.log("🎉 [DB SUCCESS] User berhasil di-upgrade ke PRO:", updatedUser.email);
+      } catch (err) {
+        console.error("❌ [DB ERROR] Gagal update database:", err.message);
+      }
+    } else {
+      console.warn("⚠️ [SKIPPED] UserId kosong atau tidak valid.");
     }
+
+  } else {
+    console.log(`ℹ️ [IGNORED] Event tipe '${event.type}' diabaikan (bukan target kita).`);
   }
 
-  // 2. KASUS: ADA PERUBAHAN LANGGANAN (CANCEL / RESUME)
-  // Stripe mengirim event ini saat kita request cancel/resume via API
-  if (event.type === 'customer.subscription.updated') {
-    const subscription = event.data.object;
-    
-    // Cari user berdasarkan subscription ID
-    const user = await prisma.user.findFirst({
-      where: { stripeSubscriptionId: subscription.id }
-    });
-
-    if (user) {
-      console.log(`cx [WH] Subscription Updated untuk ${user.email}`);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          // Update status apakah akan berhenti di akhir periode
-          cancelAtPeriodEnd: subscription.cancel_at_period_end 
-        }
-      });
-    }
-  }
-
-  // 3. KASUS: LANGGANAN BENAR-BENAR MATI (SUDAH LEWAT MASA AKTIF)
-  if (event.type === 'customer.subscription.deleted') {
-    const subscription = event.data.object;
-     const user = await prisma.user.findFirst({
-      where: { stripeSubscriptionId: subscription.id }
-    });
-
-    if (user) {
-      console.log(`zz [WH] Subscription EXPIRED untuk ${user.email}`);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { 
-          plan: 'free',
-          stripeSubscriptionId: null,
-          cancelAtPeriodEnd: false
-        }
-      });
-    }
-  }
-
+  // Return a 200 response to acknowledge receipt of the event
   res.json({ received: true });
 });
+
 // ==================================================================
 
 app.use(express.json());
-app.use('/api/auth', authRoutes);
-app.use('/api/payment', paymentRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/payment", paymentRoutes);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`💻 Server Siap di Port ${PORT}. Menunggu aktivitas...`));
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () =>
+  console.log(`💻 Server Siap di Port ${PORT}. Menunggu aktivitas...`)
+);
