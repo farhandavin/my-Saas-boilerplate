@@ -25,23 +25,45 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   let event;
 
   try {
+    // Verifikasi tanda tangan Stripe
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error(`Webhook Error: ${err.message}`);
+    // Jika tanda tangan gagal, log error dan beri tahu Stripe (400 Bad Request)
+    console.error(`❌ Webhook Error: Signature verification failed. ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const userId = parseInt(session.metadata.userId);
-    console.log(`💰 Payment success for User ID: ${userId}`);
+  // Tangani event yang relevan
+  if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.created') {
+    const dataObject = event.data.object;
+    
+    // Ambil userId dari metadata (yang dikirim dari paymentController.js)
+    const rawUserId = dataObject.metadata?.userId;
+    const userId = parseInt(rawUserId, 10);
+    
+    console.log(`[Stripe Webhook] Event Type: ${event.type}. User ID: ${userId}`);
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { plan: 'pro' }
-    });
+    // Pastikan userId valid
+    if (userId && !isNaN(userId)) {
+      try {
+        // PERBAIKAN: Masukkan operasi database ke dalam try...catch
+        await prisma.user.update({
+          where: { id: userId },
+          data: { plan: 'pro' }
+        });
+        console.log(`✅ Database updated for User ID: ${userId}. Plan set to 'pro'`);
+      } catch (dbError) {
+        // Jika update database gagal, log error spesifik dan kembalikan status 500
+        console.error(`❌ DB Update FAILED for User ID ${userId} on event ${event.type}:`, dbError.message);
+        // Mengembalikan 500 akan meminta Stripe untuk mencoba mengirim event ini lagi (retry)
+        return res.status(500).send(`Database Error on update: ${dbError.message}`); 
+      }
+    } else {
+      console.error(`❌ Invalid or missing User ID in metadata: ${rawUserId}`);
+    }
   }
-
+  
+  // Event yang berhasil diverifikasi dan diproses (atau diabaikan karena tidak relevan) harus mengembalikan 200 OK
   res.json({ received: true });
 });
 // ----------------------------------------------------

@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // Tambahkan useCallback untuk fungsi memoized
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -9,36 +9,50 @@ export default function Dashboard() {
   // State untuk menyimpan data user
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || {});
 
-  // 1. Ambil Data User Terbaru dari Backend saat halaman dibuka
-  useEffect(() => {
-    const fetchLatestUserData = async () => {
-      if (user?.id) {
-        try {
-          const res = await axios.get(`http://localhost:5000/api/auth/user/${user.id}`);
-          const latestUser = res.data;
-          
-          // Update state dan localStorage dengan data terbaru (PRO/FREE)
-          setUser(latestUser);
-          localStorage.setItem('user', JSON.stringify(latestUser));
-        } catch (err) {
-          console.error("Gagal update data user", err);
-        }
+  // **REFACKTORING: Jadikan fungsi fetchLatestUserData dapat digunakan kembali**
+  const fetchLatestUserData = useCallback(async () => {
+    if (user?.id) {
+      try {
+        // Pastikan ID user adalah integer (sesuai backend)
+        const res = await axios.get(`http://localhost:5000/api/auth/user/${user.id}`); 
+        const latestUser = res.data;
+        
+        // Update state dan localStorage dengan data terbaru (PRO/FREE)
+        setUser(latestUser);
+        localStorage.setItem('user', JSON.stringify(latestUser));
+      } catch (err) {
+        // Tampilkan error di console, jangan mengganggu user
+        console.error("Gagal update data user:", err); 
+        // Jika gagal fetch, user tetap akan melihat data lama, yang mungkin juga salah.
+        // Tapi kita biarkan flow berlanjut.
       }
-    };
+    }
+  }, [user?.id]); // Dijalankan ulang jika user.id berubah
 
+  // 1. Ambil Data User Terbaru dari Backend saat halaman dimuat
+  useEffect(() => {
     fetchLatestUserData();
-  }, []); // Array kosong artinya dijalankan sekali saat mount
+  }, [fetchLatestUserData]); // Dependency: fetchLatestUserData (Dipanggil saat mount/setelah navigasi jika diperlukan)
 
-  // 2. Notifikasi jika pembayaran sukses
+  // 2. Notifikasi jika pembayaran sukses dan panggil ulang fetch
   useEffect(() => {
     if (searchParams.get('payment') === 'success') {
+      
+      // **PERBAIKAN KRITIS:**
+      // Panggil ulang fungsi fetch untuk memastikan kita mendapatkan status 'pro' yang baru 
+      // dari database SEBELUM atau sesudah pesan sukses.
+      // Kita panggil di sini agar ada pemicu eksplisit setelah redirect Stripe.
+      fetchLatestUserData(); 
+
       alert('Terima kasih! Pembayaran berhasil. Anda sekarang PRO Member.');
-      // Hapus query params agar bersih
+      
+      // Hapus query params agar bersih (ini akan memicu re-render lagi)
       navigate('/dashboard', { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, fetchLatestUserData]); // Tambahkan fetchLatestUserData sebagai dependency
 
   const handleCheckout = async () => {
+    // ... (kode handleCheckout tetap)
     try {
       const res = await axios.post('http://localhost:5000/api/payment/create-checkout-session', {
         userId: user.id
@@ -59,6 +73,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-10 font-sans">
+      {/* ... (Konten render tetap) */}
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
