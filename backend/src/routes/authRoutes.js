@@ -1,12 +1,14 @@
 const express = require('express');
-// Tambahkan getUser di dalam kurung kurawal
-const { register, login, getUser } = require('../controllers/authController'); 
+// Import controller baru
+const { register, login, getUser, forgotPassword, resetPassword } = require('../controllers/authController'); 
 const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
-
-// Route baru untuk ambil data user terbaru
 router.get('/user/:id', getUser);
+
+// Route Baru
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import './AuthLayout.css'; // Reuse CSS yang sama
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -8,7 +9,7 @@ export default function Register() {
   const [name, setName] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post("http://localhost:5001/api/auth/register", {
@@ -16,73 +17,89 @@ export default function Register() {
         email,
         password,
       });
-      // Simpan token di localStorage (Simpel untuk starter kit)
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/login");
     } catch (err) {
-      alert(err.response?.data?.error || "Login Gagal");
+      alert(err.response?.data?.error || "Register Gagal");
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Welcome Back
-        </h2>
+    <div className="auth-wrapper">
+      <form className="auth-form" onSubmit={handleRegister}>
+        <h1 className="a11y-hidden">Register Form</h1>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
+        <figure aria-hidden="true">
+          <div className="person-body"></div>
+          <div className="neck skin"></div>
+          <div className="head skin">
+            <div className="eyes"></div>
+            <div className="mouth"></div>
+          </div>
+          <div className="hair"></div>
+          <div className="ears"></div>
+          <div className="shirt-1"></div>
+          <div className="shirt-2"></div>
+        </figure>
+
+        {/* --- NAME INPUT --- */}
+        <div>
+          <label>
             <input
-              type="name"
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              type="text"
+              className="text"
+              name="name"
+              placeholder="Name"
+              required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
+            <span className="required">Name</span>
+          </label>
+        </div>
+
+        <div>
+          <label className="label-email">
             <input
               type="email"
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="text"
+              name="email"
+              placeholder="Email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <span className="required">Email</span>
+          </label>
+        </div>
+
+        <input type="checkbox" name="show-password" class="show-password a11y-hidden" id="show-password" />
+        <label className="label-show-password" htmlFor="show-password">
+          <span>Show Password</span>
+        </label>
+
+        <div>
+          <label className="label-password">
             <input
-              type="password"
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              type="text"
+              className="text"
+              name="password"
+              placeholder="Password"
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
             />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-          >
-            Sign Up
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
+            <span className="required">Password</span>
+          </label>
+        </div>
+
+        <input type="submit" value="Sign Up" />
+
+        <div className="email-link">
+          <Link to="/login">Already have an account? Log In</Link>
+        </div>
+      </form>
     </div>
   );
 }

@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -16,7 +15,10 @@ model User {
   plan                 String   @default("free")
   createdAt            DateTime @default(now())
   
-  // TAMBAHAN BARU
-  stripeSubscriptionId String?  // Menyimpan ID langganan (sub_...)
-  cancelAtPeriodEnd    Boolean  @default(false) // Status apakah user minta berhenti nanti?
+  stripeSubscriptionId String?
+  cancelAtPeriodEnd    Boolean  @default(false)
+
+  // TAMBAHAN UNTUK RESET PASSWORD
+  resetToken           String?  // Token unik
+  resetTokenExpiry     DateTime? // Kapan token kadaluarsa
 }

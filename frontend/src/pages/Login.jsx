@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import './AuthLayout.css'; // Import CSS baru
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,7 +15,6 @@ export default function Login() {
         email,
         password
       });
-      // Simpan token di localStorage (Simpel untuk starter kit)
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       alert('Login Berhasil!');
@@ -25,35 +25,72 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Welcome Back</h2>
+    <div className="auth-wrapper">
+      <form className="auth-form" onSubmit={handleLogin}>
+        <h1 className="a11y-hidden">Login Form</h1>
         
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+        {/* --- ANIMATED FIGURE --- */}
+        <figure aria-hidden="true">
+          <div className="person-body"></div>
+          <div className="neck skin"></div>
+          <div className="head skin">
+            <div className="eyes"></div>
+            <div className="mouth"></div>
+          </div>
+          <div className="hair"></div>
+          <div className="ears"></div>
+          <div className="shirt-1"></div>
+          <div className="shirt-2"></div>
+        </figure>
+
+        {/* --- INPUTS --- */}
+        <div>
+          <label className="label-email">
             <input 
               type="email" 
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={email} onChange={(e) => setEmail(e.target.value)} required
+              className="text" 
+              name="email" 
+              placeholder="Email" 
+              required 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <span className="required">Email</span>
+          </label>
+        </div>
+
+        {/* --- SHOW PASSWORD TOGGLE (Pure CSS Logic) --- */}
+        <input type="checkbox" name="show-password" class="show-password a11y-hidden" id="show-password" />
+        <label className="label-show-password" htmlFor="show-password">
+          <span>Show Password</span>
+        </label>
+
+        <div>
+          <label className="label-password">
             <input 
-              type="password" 
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={password} onChange={(e) => setPassword(e.target.value)} required
+              type="text" 
+              className="text" 
+              name="password" 
+              placeholder="Password" 
+              required 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
-          </div>
-          <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
-            Sign In
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account? <Link to="/register" className="text-blue-600 hover:underline">Sign up</Link>
-        </p>
-      </div>
+            <span className="required">Password</span>
+          </label>
+        </div>
+
+        {/* --- SUBMIT --- */}
+        <input type="submit" value="Log In" />
+
+        {/* --- LINKS --- */}
+        <div className="email-link">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </div>
+        <div className="email-link" style={{marginTop: '5px'}}>
+          <Link to="/register">Don't have an account? Sign Up</Link>
+        </div>
+      </form>
     </div>
   );
 }
