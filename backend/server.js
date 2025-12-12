@@ -3,14 +3,12 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const Stripe = require("stripe");
-const { PrismaClient } = require("@prisma/client");
-
+const prisma = require("./src/prismaClient");
 // Import Routes
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const authRoutes = require("./src/routes/authRoutes");
 
 const app = express();
-const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const PORT = 5001; // Sesuai permintaan (Port 5001)

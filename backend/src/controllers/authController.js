@@ -1,10 +1,10 @@
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../prismaClient");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const crypto = require("crypto");
 
-const prisma = new PrismaClient();
+
 const JWT_SECRET = process.env.JWT_SECRET || "rahasia_super_aman"; // Nanti pindah ke .env
 
 // Validasi Input pakai Zod (Agar pro)

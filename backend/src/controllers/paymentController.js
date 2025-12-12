@@ -1,7 +1,6 @@
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 exports.createCheckoutSession = async (req, res) => {
   const { userId } = req.body;
