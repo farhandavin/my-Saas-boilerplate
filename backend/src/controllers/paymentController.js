@@ -22,12 +22,12 @@ exports.createCheckoutSession = async (req, res) => {
       mode: "subscription",
       line_items: [
         {
-          price: "price_1Sd8YAJzGtKOsl3g0zrBASLm",
+          price: "price_1SdNNsJw6lwIO889ixkUT3au",
           quantity: 1,
         },
       ],
       // [KUNCI UTAMA] Menitipkan data User ID agar bisa dibaca Webhook
-     metadata: {
+      metadata: {
         userId: userId.toString(),
         source: "paymentController",
       },
