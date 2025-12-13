@@ -11,15 +11,14 @@ model User {
   id                   Int      @id @default(autoincrement())
   name                 String
   email                String   @unique
-  password             String
+  password             String?
+  googleId             String?  @unique
+  avatar               String?
   role                 String   @default("user")
   plan                 String   @default("free")
   createdAt            DateTime @default(now())
-  
   stripeSubscriptionId String?
   cancelAtPeriodEnd    Boolean  @default(false)
-
-  // TAMBAHAN UNTUK RESET PASSWORD
-  resetToken           String?  // Token unik
-  resetTokenExpiry     DateTime? // Kapan token kadaluarsa
+  resetToken           String?
+  resetTokenExpiry     DateTime?
 }
