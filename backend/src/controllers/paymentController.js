@@ -3,11 +3,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../prismaClient");
 
 exports.createCheckoutSession = async (req, res) => {
-  // Tambahkan priceId di sini
   const { userId, priceId } = req.body; 
 
   if (!userId || !priceId) {
-    return res.status(400).json({ error: "User ID dan Price ID wajib ada!" });
+    return res.status(400).json({ error: "User ID and Price ID are required!" });
   }
 
   try {
@@ -22,13 +21,14 @@ exports.createCheckoutSession = async (req, res) => {
       mode: "subscription",
       line_items: [
         {
-          price: priceId, // 👈 GUNAKAN VARIABLE INI (JANGAN HARDCODE)
+          price: priceId, // 👈 Dynamic Price ID
           quantity: 1,
         },
       ],
       metadata: {
         userId: userId.toString(),
         source: "paymentController",
+        // Note: You can also pass 'planType' here if needed for the webhook
       },
       subscription_data: {
         metadata: {
@@ -53,23 +53,23 @@ exports.cancelSubscription = async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user || !user.stripeSubscriptionId) {
-      return res.status(400).json({ error: "Tidak ada langganan aktif." });
+      return res.status(400).json({ error: "No active subscription found." });
     }
 
-    // Panggil Stripe: "Jangan perpanjang nanti (cancel_at_period_end = true)"
+    // Call Stripe: "Cancel at period end"
     const subscription = await stripe.subscriptions.update(
       user.stripeSubscriptionId,
       { cancel_at_period_end: true }
     );
 
-    // Update DB Lokal langsung (biar UI cepat update)
+    // Update Local DB immediately (for faster UI updates)
     await prisma.user.update({
       where: { id: userId },
       data: { cancelAtPeriodEnd: true },
     });
 
     res.json({
-      message: "Langganan akan berhenti pada akhir periode.",
+      message: "Subscription will end at the end of the current period.",
       subscription,
     });
   } catch (error) {
@@ -77,7 +77,7 @@ exports.cancelSubscription = async (req, res) => {
   }
 };
 
-// TAMBAHAN: RESUME SUBSCRIPTION
+// ADDITION: RESUME SUBSCRIPTION
 exports.resumeSubscription = async (req, res) => {
   const { userId } = req.body;
 
@@ -87,10 +87,10 @@ exports.resumeSubscription = async (req, res) => {
     if (!user || !user.stripeSubscriptionId) {
       return res
         .status(400)
-        .json({ error: "Tidak ada langganan untuk dilanjutkan." });
+        .json({ error: "No subscription to resume." });
     }
 
-    // Panggil Stripe: "Lanjut lagi dong (cancel_at_period_end = false)"
+    // Call Stripe: "Do not cancel (cancel_at_period_end = false)"
     const subscription = await stripe.subscriptions.update(
       user.stripeSubscriptionId,
       { cancel_at_period_end: false }
@@ -101,11 +101,12 @@ exports.resumeSubscription = async (req, res) => {
       data: { cancelAtPeriodEnd: false },
     });
 
-    res.json({ message: "Langganan berhasil dilanjutkan!", subscription });
+    res.json({ message: "Subscription resumed successfully!", subscription });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 exports.createPortalSession = async (req, res) => {
   const { userId } = req.body;
 
@@ -115,12 +116,11 @@ exports.createPortalSession = async (req, res) => {
     if (!user || !user.stripeSubscriptionId) {
       return res
         .status(400)
-        .json({ error: "User tidak memiliki langganan aktif." });
+        .json({ error: "User does not have an active subscription." });
     }
 
-    // Kita butuh Customer ID Stripe.
-    // Catatan: Di implementasi Anda saat ini, Anda menyimpan Subscription ID, bukan Customer ID.
-    // Kita harus ambil subscription dari Stripe dulu untuk dapat Customer ID-nya.
+    // We need the Stripe Customer ID.
+    // Note: Since we only stored Subscription ID, we fetch the subscription object first.
     const subscription = await stripe.subscriptions.retrieve(
       user.stripeSubscriptionId
     );
@@ -132,7 +132,7 @@ exports.createPortalSession = async (req, res) => {
 
     res.json({ url: portalSession.url });
   } catch (error) {
-    console.error("Gagal membuat portal session:", error);
+    console.error("Failed to create portal session:", error);
     res.status(500).json({ error: error.message });
   }
 };

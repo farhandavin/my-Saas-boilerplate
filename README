@@ -1,0 +1,97 @@
+# 🚀 Ultimate SaaS Boilerplate (PERN Stack)
+
+**Launch your SaaS in minutes, not months.** This is a production-ready, scalable boilerplate built with **PostgreSQL, Express, React, and Node.js**. It comes pre-configured with Stripe subscriptions, Authentication, and a modern UI.
+
+## ✨ Features
+
+- **🔐 Secure Authentication**: JWT-based auth with Registration, Login, and Password Reset flows.
+- **💳 Stripe Integration**: Ready-to-use checkout sessions, webhook handling, and subscription management.
+- **🛡️ Role-Based Access**: Built-in support for User Roles (Admin/User) and Plan Types (Free/Pro).
+- **🎨 Modern Frontend**: Built with Vite + React + TailwindCSS for high performance and easy styling.
+- **🗄️ Prisma ORM**: Type-safe database access with PostgreSQL.
+- **📱 Responsive UI**: Fully responsive dashboard and landing page components.
+
+## 🛠️ Tech Stack
+
+- **Backend**: Node.js, Express, Prisma, PostgreSQL
+- **Frontend**: React (Vite), Tailwind CSS, Lucide Icons
+- **Payments**: Stripe API
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- PostgreSQL Database
+- Stripe Account (for payments)
+
+### 1. Installation
+
+Clone the repository and install dependencies for both backend and frontend.
+
+```bash
+# Install Backend Dependencies
+cd backend
+npm install
+
+# Install Frontend Dependencies
+cd ../frontend
+npm install
+2. Environment Setup
+Create a .env file in the backend/ directory based on .env.example.
+
+Ini, TOML
+
+PORT=5001
+DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
+JWT_SECRET="super_secret_key"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+CLIENT_URL="http://localhost:5173"
+3. Database Migration
+Run the Prisma migration to create tables in your PostgreSQL database.
+
+Bash
+
+cd backend
+npx prisma migrate dev --name init
+4. Running the App
+Open two terminal windows:
+
+Terminal 1 (Backend):
+
+Bash
+
+cd backend
+npm run dev
+Terminal 2 (Frontend):
+
+Bash
+
+cd frontend
+npm run dev
+Visit http://localhost:5173 to see your app in action!
+
+💳 Stripe Webhook Setup (Local Development)
+To test subscriptions locally, you need to forward Stripe events to your local server.
+
+Install Stripe CLI.
+
+Login: stripe login
+
+Listen: stripe listen --forward-to localhost:5001/api/webhook
+
+Copy the Webhook Signing Secret (starts with whsec_) and paste it into your .env file.
+
+📁 Project Structure
+├── backend/
+│   ├── src/
+│   │   ├── controllers/   # Logic for Auth & Payments
+│   │   ├── routes/        # API Routes
+│   │   └── prismaClient.js
+│   └── server.js          # App Entry Point
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # Reusable UI Components
+│   │   ├── pages/         # Application Pages
+│   │   └── App.jsx        # Main Component
