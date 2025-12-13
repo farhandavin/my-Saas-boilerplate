@@ -10,32 +10,48 @@ const Dashboard = () => {
 
   // Simulasi Load Data User
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
+    const fetchLatestUserData = async () => {
       const token = localStorage.getItem('token');
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-      if (!token) throw new Error("No token found");
+      if (!token) {
+        navigate('/auth');
+        return;
+      }
 
-      if (storedUser) {
-        // Parsing data user dan menambahkan field status langganan jika belum ada
-        const parsedUser = JSON.parse(storedUser);
+      // 1. Tampilkan data lama dulu biar cepat (Optimistic UI)
+      if (storedUser && storedUser.id) {
         setUser({
-          ...parsedUser,
-          plan: parsedUser.plan || 'Free', // Default Free
-          subscriptionStatus: parsedUser.subscriptionStatus || 'active' // active | canceled
-        });
-      } else {
-        // Data Dummy Default
-        setUser({ 
-          name: "Farhan Davin", 
-          email: "user@example.com", 
-          plan: "Free", 
-          subscriptionStatus: 'active' 
+          ...storedUser,
+          plan: storedUser.plan || 'Free',
+          subscriptionStatus: storedUser.subscriptionStatus || 'active'
         });
       }
-    } catch (err) {
-      navigate('/auth');
-    }
+
+      // 2. Ambil data TERBARU dari Database (Background Refresh)
+      try {
+        // Asumsi Anda punya endpoint untuk get profile (misal: /api/auth/me atau get user by id)
+        // Jika belum ada endpoint '/me', kita pakai endpoint user details biasa.
+        const response = await fetch(`http://localhost:5001/api/auth/me`, { // Pastikan endpoint ini ada
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const freshUserData = await response.json();
+          
+          // 3. Update State & LocalStorage dengan data baru (Team/Pro)
+          setUser(freshUserData);
+          localStorage.setItem('user', JSON.stringify(freshUserData));
+          console.log("Data user diperbarui:", freshUserData.plan);
+        }
+      } catch (err) {
+        console.error("Gagal refresh data user:", err);
+      }
+    };
+
+    fetchLatestUserData();
   }, [navigate]);
 
   const PLAN_PRICES = {

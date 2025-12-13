@@ -1,14 +1,17 @@
-const express = require('express');
-// Import controller baru
-const { register, login, getUser, forgotPassword, resetPassword } = require('../controllers/authController'); 
+// backend/src/routes/authRoutes.js
+const express = require("express");
+const { register, login, getMe, forgotPassword, resetPassword } = require("../controllers/authController");
+const verifyToken = require("../middleware/authMiddleware"); // Import middleware
+
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.get('/user/:id', getUser);
+router.post("/register", register);
+router.post("/login", login);
 
-// Route Baru
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+// GANTI route getUser lama dengan ini:
+router.get("/me", verifyToken, getMe); // <-- AMAN: Pakai token
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

@@ -49,18 +49,15 @@ app.post(
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
         const userId = parseInt(session.metadata?.userId);
-
-        console.log("📦 [WEBHOOK DATA] Session ID:", session.id);
-        console.log(
-          "👤 [WEBHOOK DATA] Metadata User ID:",
-          session.metadata?.userId
-        );
+        
+        // 1. AMBIL PLAN TYPE DARI METADATA
+        const planType = session.metadata?.planType; // <--- Pastikan controller mengirim ini
 
         if (userId) {
-          const updatedUser = await prisma.user.update({
+          await prisma.user.update({
             where: { id: userId },
             data: {
-              plan: "pro",
+              plan: planType || "pro", // <--- JANGAN HARDCODE STRING "pro"
               stripeSubscriptionId: session.subscription,
               cancelAtPeriodEnd: false,
             },
