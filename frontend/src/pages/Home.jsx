@@ -1,113 +1,60 @@
-import { Link } from "react-router-dom";
+// src/pages/Home.jsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { LayoutDashboard, LogIn, CheckCircle } from 'lucide-react';
 
-export default function Home() {
+const Home = () => {
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
-      {/* --- NAVBAR --- */}
-      <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-600 tracking-tighter">
-          MySaaS<span className="text-gray-900">Kit</span>
-        </div>
+    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden">
+      {/* Abstract Background Element */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-50 skew-x-12 transform origin-top translate-x-32 -z-10"></div>
+
+      {/* Navbar Minimalis */}
+      <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-blue-900 tracking-tight">SaaS<span className="text-blue-600">Boilerplate</span>.</h1>
         <div className="space-x-4">
-          <Link to="/login" className="text-gray-600 hover:text-blue-600 font-medium">
-            Sign In
-          </Link>
-          <Link
-            to="/register"
-            className="bg-blue-600 text-white px-5 py-2 rounded-full font-medium hover:bg-blue-700 transition"
-          >
-            Get Started
-          </Link>
+          <Link to="/auth" className="text-slate-600 font-medium hover:text-blue-600 transition-colors">Log In</Link>
+          <Link to="/auth" className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-shadow shadow-lg shadow-blue-500/20">Get Started</Link>
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
-      <header className="max-w-5xl mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
-          Bangun SaaS Impian Anda <br />
-          <span className="text-blue-600">Dalam Waktu Singkat.</span>
-        </h1>
-        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-          Boilerplate lengkap dengan React, Node.js, Prisma, dan Stripe. 
-          Hemat waktu 200+ jam pengembangan dan fokus pada jualan.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            to="/register"
-            className="bg-blue-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30 transition-all"
-          >
-            Mulai Sekarang 🚀
-          </Link>
-          <a
-            href="#pricing"
-            className="bg-gray-100 text-gray-700 px-8 py-4 rounded-full text-lg font-bold hover:bg-gray-200 transition"
-          >
-            Lihat Harga
-          </a>
-        </div>
-      </header>
+      {/* Hero Section */}
+      <main className="flex-1 flex flex-col items-start justify-center max-w-7xl mx-auto px-6 py-12 lg:py-20">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            v2.0 is now live
+          </div>
+          
+          <h1 className="text-5xl lg:text-7xl font-extrabold text-slate-900 leading-tight mb-6">
+            Build faster with <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Focus & Clarity.</span>
+          </h1>
+          
+          <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg">
+            A clean, highly efficient SaaS boilerplate designed for readability and speed. Start your next big project without the clutter.
+          </p>
 
-      {/* --- FEATURES SECTION --- */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">Fitur Unggulan</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { title: "Authentication", desc: "Login & Register aman dengan JWT dan Hash Password." },
-              { title: "Stripe Payment", desc: "Integrasi langganan bulanan/tahunan siap pakai." },
-              { title: "Database Ready", desc: "Menggunakan Prisma ORM & PostgreSQL yang scalable." },
-            ].map((feature, idx) => (
-              <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xl mb-4">
-                  ⚡
-                </div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.desc}</p>
-              </div>
-            ))}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link to="/auth" className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition-all transform hover:-translate-y-1 shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2">
+              <LogIn size={20} /> Join Now
+            </Link>
+            <Link to="/dashboard" className="px-8 py-4 bg-white border border-slate-200 text-slate-700 text-lg font-semibold rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all flex items-center justify-center gap-2">
+              <LayoutDashboard size={20} /> View Dashboard
+            </Link>
           </div>
         </div>
-      </section>
-
-      {/* --- PRICING SECTION --- */}
-      <section id="pricing" className="py-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">Harga Sederhana</h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free */}
-            <div className="p-8 border border-gray-200 rounded-3xl">
-              <h3 className="text-xl font-bold text-gray-500">Starter</h3>
-              <div className="text-4xl font-extrabold my-4">$0</div>
-              <ul className="space-y-3 mb-8 text-gray-600">
-                <li>✅ Akses Dashboard</li>
-                <li>✅ Fitur Dasar</li>
-              </ul>
-              <Link to="/register" className="block w-full py-3 text-center border border-gray-300 rounded-xl font-bold hover:bg-gray-50">
-                Daftar Gratis
-              </Link>
-            </div>
-            {/* Pro */}
-            <div className="p-8 bg-gray-900 text-white rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-blue-500 text-xs font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
-              <h3 className="text-xl font-bold text-gray-300">Pro</h3>
-              <div className="text-4xl font-extrabold my-4">$10 <span className="text-lg text-gray-500 font-normal">/bulan</span></div>
-              <ul className="space-y-3 mb-8 text-gray-300">
-                <li>✅ Semua Fitur Starter</li>
-                <li>✅ Prioritas Support</li>
-                <li>✅ Akses API Unlimited</li>
-              </ul>
-              <Link to="/register" className="block w-full py-3 text-center bg-blue-600 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-900/50">
-                Beli Sekarang
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- FOOTER --- */}
-      <footer className="bg-white border-t border-gray-100 py-10 text-center text-gray-500">
-        <p>© 2025 MySaaS Kit. Built by You.</p>
+      </main>
+      
+      {/* Footer Minimal */}
+      <footer className="w-full border-t border-slate-100 py-6 text-center text-slate-400 text-sm bg-white">
+        © 2025 SaaS Boilerplate. Crafted for efficiency.
       </footer>
     </div>
   );
-}
+};
+
+export default Home;

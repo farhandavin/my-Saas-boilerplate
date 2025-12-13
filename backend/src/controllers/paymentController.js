@@ -3,10 +3,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../prismaClient");
 
 exports.createCheckoutSession = async (req, res) => {
-  const { userId } = req.body;
+  // Tambahkan priceId di sini
+  const { userId, priceId } = req.body; 
 
-  if (!userId) {
-    return res.status(400).json({ error: "User ID wajib ada!" });
+  if (!userId || !priceId) {
+    return res.status(400).json({ error: "User ID dan Price ID wajib ada!" });
   }
 
   try {
@@ -21,16 +22,14 @@ exports.createCheckoutSession = async (req, res) => {
       mode: "subscription",
       line_items: [
         {
-          price: "price_1SdNNsJw6lwIO889ixkUT3au",
+          price: priceId, // 👈 GUNAKAN VARIABLE INI (JANGAN HARDCODE)
           quantity: 1,
         },
       ],
-      // [KUNCI UTAMA] Menitipkan data User ID agar bisa dibaca Webhook
       metadata: {
         userId: userId.toString(),
         source: "paymentController",
       },
-      // Penting: Masukkan juga ke subscription_data agar invoice subsequent juga punya metadata
       subscription_data: {
         metadata: {
           userId: userId.toString(),
