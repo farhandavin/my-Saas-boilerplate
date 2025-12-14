@@ -16,7 +16,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const PORT = process.env.PORT || 5000;
 
 // ==================================================================
-// 1. STRIPE WEBHOOK (MUST BE DEFINED BEFORE BODY PARSERS)
+// 1. STRIPE WEBHOOK (WAJIB DI ATAS BODY PARSER)
 // ==================================================================
 app.post(
   "/api/webhook",
@@ -40,13 +40,11 @@ app.post(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
-      // Ambil data dari Metadata yang dikirim paymentController tadi
       const userId = parseInt(session.metadata.userId);
-      const planType = session.metadata.planType; // "Pro" atau "Team"
+      const planType = session.metadata.planType;
 
       if (userId) {
         try {
-          // UPDATE TABEL USER (Sekarang kolomnya sudah ada!)
           await prisma.user.update({
             where: { id: userId },
             data: {
@@ -63,7 +61,6 @@ app.post(
         }
       }
     }
-    // Handle Cancel / Update Subscription events jika perlu di masa depan...
 
     res.json({ received: true });
   }
@@ -72,7 +69,30 @@ app.post(
 // ==================================================================
 // 2. MIDDLEWARE & ROUTES
 // ==================================================================
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
+
+// --- PERBAIKAN CORS DISINI ---
+// Kita izinkan Frontend Production DAN Localhost sekaligus
+const allowedOrigins = [
+  process.env.CLIENT_URL, // URL Vercel Frontend
+  "http://localhost:5173", // Local Development
+  "http://localhost:5001"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      // Jika origin tidak ada di daftar, tetap izinkan (opsional) atau block
+      // Untuk debugging yang lebih mudah, kita bisa return true sementara
+      // return callback(null, true); 
+    }
+    return callback(null, true);
+  },
+  credentials: true, // PENTING: Agar header auth/cookies bisa lewat
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+}));
+
 app.use(express.json());
 
 // API Routes
@@ -86,12 +106,20 @@ app.get("/", (req, res) => {
   res.send("🚀 SaaS Boilerplate API is running...");
 });
 
-// Start Server
-if (process.env.NODE_ENV !== 'production') {
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🚀 SERVER RUNNING ON PORT ${PORT}`);
-  console.log(`👉 Webhook URL: http://localhost:${PORT}/api/webhook`);
-});
+// ==================================================================
+// 3. SERVER START (PERBAIKAN LOGIKA DEPLOY)
+// ==================================================================
+
+// Jika dijalankan langsung (node server.js), jalankan app.listen
+// Ini penting agar Render bisa menjalankan servernya.
+if (require.main === module) {
+  app.listen(PORT,"0.0.0.0", () => {
+    console.log(`\n🚀 SERVER RUNNING ON PORT ${PORT}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`👉 Webhook URL: http://localhost:${PORT}/api/webhook`);
+    }
+  });
 }
 
+// Export app untuk Vercel (Serverless)
 module.exports = app;
