@@ -8,16 +8,25 @@ datasource db {
 }
 
 model User {
-  id                   Int       @id @default(autoincrement())
+  id                   Int          @id @default(autoincrement())
   name                 String
-  email                String    @unique
+  email                String       @unique
   password             String?
-  googleId             String?   @unique
-  avatar               String?  
-  teams                TeamMember[]
-  currentTeamId        Int?     
+  googleId             String?      @unique
+  avatar               String?
   
-  createdAt            DateTime  @default(now())
+  // --- PERBAIKAN: KOLOM BILLING DITAMBAHKAN DI SINI ---
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String       @default("Free") // Default huruf besar 'Free' agar cocok dengan frontend
+  subscriptionStatus   String       @default("active")
+  cancelAtPeriodEnd    Boolean      @default(false)
+  // ----------------------------------------------------
+
+  teams                TeamMember[]
+  currentTeamId        Int?      
+  
+  createdAt            DateTime     @default(now())
   resetToken           String?
   resetTokenExpiry     DateTime?
 }
@@ -28,10 +37,9 @@ model Team {
   slug                 String       @unique
   ownerId              Int
   
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  plan                 String       @default("free")
-  subscriptionStatus   String       @default("active")
+  // Opsi: Anda bisa menghapus billing dari Team jika billing per-user
+  // atau biarkan saja jika nanti ingin fitur 'Team Billing' terpisah.
+  // Untuk sekarang kita fokus User Billing agar Dashboard jalan.
   
   members              TeamMember[]
   createdAt            DateTime     @default(now())

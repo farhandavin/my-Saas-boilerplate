@@ -9,6 +9,7 @@ const prisma = require("./src/prismaClient");
 const authRoutes = require("./src/routes/authRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const aiRoutes = require("./src/routes/aiRoutes");
+const teamRoutes = require("./src/routes/teamRoutes");
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -17,59 +18,52 @@ const PORT = process.env.PORT || 5000;
 // ==================================================================
 // 1. STRIPE WEBHOOK (MUST BE DEFINED BEFORE BODY PARSERS)
 // ==================================================================
-// Stripe requires the raw body to validate the webhook signature.
 app.post(
   "/api/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    console.log("🔔 [WEBHOOK] Signal received from Stripe");
-
     const sig = req.headers["stripe-signature"];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!sig || !endpointSecret) {
-      console.error("❌ [WEBHOOK ERROR] Missing signature or secret.");
-      return res.status(400).send("Missing signature or secret");
-    }
-
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-      console.log("✅ [WEBHOOK] Signature Valid. Event Type:", event.type);
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
     } catch (err) {
-      console.error(`❌ [WEBHOOK ERROR] Verification Failed: ${err.message}`);
+      console.error(`Webhook Error: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // Handle Stripe Events
-    try {
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
-        const userId = session.metadata?.userId ? parseInt(session.metadata.userId) : null;
-        const planType = session.metadata?.planType;
+    // Handle Event
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      
+      // Ambil data dari Metadata yang dikirim paymentController tadi
+      const userId = parseInt(session.metadata.userId);
+      const planType = session.metadata.planType; // "Pro" atau "Team"
 
-        if (userId) {
+      if (userId) {
+        try {
+          // UPDATE TABEL USER (Sekarang kolomnya sudah ada!)
           await prisma.user.update({
             where: { id: userId },
             data: {
-              plan: planType || "pro",
+              plan: planType, 
+              stripeCustomerId: session.customer,
               stripeSubscriptionId: session.subscription,
-              cancelAtPeriodEnd: false,
+              subscriptionStatus: "active",
+              cancelAtPeriodEnd: false
             },
           });
-          console.log(`🎉 [DB SUCCESS] User ID ${userId} upgraded to ${planType || "pro"}`);
-        } else {
-          console.warn("⚠️ [WEBHOOK WARN] No User ID found in metadata.");
+          console.log(`✅ User ${userId} upgraded to ${planType}`);
+        } catch (dbError) {
+          console.error("❌ Database Update Failed:", dbError);
         }
-      } else {
-        console.log(`ℹ️ [WEBHOOK INFO] Unhandled event type: ${event.type}`);
       }
-    } catch (error) {
-      console.error("❌ [DB ERROR] Database update failed:", error.message);
-      // Return 200 to prevent Stripe from retrying endlessly on DB errors
-      return res.json({ received: true });
     }
+    // Handle Cancel / Update Subscription events jika perlu di masa depan...
 
     res.json({ received: true });
   }
@@ -78,12 +72,14 @@ app.post(
 // ==================================================================
 // 2. MIDDLEWARE & ROUTES
 // ==================================================================
-app.use(cors({ origin: process.env.CLIENT_URL || "*" })); // Secure CORS
+app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
 app.use(express.json());
 
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/teams", teamRoutes);
 
 // Health Check
 app.get("/", (req, res) => {

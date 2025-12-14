@@ -2,46 +2,38 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../prismaClient");
 
+const PLANS = {
+  Pro: "price_1SdYbxJw6lwIO889e72HIAYe", 
+  Team: "price_1SdYbeJw6lwIO889QIkgdwqB" 
+};
+
 exports.createCheckoutSession = async (req, res) => {
-  const { userId, priceId } = req.body; 
-
-  if (!userId || !priceId) {
-    return res.status(400).json({ error: "User ID and Price ID are required!" });
-  }
-
+  const { userId, priceId } = req.body;
+const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Tentukan nama plan berdasarkan priceId
+    let planName = "Pro";
+    if (priceId === PLANS.Team) planName = "Team";
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
-      line_items: [
-        {
-          price: priceId, // 👈 Dynamic Price ID
-          quantity: 1,
-        },
-      ],
+      customer_email: user.email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${clientUrl}/dashboard?success=true`,
+      cancel_url: `${clientUrl}/dashboard?canceled=true`,
       metadata: {
-        userId: userId.toString(),
-        source: "paymentController",
-        // Note: You can also pass 'planType' here if needed for the webhook
+        userId: userId.toString(), // PENTING: ID ini dipakai webhook untuk update DB
+        planType: planName         // PENTING: Nama plan yang akan disimpan ke DB
       },
-      subscription_data: {
-        metadata: {
-          userId: userId.toString(),
-        },
-      },
-      success_url: `${process.env.FRONTEND_URL}/dashboard?payment=success`,
-      cancel_url: `${process.env.FRONTEND_URL}/dashboard?payment=cancelled`,
     });
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error("Stripe Error:", error);
+    console.error("Stripe Checkout Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

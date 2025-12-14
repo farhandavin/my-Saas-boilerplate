@@ -1,26 +1,45 @@
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Pastikan user punya API KEY sendiri di .env atau Anda menyediakan proxy
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Cek API Key
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("❌ GEMINI_API_KEY is missing in .env file");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 exports.generateContent = async (req, res) => {
   const { prompt } = req.body;
 
-  // Validasi User Plan sebelum akses AI (Fitur Premium)
-  // Asumsi req.user sudah ada dari middleware verifyToken
-  // Cek database apakah user/team ini plan-nya 'pro' atau 'team'
-  
-  try {
-    const completion = await openai.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "gpt-3.5-turbo", // Atau gpt-4 untuk plan mahal
-    });
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
 
-    res.json({ result: completion.choices[0].message.content });
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    // --- MODIFIKASI DI SINI ---
+    // Kita tambahkan instruksi paksa agar output selalu Inggris
+    // Walaupun user nanya "Buatkan ide konten", AI akan jawab pakai B.Inggris
+    const finalPrompt = `${prompt}\n\n(Please provide the response strictly in English language)`;
+
+    const result = await model.generateContent(finalPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    res.json({ result: text });
   } catch (error) {
-    console.error("AI Error:", error);
-    res.status(500).json({ error: "Failed to generate AI content" });
+    console.error("Gemini Error Detail:", error);
+    
+    // Error handling (Saya ubah jadi B.Inggris juga pesan errornya)
+    if (error.message && error.message.includes("fetch failed")) {
+       return res.status(503).json({ 
+         error: "Connection to Google AI failed. Please check your internet connection or Node.js version." 
+       });
+    }
+
+    res.status(500).json({ 
+      error: "AI service is currently unavailable. Please try again later." 
+    });
   }
 };
