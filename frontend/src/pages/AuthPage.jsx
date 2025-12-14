@@ -10,7 +10,7 @@ const AuthPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-
+const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
   useEffect(() => {
     // Parse query params dari URL
     const params = new URLSearchParams(location.search);
@@ -53,7 +53,7 @@ const AuthPage = () => {
 
     try {
       // 2. Panggil API Backend
-      const response = await fetch('http://localhost:5001/api/auth/login', {
+      const response = await fetch(`${api_url}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -106,7 +106,7 @@ const AuthPage = () => {
 
     try {
       // 2. Panggil API Backend
-      const response = await fetch('http://localhost:5001/api/auth/register', {
+      const response = await fetch(`${api_url}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
@@ -134,7 +134,7 @@ const AuthPage = () => {
 
   const handleGoogleLogin = () => {
     // Redirect user ke endpoint backend untuk memulai proses OAuth
-    window.location.href = "http://localhost:5001/api/auth/google";
+    window.location.href = `${api_url}/api/auth/google`;
   };
 
   return (

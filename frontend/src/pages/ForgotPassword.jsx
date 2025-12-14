@@ -5,11 +5,12 @@ import { Link } from "react-router-dom";
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/forgot-password", { email });
+      const res = await axios.post(`${api_url}/api/auth/forgot-password`, { email });
       setMessage(res.data.message);
     } catch (err) {
       alert(err.response?.data?.error || "Gagal mengirim email");

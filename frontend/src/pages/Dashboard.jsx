@@ -43,6 +43,8 @@ const Dashboard = () => {
   const [newTeamName, setNewTeamName] = useState("");
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
 
+  const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
   // --- 1. INITIAL DATA FETCHING ---
   useEffect(() => {
     const initData = async () => {
@@ -55,7 +57,7 @@ const Dashboard = () => {
       try {
         setLoadingUser(true);
         // A. Fetch User Data
-        const userRes = await fetch(`http://localhost:5001/api/auth/me`, {
+        const userRes = await fetch(`${api_url}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -63,7 +65,7 @@ const Dashboard = () => {
         const userData = await userRes.json();
 
         // B. Fetch Teams Data
-        const teamRes = await fetch("http://localhost:5001/api/teams", {
+        const teamRes = await fetch(`${api_url}/api/teams`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const teamData = teamRes.ok ? await teamRes.json() : [];
@@ -86,8 +88,8 @@ const Dashboard = () => {
 
   // --- 2. BILLING HANDLERS (LOGIC ASLI) ---
   const PLAN_PRICES = {
-    Pro: "price_1SdYbxJw6lwIO889e72HIAYe", 
-    Team: "price_1SdYbeJw6lwIO889QIkgdwqB",
+    Pro: "price_1SdYbxJw6lwIO889e72HIAYe",//change with your price
+    Team: "price_1SdYbeJw6lwIO889QIkgdwqB",//change with your price
   };
 
   const handleUpgrade = async (planName) => {
@@ -100,7 +102,7 @@ const Dashboard = () => {
       }
 
       const response = await fetch(
-        "http://localhost:5001/api/payment/create-checkout-session",
+        `${api_url}/api/payment/create-checkout-session`,
         {
           method: "POST",
           headers: {
@@ -134,7 +136,7 @@ const Dashboard = () => {
     setLoadingBilling(true); // <--- GANTI INI
     try {
       const response = await fetch(
-        "http://localhost:5001/api/payment/cancel-subscription",
+        `${api_url}/api/payment/cancel-subscription`,
         {
           method: "POST",
           headers: {
@@ -164,7 +166,7 @@ const Dashboard = () => {
     setLoadingBilling(true); // <--- GANTI INI
     try {
       const response = await fetch(
-        "http://localhost:5001/api/payment/resume-subscription",
+        `${api_url}/api/payment/resume-subscription`,
         {
           method: "POST",
           headers: {
@@ -195,7 +197,7 @@ const Dashboard = () => {
     if (!newTeamName) return;
     setLoadingTeam(true);
     try {
-      const res = await fetch("http://localhost:5001/api/teams/create", {
+      const res = await fetch(`${api_url}/api/teams/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +228,7 @@ const Dashboard = () => {
     setLoadingAi(true);
     setAiResponse("");
     try {
-      const res = await fetch("http://localhost:5001/api/ai/generate", {
+      const res = await fetch(`${api_url}/api/ai/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -519,7 +521,7 @@ const Dashboard = () => {
                   "5 Team Members",
                 ]}
                 onUpgrade={() => handleUpgrade("Pro")}
-                loading={loadingBilling}  // <--- GANTI INI (DULU loadingAction)
+                loading={loadingBilling} // <--- GANTI INI (DULU loadingAction)
               />
               <PricingCard
                 name="Team"
@@ -567,7 +569,7 @@ const Dashboard = () => {
                     disabled={loadingBilling} // <--- GANTI INI
                     className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm transition-all shadow-md"
                   >
-                    {loadingBilling ? "Memproses..." : "Lanjutkan Langganan"} 
+                    {loadingBilling ? "Memproses..." : "Lanjutkan Langganan"}
                   </button>
                 ) : (
                   <button

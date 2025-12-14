@@ -1,7 +1,11 @@
+// src/pages/Register.jsx
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import './AuthLayout.css'; // Reuse CSS yang sama
+import './AuthLayout.css'; 
+
+// --- DEFINISI URL API ---
+const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -12,7 +16,8 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/register", {
+      // --- UPDATE URL DISINI ---
+      const res = await axios.post(`${api_url}/api/auth/register`, {
         name,
         email,
         password,

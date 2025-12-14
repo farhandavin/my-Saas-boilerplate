@@ -6,11 +6,12 @@ export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const { token } = useParams(); // Ambil token dari URL
   const navigate = useNavigate();
+  const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5001/api/auth/reset-password", {
+      await axios.post(`${api_url}/api/auth/reset-password`, {
         token,
         newPassword: password,
       });
