@@ -8,6 +8,7 @@ const prisma = require("./src/prismaClient");
 // Import Routes
 const authRoutes = require("./src/routes/authRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
+const aiRoutes = require("./src/routes/aiRoutes");
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

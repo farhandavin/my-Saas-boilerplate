@@ -8,17 +8,43 @@ datasource db {
 }
 
 model User {
-  id                   Int      @id @default(autoincrement())
+  id                   Int       @id @default(autoincrement())
   name                 String
-  email                String   @unique
+  email                String    @unique
   password             String?
-  googleId             String?  @unique
-  avatar               String?
-  role                 String   @default("user")
-  plan                 String   @default("free")
-  createdAt            DateTime @default(now())
-  stripeSubscriptionId String?
-  cancelAtPeriodEnd    Boolean  @default(false)
+  googleId             String?   @unique
+  avatar               String?  
+  teams                TeamMember[]
+  currentTeamId        Int?     
+  
+  createdAt            DateTime  @default(now())
   resetToken           String?
   resetTokenExpiry     DateTime?
+}
+
+model Team {
+  id                   Int          @id @default(autoincrement())
+  name                 String
+  slug                 String       @unique
+  ownerId              Int
+  
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String       @default("free")
+  subscriptionStatus   String       @default("active")
+  
+  members              TeamMember[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  teamId    Int
+  role      String   @default("member") 
+  user      User     @relation(fields: [userId], references: [id])
+  team      Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
 }

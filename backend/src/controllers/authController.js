@@ -1,4 +1,6 @@
 // backend/src/controllers/authController.js
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 const prisma = require("../prismaClient");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -41,7 +43,9 @@ exports.register = async (req, res) => {
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     // Handle Zod Validation Errors nicely
-    const errorMessage = error.errors ? error.errors[0].message : "Registration failed";
+    const errorMessage = error.errors
+      ? error.errors[0].message
+      : "Registration failed";
     res.status(400).json({ error: errorMessage });
   }
 };
@@ -97,11 +101,11 @@ exports.getMe = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // Determine Subscription Status for Frontend UI
-    let status = 'active';
+    let status = "active";
     if (!user.stripeSubscriptionId) {
-       status = 'inactive';
+      status = "inactive";
     } else if (user.cancelAtPeriodEnd) {
-       status = 'canceled';
+      status = "canceled";
     }
 
     res.json({
@@ -111,7 +115,7 @@ exports.getMe = async (req, res) => {
       plan: user.plan,
       stripeSubscriptionId: user.stripeSubscriptionId,
       cancelAtPeriodEnd: user.cancelAtPeriodEnd,
-      subscriptionStatus: status 
+      subscriptionStatus: status,
     });
   } catch (error) {
     console.error("GetMe Error:", error);
@@ -141,12 +145,20 @@ exports.forgotPassword = async (req, res) => {
 
     // In production, use an email service (e.g., Resend, SendGrid)
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-    
-    // DEV LOG ONLY
-    console.log(`\n📧 [EMAIL MOCK] Reset Link for ${email}:`);
-    console.log(resetLink);
-    console.log("------------------------------------------------------\n");
 
+    // DEV LOG ONLY
+    try {
+      await resend.emails.send({
+        from: "onboarding@resend.dev", // Ganti dengan domain verifikasi nanti
+        to: email,
+        subject: "Reset Your Password",
+        html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
+      });
+
+      res.json({ message: "Email reset sent successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send email" });
+    }
     res.json({ message: "Password reset link sent to email" });
   } catch (error) {
     console.error("Forgot Password Error:", error);
@@ -170,7 +182,8 @@ exports.resetPassword = async (req, res) => {
       },
     });
 
-    if (!user) return res.status(400).json({ error: "Invalid or expired token" });
+    if (!user)
+      return res.status(400).json({ error: "Invalid or expired token" });
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
