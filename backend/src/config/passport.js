@@ -2,17 +2,16 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const prisma = require("../prismaClient");
 
-console.log("--- DEBUG GOOGLE AUTH ---");
-console.log("Client ID Loaded:", process.env.GOOGLE_CLIENT_ID ? "YES" : "NO");
-console.log("Client Secret Loaded:", process.env.GOOGLE_CLIENT_SECRET ? "YES" : "NO");
-console.log("-------------------------");
+const BACKEND_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://mysaas-api.vercel.app' // Ganti dengan URL Backend Render kamu yang sebenarnya
+  : 'http://localhost:5001';
 
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5001/api/auth/google/callback"
+      callbackURL: `${BACKEND_URL}/api/auth/google/callback`
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
