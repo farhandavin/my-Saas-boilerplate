@@ -161,6 +161,87 @@ Open the `.env` file located in the `backend/` folder. You **must** fill in thes
 
 -----
 
+## 🔑 Detailed Configuration Guide: How to Get Your API Keys
+
+This section provides step-by-step instructions on how to obtain the necessary credentials for `Authentication`, `Stripe`, and `AI Services`.
+
+### 1. Authentication Setup
+
+#### A. Generate `JWT_SECRET`
+This key is used to sign and verify JSON Web Tokens for user sessions. You can generate a secure random string using your terminal.
+
+1.  Open your terminal.
+2.  Run the following command:
+    ```bash
+    openssl rand -base64 32
+    ```
+3.  Copy the output string and paste it into your `.env` file as `JWT_SECRET`.
+
+#### B. Google OAuth (`GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`)
+To enable "Sign in with Google", you need to set up a project in the Google Cloud Console.
+
+1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  Click the project dropdown in the top bar and select **"New Project"**. Name it (e.g., "SaaS Boilerplate") and click **Create**.
+3.  **Configure Consent Screen:**
+    * Navigate to **"APIs & Services"** > **"OAuth consent screen"**.
+    * Select **External** (for testing) and click **Create**.
+    * Fill in the required fields (App name, User support email, Developer contact information). Click **Save and Continue**.
+4.  **Create Credentials:**
+    * Navigate to **"Credentials"** on the left sidebar.
+    * Click **"+ CREATE CREDENTIALS"** and select **"OAuth client ID"**.
+    * **Application type:** Select **Web application**.
+    * **Name:** Enter a name (e.g., "SaaS Web Client").
+    * **Authorized redirect URIs:** Click **"ADD URI"** and paste the following URL (as seen in your setup):
+        ```text
+        http://localhost:5001/api/auth/google/callback
+        ```
+    * Click **Create**.
+5.  Copy the **Client ID** and **Client Secret** and paste them into your `.env` file.
+
+---
+
+### 2. Stripe Payments Setup
+
+#### A. API Keys (`STRIPE_SECRET_KEY` & `STRIPE_PUBLISHABLE_KEY`)
+1.  Log in to your [Stripe Dashboard](https://dashboard.stripe.com/).
+2.  Toggle **"Test Mode"** on (orange toggle in the top right).
+3.  Go to the **"Developers"** tab and select **"API keys"**.
+4.  Copy the **Publishable key** (starts with `pk_test_...`) to `STRIPE_PUBLISHABLE_KEY` in your `.env`.
+5.  Click **"Reveal live key token"** (for Secret key) and copy it (starts with `sk_test_...`) to `STRIPE_SECRET_KEY` in your `.env`.
+
+#### B. Webhook Secret (`STRIPE_WEBHOOK_SECRET`)
+To test subscription updates locally, you need the Stripe CLI.
+
+1.  [Install the Stripe CLI](https://stripe.com/docs/stripe-cli) if you haven't already.
+2.  Login via the CLI:
+    ```bash
+    stripe login
+    ```
+3.  Start listening for webhooks and forward them to your local backend:
+    ```bash
+    stripe listen --forward-to localhost:5001/api/webhook
+    ```
+4.  The terminal will display a "Ready!" message with a signing secret (starts with `whsec_...`).
+5.  Copy this secret and paste it into your `.env` file as `STRIPE_WEBHOOK_SECRET`.
+
+---
+
+### 3. AI & Email Services
+
+#### A. Google Gemini AI (`GEMINI_API_KEY`)
+1.  Visit [Google AI Studio](https://aistudio.google.com/).
+2.  Click on **"Get API key"** in the sidebar.
+3.  Click **"Create API key"**.
+4.  Select your Google Cloud project (created in step 1) or create a new one.
+5.  Copy the generated key to `GEMINI_API_KEY` in your `.env`.
+
+#### B. Resend Email (`RESEND_API_KEY`) *Optional*
+1.  Sign up or log in to [Resend.com](https://resend.com/).
+2.  Navigate to **"API Keys"** in the sidebar.
+3.  Click **"Create API Key"**.
+4.  Give it a name (e.g., "SaaS App") and ensure "Full Access" or "Sending Access" is selected.
+5.  Copy the key (starts with `re_...`) to `RESEND_API_KEY` in your `.env`.
+
 ## 🗄️ 4. Database Setup
 
 Once your `.env` is configured with the `DATABASE_URL`, initialize your database schema.
