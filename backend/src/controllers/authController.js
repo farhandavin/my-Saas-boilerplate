@@ -146,7 +146,7 @@ exports.forgotPassword = async (req, res) => {
     // In production, use an email service (e.g., Resend, SendGrid)
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // DEV LOG ONLY
+    // Kirim Email
     try {
       await resend.emails.send({
         from: "onboarding@resend.dev", // Ganti dengan domain verifikasi nanti
@@ -155,14 +155,21 @@ exports.forgotPassword = async (req, res) => {
         html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
       });
 
-      res.json({ message: "Email reset sent successfully" });
+      // ✅ Tambahkan return disini
+      return res.json({ message: "Email reset sent successfully" });
     } catch (error) {
-      res.status(500).json({ error: "Failed to send email" });
+      // ✅ Tambahkan return disini juga
+      return res.status(500).json({ error: "Failed to send email" });
     }
-    res.json({ message: "Password reset link sent to email" });
+
+   
+
   } catch (error) {
     console.error("Forgot Password Error:", error);
-    res.status(500).json({ error: "Request failed" });
+    // Pastikan tidak mengirim respon jika headers sudah terkirim (safety check)
+    if (!res.headersSent) {
+        return res.status(500).json({ error: "Request failed" });
+    }
   }
 };
 
