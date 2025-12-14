@@ -1,161 +1,272 @@
+# 🚀 Ultimate SaaS Boilerplate: Build AI & B2B Apps Faster!
+
+**Stop Wasting 200+ Hours on Boring Configs! Start Building Your Dream Today!** 🎉
+
+Are you tired of writing the same authentication code, wrestling with database schemas, and debugging payment webhooks over and over again? **Say goodbye to the headache!** 👋
+
+The **Ultimate SaaS Boilerplate** is here to slash **80% of your initial development time**. Built with the modern and powerful **PERN Stack (PostgreSQL, Express, React, Node.js)**, this isn't just an empty template—it's a **production-ready foundation** packed with everything you need to launch: **Full Stripe Integration**, **Team Management (B2B)**, and cutting-edge **Generative AI (Google Gemini)** capabilities.
+
+Focus on your brilliant business idea and let us handle the boring infrastructure. **Happy coding, happy launching!** 🚀
+
+---
+
+## 🌟 Why You'll Love This (The "Money Makers")
+*These are the game-changing features that will make your customers hit that "Subscribe" button!*
+
+### 1. 💳 Complete End-to-End Stripe Subscription System
+Don't spend weeks reading Stripe docs! We've done the heavy lifting for you.
+* **Checkout Sessions:** Ready for One-time payments or Subscriptions (Pro/Team plans).
+* **Customer Portal:** Let users manage their own billing, update cards, or cancel/resume subscriptions easily.
+* **Smart Webhooks:** Automated backend logic handles plan upgrades and downgrades in real-time.
+* **Dynamic Pricing UI:** A beautiful frontend that adapts to your user's subscription status.
+
+### 2. 🤖 Native AI Integration (Google Gemini)
+Ready to build the next big AI wrapper?
+* **AI-Powered Backend:** Fully integrated with **Google Gemini AI**.
+* **Ready-to-Use API:** specialized endpoints to generate amazing text content.
+* **Responsive UI:** A chat/prompt interface that's ready for you to customize and expand.
+
+### 3. 👥 B2B Team Management & Collaboration
+A rare gem in standard boilerplates! Perfect for building Enterprise or Agency apps.
+* **Create Organizations:** Users can create and manage their own Teams.
+* **Role-Based Access:** Built-in database structure for `TeamMember` and `Owner` relationships.
+* **Management Dashboard:** A sleek UI for inviting and managing team members.
+
+### 4. ⚡ "One-Command" Setup Script
+We value your time! Experience the best Developer Experience (DX).
+* **Automated Setup:** Our custom `setup-project.js` script installs all dependencies (Root, Backend, Frontend).
+* **Environment Config:** Sets up your `.env` variables automatically.
+* **Database Ready:** Runs Prisma migrations for you.
+* **Just run `npm run setup` and you are ready to code!**
+
+### 5. 🔐 Secure Hybrid Authentication
+* **Google OAuth:** One-click login with Passport.js integration.
+* **Magic Link / Email Password:** Robust flows for Sign Up, Login, Forgot Password, and Secure Token Reset.
+* **JWT Protection:** Pre-configured middleware to keep your API routes safe and secure.
+
+---
+
+## 🛠️ Solid Foundation (Technical Goodies)
+*The technical excellence that ensures your code is clean, scalable, and a joy to work with.*
+
+* **⚛️ Modern Tech Stack:** Blazing fast frontend with **React 19 (Vite)** and a scalable **Node.js/Express** backend.
+* **🗄️ Database Powerhouse:** **PostgreSQL** with **Prisma ORM**. Clean, type-safe, and readable database schemas.
+* **🎨 Beautiful Dark Mode:** Includes a custom `useTheme` hook. Seamlessly switch between Light and Dark modes, fully styled with **Tailwind CSS**.
+* **📱 Responsive UI Components:** Professional dashboard layouts built with Tailwind and **Lucide Icons**. Looks stunning on desktop and mobile!
+* **✨ Esthetic Auth Pages:** Say no to boring forms! Enjoy 3D flip animations and interactive visuals on Login/Register pages.
+* **🚀 Deployment Ready:** Comes with `vercel.json` configuration for hassle-free deployment to Vercel or other serverless platforms.
+* **VP Clean Architecture:** Organized folder structure (Controllers, Routes, Middleware) that makes teamwork a breeze.
+
+---
+
+## 💡 Get Started in Minutes
+
+1.  **Clone the repo.**
+2.  **Run `npm run setup`** to install everything.
+3.  **Add your API Keys** (Stripe, Google, etc.) to the `.env` file.
+4.  **Run `npm run dev`** and watch your SaaS come to life!
+
+---
+
+**⏳ Save Time. Launch Faster. Earn Sooner.**
+
+Get the **Ultimate SaaS Boilerplate** today and turn your idea into Monthly Recurring Revenue (MRR) in days, not months! 💸
+
+**[Buy Now & Start Building!]**
+
+
+
+
+
+
+-----
+
 ````markdown
-# 🚀 Ultimate SaaS Boilerplate (PERN Stack)
+# 📘 Comprehensive Usage & Setup Guide
 
-> Build your next big idea with focus and clarity. The most efficient way to start your SaaS journey using PostgreSQL, Express, React, and Node.js.
-
-![License](https://img.shields.io/badge/license-Commercial-blue.svg)
-![Stack](https://img.shields.io/badge/stack-PERN-green.svg)
-![Stripe](https://img.shields.io/badge/payments-Stripe-purple.svg)
-
-## 📖 Overview
-
-This boilerplate provides a solid foundation for building scalable SaaS applications. It comes pre-configured with **Authentication**, **Subscription Payments**, **Team Management**, and **AI Integration**, saving you weeks of development time.
-
-### ✨ Key Features
-
-* **🔐 Authentication System:** Secure Email/Password login, Google OAuth, and Password Reset flow (powered by Passport.js & JWT).
-* **💳 Stripe Integration:** Full subscription handling including Checkout, Webhooks, Customer Portal, and Plan Upgrades/Downgrades.
-* **👥 Team Management:** Built-in support for creating and managing teams.
-* **🤖 AI-Powered:** Ready-to-use integration with Google Gemini AI for generative content.
-* **🎨 Modern UI/UX:** Built with React 19, Tailwind CSS, and Lucide Icons. Includes Dark Mode support and animated Auth pages.
-* **🗄️ Database:** Robust data modeling with PostgreSQL and Prisma ORM.
-* **⚡ Developer Experience:** Fast setup script and concurrent development server.
+Welcome to the **Ultimate SaaS Boilerplate**! This guide will walk you through setting up, configuring, and using every feature of this PERN stack application.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ 1. Prerequisites
 
-* **Frontend:** React (Vite), Tailwind CSS, Axios, React Router 7.
-* **Backend:** Node.js, Express.js.
-* **Database:** PostgreSQL, Prisma ORM.
-* **Services:** Stripe (Payments), Google Gemini (AI), Resend (Transactional Emails).
+Before you begin, ensure you have the following installed/created:
+
+* **Node.js** (v18 or higher)
+* **PostgreSQL** (Running locally or a cloud instance like Supabase/Neon)
+* **Stripe Account** (For payments)
+* **Google Cloud Console Project** (For OAuth & Gemini AI)
 
 ---
 
-## 🚀 Getting Started
+## 📦 2. Installation
 
-### Prerequisites
+We have simplified the process with an automated script.
 
-* Node.js (v18 or higher)
-* PostgreSQL installed and running locally
-* Stripe Account (for keys)
-* Google Cloud Console Project (for OAuth)
-
-### 1. Installation
-
-We have included a setup script to install all dependencies automatically.
+### Option A: Automated Setup (Recommended)
+Run this single command in the root directory. It will install dependencies for the root, backend, and frontend, and create your `.env` file.
 
 ```bash
-# Run the automated setup script
 node setup-project.js
 ````
 
-Alternatively, you can install manually:
+### Option B: Manual Installation
+
+If you prefer to do it manually:
 
 ```bash
+# 1. Install Root Dependencies
 npm install
-cd backend && npm install
-cd ../frontend && npm install
+
+# 2. Install Backend Dependencies
+cd backend
+npm install
+cp .env.example .env
+
+# 3. Install Frontend Dependencies
+cd ../frontend
+npm install
 ```
 
-### 2\. Environment Variables
+-----
 
-Create a `.env` file in the **`backend`** directory (copy from `.env.example`).
+## ⚙️ 3. Configuration (Environment Variables)
 
-```env
-# Server Config
-PORT=5001
-NODE_ENV=development
-CLIENT_URL=http://localhost:5173
+Open the `.env` file located in the `backend/` folder. You **must** fill in these values for the app to function correctly.
 
-# Database (Prisma)
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/my_saas_db?schema=public"
+### Database & Server
 
-# Auth (JWT)
-JWT_SECRET="your_super_secret_jwt_key"
-JWT_EXPIRES_IN="1d"
+  * `PORT`: `5001` (Default)
+  * `DATABASE_URL`: Your PostgreSQL connection string.
+      * *Example:* `postgresql://user:password@localhost:5432/my_saas_db?schema=public`
+  * `CLIENT_URL`: `http://localhost:5173` (For CORS and redirects)
 
-# Google OAuth
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
+### Authentication (JWT & Google)
 
-# Stripe Payments
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-STRIPE_PUBLISHABLE_KEY="pk_test_..."
+  * `JWT_SECRET`: Generate a random string (e.g., `openssl rand -base64 32`).
+  * `GOOGLE_CLIENT_ID`: From Google Cloud Console (APIs & Services \> Credentials).
+  * `GOOGLE_CLIENT_SECRET`: From Google Cloud Console.
+      * *Redirect URI:* `http://localhost:5001/api/auth/google/callback`
 
-# AI & Email
-GEMINI_API_KEY="your_google_gemini_key"
-RESEND_API_KEY="re_..."
-```
+### Stripe Payments
 
-### 3\. Database Setup
+  * `STRIPE_SECRET_KEY`: From Stripe Dashboard (Developers \> API keys).
+  * `STRIPE_PUBLISHABLE_KEY`: From Stripe Dashboard.
+  * `STRIPE_WEBHOOK_SECRET`: Generated after running the Stripe CLI listen command (see Section 5).
 
-Initialize the database schema using Prisma:
+### AI & Email
+
+  * `GEMINI_API_KEY`: From Google AI Studio (Get API key).
+  * `RESEND_API_KEY`: (Optional) For sending emails via Resend.
+
+-----
+
+## 🗄️ 4. Database Setup
+
+Once your `.env` is configured with the `DATABASE_URL`, initialize your database schema.
 
 ```bash
 cd backend
+
+# 1. Generate Prisma Client
 npx prisma generate
+
+# 2. Push Schema to Database
 npx prisma db push
 ```
 
-### 4\. Running the App
+-----
 
-Run both frontend and backend concurrently with a single command from the **root** directory:
+## 💳 5. Setting Up Stripe (Crucial Step)
+
+To make subscriptions work, you need to sync Stripe with your code.
+
+1.  **Create Products:** Go to your [Stripe Dashboard](https://dashboard.stripe.com/test/products) and create two products:
+      * **Pro Plan** (Recurring Monthly)
+      * **Team Plan** (Recurring Monthly)
+2.  **Get Price IDs:** Copy the `API ID` for the pricing of each product (looks like `price_1XyZ...`).
+3.  **Update Backend Code:**
+      * Open `backend/src/controllers/paymentController.js`.
+      * Replace the values in the `PLANS` object with your new Price IDs.
+4.  **Update Frontend Code:**
+      * Open `frontend/src/pages/Dashboard.jsx`.
+      * Replace the values in the `PLAN_PRICES` object with the same Price IDs.
+5.  **Start Webhook Listener:**
+    To test payments locally, you need the Stripe CLI.
+    ```bash
+    stripe listen --forward-to localhost:5001/api/webhook
+    ```
+      * Copy the **Webhook Signing Secret** (`whsec_...`) printed in the terminal.
+      * Paste it into your `backend/.env` file under `STRIPE_WEBHOOK_SECRET`.
+
+-----
+
+## 🚀 6. Running the Application
+
+You can run both the frontend and backend with one command from the **root** directory:
 
 ```bash
 npm run dev
 ```
 
-  * **Frontend:** http://localhost:5173
-  * **Backend:** http://localhost:5001
+  * **Frontend:** Visit `http://localhost:5173`
+  * **Backend API:** Running at `http://localhost:5001`
 
 -----
 
-## 💳 Stripe Setup Guide
+## 🕹️ 7. Feature Usage Guide
 
-1.  **Create Products:** Go to your Stripe Dashboard and create two products: "Pro" and "Team".
-2.  **Get Price IDs:** Copy the Price ID (e.g., `price_123...`) for both products.
-3.  **Update Code:**
-      * **Backend:** Update `PLANS` object in `backend/src/controllers/paymentController.js`.
-      * **Frontend:** Update `PLAN_PRICES` object in `frontend/src/pages/Dashboard.jsx`.
-4.  **Webhook Setup:** Use the Stripe CLI to forward webhooks to your local server:
-    ```bash
-    stripe listen --forward-to localhost:5001/api/webhook
-    ```
-    Copy the webhook signing secret to your `.env` file.
+### 🔐 Authentication
+
+  * **Sign Up/Login:** Users can register via Email/Password or "Sign in with Google".
+  * **Password Reset:** If `RESEND_API_KEY` is configured, users can request a password reset link.
+  * **Security:** Routes are protected using JWT. The token is stored in LocalStorage.
+
+### 🤖 AI Generator
+
+1.  Log in and navigate to the **Dashboard**.
+2.  Click on the **"AI Tools"** tab in the sidebar.
+3.  Type a prompt (e.g., *"Write a marketing email for a coffee shop"*).
+4.  The system uses Google Gemini to generate the content.
+      * *Note: Free users have limited access (logic can be customized in `aiController.js`).*
+
+### 👥 Team Management
+
+1.  Go to the **"Team"** tab on the Dashboard.
+2.  Click **"New Team"**.
+3.  Enter a team name.
+4.  You will automatically become the `Owner` of the team.
+5.  *Future Extension:* You can add logic to invite other users by email via `TeamMember` relationship in Prisma.
+
+### 💰 Subscription Management
+
+1.  Go to the **"Billing"** tab.
+2.  Click **"Upgrade Now"** on the Pro or Team plan.
+3.  You will be redirected to the **Stripe Checkout** page.
+4.  Use Stripe Test Cards (e.g., `4242 4242...`) to complete payment.
+5.  Upon success, you will be redirected back, and your plan status will update to **Pro** automatically (via Webhook).
+6.  **Cancel/Resume:** You can cancel or resume your subscription directly from the dashboard.
 
 -----
 
-## 📂 Project Structure
+## ☁️ 8. Deployment
+
+This project is configured for easy deployment.
+
+### Backend (Render / Railway / Vercel)
+
+  * **Vercel:** A `vercel.json` is included for serverless deployment. Simply import the `backend` folder to Vercel.
+  * **Render/Railway:** Connect your repo and use `npm install && npm run start` as the build/start command. Ensure environment variables are set in the dashboard.
+
+### Frontend (Vercel / Netlify)
+
+  * Import the `frontend` folder to Vercel.
+  * Set the Build Command to `vite build` (or `npm run build`).
+  * **Important:** Add an Environment Variable `VITE_API_URL` pointing to your deployed backend URL (e.g., `https://your-api.onrender.com`).
+
+-----
+
+**Happy Coding\!** 🚀
 
 ```
-├── backend/
-│   ├── prisma/          # Database schema & migrations
-│   ├── src/
-│   │   ├── config/      # Passport & other configs
-│   │   ├── controllers/ # Logic for Auth, Payments, Teams, AI
-│   │   ├── routes/      # API Routes
-│   │   └── middleware/  # Auth verification
-│   └── server.js        # Entry point & Webhook handler
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   ├── pages/       # Dashboard, Auth, Home pages
-│   │   └── hooks/       # Custom hooks (e.g., useTheme)
-│   └── index.html
-└── setup-project.js     # Auto-installer script
-```
-
------
-
-## 📄 License
-
-This project is licensed under the [MIT License](https://www.google.com/search?q=LICENSE) - feel free to use it for your personal and commercial projects.
-
------
-
-Developed with ❤️ by [farhan davin rinaldi]
-
 ```
