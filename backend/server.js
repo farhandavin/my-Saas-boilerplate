@@ -87,7 +87,11 @@ app.get("/", (req, res) => {
 });
 
 // Start Server
+if (process.env.NODE_ENV !== 'production') {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n🚀 SERVER RUNNING ON PORT ${PORT}`);
   console.log(`👉 Webhook URL: http://localhost:${PORT}/api/webhook`);
 });
+}
+
+module.exports = app;
