@@ -40,7 +40,7 @@ app.post(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
-      const userId = parseInt(session.metadata.userId);
+      const userId = parseInt(session.metadata.userId, 10);
       const planType = session.metadata.planType;
 
       if (userId) {

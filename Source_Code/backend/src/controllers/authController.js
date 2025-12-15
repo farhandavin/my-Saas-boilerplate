@@ -7,7 +7,10 @@ const jwt = require("jsonwebtoken");
 const { z } = require("zod");
 const crypto = require("crypto");
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_unsafe_secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET is not defined in .env");
+}
 
 // Validation Schemas
 const registerSchema = z.object({

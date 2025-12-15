@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Ultimate SaaS Boilerplate</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --sidebar-width: 280px;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-code: #f1f5f9;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        aside {
+            width: var(--sidebar-width);
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        aside h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        aside ul { list-style: none; }
+        
+        aside li { margin-bottom: 0.5rem; }
+
+        aside a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            display: block;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        aside a:hover {
+            background: #e2e8f0;
+            color: var(--primary);
+        }
+
+        /* Main Content */
+        main {
+            margin-left: var(--sidebar-width);
+            padding: 4rem;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #0f172a; }
+        h2 { font-size: 1.75rem; margin-top: 3rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        h3 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; color: #334155; }
+        
+        p, li { margin-bottom: 1rem; color: #334155; }
+        
+        ul, ol { margin-left: 1.5rem; margin-bottom: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+
+        /* Code Blocks */
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: var(--bg-code);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
+            color: #d946ef;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        .alert {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            aside { display: none; }
+            main { margin-left: 0; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div style="font-weight: 800; font-size: 1.25rem; margin-bottom: 2rem; color: var(--primary);">
+            SaaS Boilerplate
+        </div>
+        
+        <h3>Getting Started</h3>
+        <ul>
+            <li><a href="#intro">Introduction</a></li>
+            <li><a href="#prerequisites">Prerequisites</a></li>
+            <li><a href="#installation">Installation</a></li>
+        </ul>
+
+        <h3>Configuration</h3>
+        <ul>
+            <li><a href="#env-setup">Environment Variables</a></li>
+            <li><a href="#database">Database Setup</a></li>
+            <li><a href="#stripe">Stripe Integration</a></li>
+            <li><a href="#google-ai">Auth & AI Keys</a></li>
+        </ul>
+
+        <h3>Usage</h3>
+        <ul>
+            <li><a href="#running">Running the App</a></li>
+            <li><a href="#features">Feature Guide</a></li>
+            <li><a href="#deployment">Deployment</a></li>
+        </ul>
+    </aside>
+
+    <main>
+        <section id="intro">
+            <h1>Documentation</h1>
+            <p class="lead">Welcome to the <strong>Ultimate SaaS Boilerplate</strong> documentation. This guide will help you set up, configure, and launch your SaaS application in minutes.</p>
+            <div class="alert">
+                <strong>Note:</strong> This boilerplate uses the PERN stack (PostgreSQL, Express, React, Node.js).
+            </div>
+        </section>
+
+        <section id="prerequisites">
+            <h2>1. Prerequisites</h2>
+            <p>Before you begin, ensure you have the following installed:</p>
+            <ul>
+                <li><strong>Node.js</strong> (v18 or higher)</li>
+                <li><strong>PostgreSQL</strong> (Running locally or a cloud instance like Supabase/Neon)</li>
+                <li><strong>Stripe Account</strong> (For payments)</li>
+                <li><strong>Google Cloud Project</strong> (For OAuth & Gemini AI)</li>
+            </ul>
+        </section>
+
+        <section id="installation">
+            <h2>2. Installation</h2>
+            <p>We've included an automated script to make setup effortless.</p>
+            
+            <h3>Option A: Automated Setup (Recommended)</h3>
+            <pre><code>node setup-project.js</code></pre>
+            <p>This command installs dependencies for Root, Backend, and Frontend automatically.</p>
+
+            <h3>Option B: Manual Installation</h3>
+            <pre><code># 1. Install Root Dependencies
+npm install
+
+# 2. Install Backend
+cd backend && npm install
+cp .env.example .env
+
+# 3. Install Frontend
+cd ../frontend && npm install</code></pre>
+        </section>
+
+        <section id="env-setup">
+            <h2>3. Configuration</h2>
+            <p>Open the <code>.env</code> file in the <code>backend/</code> directory. You must fill in these values:</p>
+            
+            <ul>
+                <li><code>DATABASE_URL</code>: Your PostgreSQL connection string.</li>
+                <li><code>JWT_SECRET</code>: Run <code>openssl rand -base64 32</code> in your terminal to generate one.</li>
+                <li><code>CLIENT_URL</code>: <code>http://localhost:5173</code> (for local development).</li>
+            </ul>
+        </section>
+
+        <section id="database">
+            <h2>4. Database Setup</h2>
+            <p>Once your <code>.env</code> is ready, initialize the database schema.</p>
+            <pre><code>cd backend
+npx prisma generate
+npx prisma db push</code></pre>
+        </section>
+
+        <section id="stripe">
+            <h2>5. Stripe Setup (Important)</h2>
+            <p>To enable subscriptions, sync Stripe with your code:</p>
+            <ol>
+                <li>Create two products in Stripe Dashboard: <strong>Pro</strong> and <strong>Team</strong>.</li>
+                <li>Copy the <strong>Price ID</strong> (e.g., <code>price_1Xy...</code>) for both.</li>
+                <li>Update <code>backend/src/controllers/paymentController.js</code> with these IDs.</li>
+                <li>Update <code>frontend/src/pages/Dashboard.jsx</code> with these IDs.</li>
+                <li>Run Stripe CLI to get your Webhook Secret:</li>
+            </ol>
+            <pre><code>stripe listen --forward-to localhost:5001/api/webhook</code></pre>
+            <p>Paste the <code>whsec_...</code> secret into your <code>.env</code> file.</p>
+        </section>
+
+        <section id="google-ai">
+            <h2>6. Auth & AI Keys</h2>
+            <h3>Google OAuth</h3>
+            <p>Create a project in Google Cloud Console, enable OAuth, and set the redirect URI to:</p>
+            <code>http://localhost:5001/api/auth/google/callback</code>
+            
+            <h3>Gemini AI</h3>
+            <p>Get your API key from <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> and paste it into <code>GEMINI_API_KEY</code> in your .env file.</p>
+        </section>
+
+        <section id="running">
+            <h2>7. Running the App</h2>
+            <p>Start both frontend and backend with a single command:</p>
+            <pre><code>npm run dev</code></pre>
+            <ul>
+                <li>Frontend: <a href="http://localhost:5173">http://localhost:5173</a></li>
+                <li>Backend: <a href="http://localhost:5001">http://localhost:5001</a></li>
+            </ul>
+        </section>
+
+        <section id="features">
+            <h2>8. Feature Usage</h2>
+            <ul>
+                <li><strong>AI Generator:</strong> Go to "AI Tools" in Dashboard. Prompts are processed via Google Gemini.</li>
+                <li><strong>Team Management:</strong> Create organizations and manage members via the "Team" tab.</li>
+                <li><strong>Billing:</strong> Test upgrades using Stripe Test Cards (e.g., 4242 4242...).</li>
+            </ul>
+        </section>
+
+        <section id="deployment">
+            <h2>9. Deployment</h2>
+            <p>The project includes <code>vercel.json</code> for easy deployment.</p>
+            <ul>
+                <li><strong>Frontend:</strong> Deploy to Vercel/Netlify. Set <code>VITE_API_URL</code> to your backend URL.</li>
+                <li><strong>Backend:</strong> Deploy to Render, Railway, or Vercel. Ensure all environment variables are set in the cloud dashboard.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 Ultimate SaaS Boilerplate. All rights reserved.</p>
+        </footer>
+    </main>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

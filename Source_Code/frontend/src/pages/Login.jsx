@@ -92,7 +92,7 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
         <div className="email-link">
           <Link to="/forgot-password">Forgot password?</Link>
         </div>
-        <div className="email-link" style={{ marginTop: "5px" }}>
+        <div className="email-link mt-[5px]">
           <Link to="/register">Don't have an account? Sign Up</Link>
         </div>
       </form>

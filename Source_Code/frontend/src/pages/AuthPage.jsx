@@ -17,7 +17,6 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     const token = params.get('token');
 
     if (token) {
-      console.log("✅ Google Login Success");
       localStorage.setItem('token', token);
       
       // Opsional: Fetch user data segera untuk disimpan di localStorage 'user'
@@ -67,7 +66,6 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       }
 
       // 3. Sukses
-      console.log("✅ Login Berhasil:", data);
       localStorage.setItem('token', data.token); // Simpan token
       localStorage.setItem('user', JSON.stringify(data.user)); // Simpan data user (opsional)
       navigate('/dashboard');
@@ -119,7 +117,6 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
       }
 
       // 3. Sukses
-      console.log("✅ Register Berhasil:", data);
       alert("Registrasi berhasil! Silakan login.");
       setIsSignUp(false); // Pindah ke tab Login otomatis
 

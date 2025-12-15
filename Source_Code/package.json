@@ -9,7 +9,7 @@
     "setup": "node setup-project.js"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "8.2.2"
   },
   "author": "Farhan Davin"
 }
