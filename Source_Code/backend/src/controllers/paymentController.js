@@ -3,9 +3,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../prismaClient");
 
 const PLANS = {
-  Pro: "price_1SdYbxJw6lwIO889e72HIAYe", 
-  Team: "price_1SdYbeJw6lwIO889QIkgdwqB" 
+  Pro: process.env.STRIPE_PRICE_PRO,
+  Team: process.env.STRIPE_PRICE_TEAM
 };
+
+if (!PLANS.Pro || !PLANS.Team) {
+  console.warn("WARNING: Stripe Price IDs are missing in .env file.");
+}
 
 exports.createCheckoutSession = async (req, res) => {
   const { userId, priceId } = req.body;

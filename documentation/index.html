@@ -74,6 +74,7 @@
         h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #0f172a; }
         h2 { font-size: 1.75rem; margin-top: 3rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
         h3 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; color: #334155; }
+        h4 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #0f172a; font-weight: 700; }
         
         p, li { margin-bottom: 1rem; color: #334155; }
         
@@ -160,10 +161,10 @@
 
         <h3>Configuration</h3>
         <ul>
+            <li><a href="#api-guide"><strong>Get API Keys</strong></a></li>
             <li><a href="#env-setup">Environment Variables</a></li>
             <li><a href="#database">Database Setup</a></li>
-            <li><a href="#stripe">Stripe Integration</a></li>
-            <li><a href="#google-ai">Auth & AI Keys</a></li>
+            <li><a href="#stripe">Stripe Product Sync</a></li>
         </ul>
 
         <h3>Usage</h3>
@@ -214,56 +215,119 @@ cp .env.example .env
 cd ../frontend && npm install</code></pre>
         </section>
 
-        <section id="env-setup">
-            <h2>3. Configuration</h2>
-            <p>Open the <code>.env</code> file in the <code>backend/</code> directory. You must fill in these values:</p>
+        <section id="api-guide">
+            <h2>3. Detailed API Key Guide</h2>
+            <p>Before configuring your environment file, you need to obtain the necessary credentials. Follow these steps carefully.</p>
+
+            <h3>A. Authentication Setup</h3>
             
-            <ul>
-                <li><code>DATABASE_URL</code>: Your PostgreSQL connection string.</li>
-                <li><code>JWT_SECRET</code>: Run <code>openssl rand -base64 32</code> in your terminal to generate one.</li>
-                <li><code>CLIENT_URL</code>: <code>http://localhost:5173</code> (for local development).</li>
-            </ul>
+            <h4>1. Generate JWT_SECRET</h4>
+            <p>This key verifies user sessions. Generate a secure string via your terminal:</p>
+            <pre><code>openssl rand -base64 32</code></pre>
+            <p>Copy the output and save it for the next step.</p>
+
+            <h4>2. Google OAuth (Sign in with Google)</h4>
+            <ol>
+                <li>Go to the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>.</li>
+                <li>Create a <strong>New Project</strong> (e.g., "SaaS Boilerplate").</li>
+                <li>Navigate to <strong>APIs & Services > OAuth consent screen</strong>. Select <strong>External</strong> and fill in the required app details.</li>
+                <li>Navigate to <strong>Credentials > Create Credentials > OAuth client ID</strong>.</li>
+                <li>Select <strong>Web application</strong>.</li>
+                <li>Under <strong>Authorized redirect URIs</strong>, add:
+                    <pre><code>http://localhost:5001/api/auth/google/callback</code></pre>
+                </li>
+                <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+            </ol>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border);">
+
+            <h3>B. Stripe Payments Setup</h3>
+            
+            <div class="alert">
+                <strong>Important:</strong> Ensure you are in "Test Mode" (Orange toggle in Stripe Dashboard).
+            </div>
+
+            <h4>1. API Keys</h4>
+            <ol>
+                <li>Log in to <a href="https://dashboard.stripe.com/" target="_blank">Stripe Dashboard</a>.</li>
+                <li>Go to <strong>Developers > API keys</strong>.</li>
+                <li>Copy the <strong>Publishable key</strong> (starts with <code>pk_test_</code>).</li>
+                <li>Reveal and copy the <strong>Secret key</strong> (starts with <code>sk_test_</code>).</li>
+            </ol>
+
+            <h4>2. Webhook Secret</h4>
+            <p>To test subscription updates locally, use the Stripe CLI:</p>
+            <pre><code># 1. Login
+stripe login
+
+# 2. Start Listener
+stripe listen --forward-to localhost:5001/api/webhook</code></pre>
+            <p>Copy the signing secret (starts with <code>whsec_</code>) from the terminal output.</p>
+
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border);">
+
+            <h3>C. AI & Email Services</h3>
+
+            <h4>1. Google Gemini AI</h4>
+            <ol>
+                <li>Visit <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>.</li>
+                <li>Click <strong>Get API key</strong> > <strong>Create API key</strong>.</li>
+                <li>Select your Google Cloud project and copy the key.</li>
+            </ol>
+
+            <h4>2. Resend Email (Optional)</h4>
+            <ol>
+                <li>Sign up at <a href="https://resend.com/" target="_blank">Resend.com</a>.</li>
+                <li>Create an API Key with "Sending Access" and copy it.</li>
+            </ol>
+        </section>
+        <section id="env-setup">
+            <h2>4. Environment Configuration</h2>
+            <p>Now that you have your keys, open the <code>.env</code> file in the <code>backend/</code> directory and paste the values:</p>
+            
+            <pre><code># Authentication
+JWT_SECRET=your_openssl_string
+GOOGLE_CLIENT_ID=your_google_id
+GOOGLE_CLIENT_SECRET=your_google_secret
+
+# Stripe
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# AI
+GEMINI_API_KEY=your_gemini_key
+
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"</code></pre>
         </section>
 
         <section id="database">
-            <h2>4. Database Setup</h2>
-            <p>Once your <code>.env</code> is ready, initialize the database schema.</p>
+            <h2>5. Database Setup</h2>
+            <p>Once your <code>.env</code> is ready with the <code>DATABASE_URL</code>, initialize the schema.</p>
             <pre><code>cd backend
 npx prisma generate
 npx prisma db push</code></pre>
         </section>
 
         <section id="stripe">
-            <h2>5. Stripe Setup (Important)</h2>
-            <p>To enable subscriptions, sync Stripe with your code:</p>
+            <h2>6. Stripe Product Sync</h2>
+            <p>To finalize subscriptions, you must sync your Stripe Product IDs with the code:</p>
             <ol>
                 <li>Create two products in Stripe Dashboard: <strong>Pro</strong> and <strong>Team</strong>.</li>
-                <li>Copy the <strong>Price ID</strong> (e.g., <code>price_1Xy...</code>) for both.</li>
+                <li>Copy the <strong>Price ID</strong> (e.g., <code>price_1Xy...</code>) for each.</li>
                 <li>Update <code>backend/src/controllers/paymentController.js</code> with these IDs.</li>
                 <li>Update <code>frontend/src/pages/Dashboard.jsx</code> with these IDs.</li>
-                <li>Run Stripe CLI to get your Webhook Secret:</li>
             </ol>
-            <pre><code>stripe listen --forward-to localhost:5001/api/webhook</code></pre>
-            <p>Paste the <code>whsec_...</code> secret into your <code>.env</code> file.</p>
-        </section>
-
-        <section id="google-ai">
-            <h2>6. Auth & AI Keys</h2>
-            <h3>Google OAuth</h3>
-            <p>Create a project in Google Cloud Console, enable OAuth, and set the redirect URI to:</p>
-            <code>http://localhost:5001/api/auth/google/callback</code>
-            
-            <h3>Gemini AI</h3>
-            <p>Get your API key from <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> and paste it into <code>GEMINI_API_KEY</code> in your .env file.</p>
         </section>
 
         <section id="running">
             <h2>7. Running the App</h2>
-            <p>Start both frontend and backend with a single command:</p>
+            <p>Start both frontend and backend with a single command from the root:</p>
             <pre><code>npm run dev</code></pre>
             <ul>
-                <li>Frontend: <a href="http://localhost:5173">http://localhost:5173</a></li>
-                <li>Backend: <a href="http://localhost:5001">http://localhost:5001</a></li>
+                <li>Frontend: <a href="http://localhost:5173" target="_blank">http://localhost:5173</a></li>
+                <li>Backend: <a href="http://localhost:5001" target="_blank">http://localhost:5001</a></li>
             </ul>
         </section>
 

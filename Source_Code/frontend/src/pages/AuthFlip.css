@@ -21,7 +21,6 @@
   transition: all 600ms ease-out;
 }
 
-/* Mengatur state flip berdasarkan class, bukan checkbox input agar lebih React-friendly */
 .card-3d-wrapper.flipped {
   transform: rotateY(180deg);
 }
@@ -31,7 +30,7 @@
   width: 100%;
   height: 100%;
   background-color: #ffffff; /* Ubah ke Putih */
-  background-image: url("https://s3-us-west-2.amazonaws.com/s.cdpn.io/1462889/pat.svg");
+  background-image: url("../assets/pat.svg");
   background-position: bottom center;
   background-repeat: no-repeat;
   background-size: 300%;

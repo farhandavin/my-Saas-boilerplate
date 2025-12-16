@@ -13,7 +13,7 @@ const run = (command, cwd) => {
   }
 };
 
-// 1. Install Dependencies
+
 console.log("\n📦 Installing Root Dependencies...");
 run('npm install', '.');
 
@@ -23,7 +23,7 @@ run('npm install', './backend');
 console.log("\n📦 Installing Frontend Dependencies...");
 run('npm install', './frontend');
 
-// 2. Setup .env (Copy example jika belum ada)
+
 const copyEnv = (dir) => {
   const example = path.join(dir, '.env.example');
   const target = path.join(dir, '.env');
@@ -36,16 +36,14 @@ const copyEnv = (dir) => {
 };
 
 copyEnv('./backend');
-// Frontend biasanya pakai .env.local atau .env, sesuaikan
-// copyEnv('./frontend'); 
+
 
 // 3. Database Setup
 console.log("\n🗄️ Setting up Database (Prisma Generate & Push)...");
-// Pastikan user sudah set URL database di .env backend sebelum ini, 
-// atau biarkan script ini gagal dengan pesan instruksi.
+
 try {
     run('npx prisma generate', './backend');
-    // Opsional: run('npx prisma db push', './backend'); // Hati-hati ini mengubah DB
+    
     console.log("✅ Prisma Client Generated.");
 } catch (error) {
     console.log("⚠️ Database setup skipped. Make sure DATABASE_URL is set in backend/.env");

@@ -88,8 +88,8 @@ const Dashboard = () => {
 
   // --- 2. BILLING HANDLERS (LOGIC ASLI) ---
   const PLAN_PRICES = {
-    Pro: "price_1SdYbxJw6lwIO889e72HIAYe",//change with your price
-    Team: "price_1SdYbeJw6lwIO889QIkgdwqB",//change with your price
+    Pro: import.meta.env.VITE_STRIPE_PRICE_PRO,
+    Team: import.meta.env.VITE_STRIPE_PRICE_TEAM,
   };
 
   const handleUpgrade = async (planName) => {
