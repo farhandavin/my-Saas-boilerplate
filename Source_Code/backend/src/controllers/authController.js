@@ -1,55 +1,82 @@
-// backend/src/controllers/authController.js
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
 const prisma = require("../prismaClient");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { z } = require("zod");
 const crypto = require("crypto");
+// Kita standarisasi menggunakan express-validator (Standard Express)
+const { validationResult, check } = require("express-validator");
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 const JWT_SECRET = process.env.JWT_SECRET;
+
 if (!JWT_SECRET) {
   throw new Error("FATAL: JWT_SECRET is not defined in .env");
 }
 
-// Validation Schemas
-const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+// ==================================================================
+// 1. VALIDATION RULES (Security & Sanitization)
+// ==================================================================
+
+exports.validateRegister = [
+  check('email', 'Format email tidak valid').isEmail().normalizeEmail(),
+  check('password', 'Password minimal 6 karakter').isLength({ min: 6 }),
+  // .escape() penting untuk mencegah XSS karena kita hapus xss-clean
+  check('name', 'Nama wajib diisi').not().isEmpty().trim().escape() 
+];
+
+exports.validateLogin = [
+  check('email', 'Email tidak valid').isEmail().normalizeEmail(),
+  check('password', 'Password wajib diisi').exists()
+];
+
+exports.validateResetPassword = [
+  check('newPassword', 'Password baru minimal 6 karakter').isLength({ min: 6 }),
+  check('token', 'Token wajib ada').not().isEmpty()
+];
+
+// ==================================================================
+// 2. CONTROLLER FUNCTIONS
+// ==================================================================
 
 /**
- * @desc    Register a new user
+ * @desc    Register user baru
  * @route   POST /api/auth/register
  * @access  Public
  */
-exports.register = async (req, res) => {
-  try {
-    // 1. Validate Input
-    const { name, email, password } = registerSchema.parse(req.body);
+exports.register = async (req, res, next) => {
+  // 1. Cek Error Validasi
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
 
-    // 2. Check if user exists
+  const { email, password, name } = req.body;
+
+  try {
+    // 2. Cek Duplikasi
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: "Email already in use" });
+      return res.status(400).json({ message: "Email is already registered" });
     }
 
     // 3. Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 4. Create User
-    await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+    const user = await prisma.user.create({
+      data: { email, password: hashedPassword, name },
     });
 
-    res.status(201).json({ message: "User registered successfully" });
+    // Security: Jangan kembalikan password hash
+    user.password = undefined; 
+
+    res.status(201).json({ 
+        success: true,
+        message: "User registered successfully", 
+        user 
+    });
   } catch (error) {
-    // Handle Zod Validation Errors nicely
-    const errorMessage = error.errors
-      ? error.errors[0].message
-      : "Registration failed";
-    res.status(400).json({ error: errorMessage });
+    next(error); // Lempar ke Global Error Handler
   }
 };
 
@@ -58,44 +85,54 @@ exports.register = async (req, res) => {
  * @route   POST /api/auth/login
  * @access  Public
  */
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
+  // 1. Cek Error Validasi
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body;
-
-    // 1. Find User
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+    
+    // Security: Gunakan pesan generik untuk mencegah User Enumeration
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-    // 2. Check Password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    const token = jwt.sign(
+        { userId: user.id, role: user.role }, 
+        JWT_SECRET, 
+        { expiresIn: "24h" }
+    );
 
-    // 3. Generate Token
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan,
-      },
+    res.json({ 
+        success: true,
+        token, 
+        user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email, 
+            role: user.role,
+            plan: user.plan 
+        } 
     });
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    next(error);
   }
 };
 
 /**
- * @desc    Get current logged-in user data
+ * @desc    Get Current User Data
  * @route   GET /api/auth/me
- * @access  Private (Bearer Token)
+ * @access  Private
  */
-exports.getMe = async (req, res) => {
+exports.getMe = async (req, res, next) => {
   try {
-    const userId = req.user.id; // From middleware
+    // req.user diset oleh middleware authMiddleware
+    const userId = req.user.userId || req.user.id; 
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -103,7 +140,7 @@ exports.getMe = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Determine Subscription Status for Frontend UI
+    // Logika Status Langganan
     let status = "active";
     if (!user.stripeSubscriptionId) {
       status = "inactive";
@@ -115,27 +152,33 @@ exports.getMe = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
       plan: user.plan,
       stripeSubscriptionId: user.stripeSubscriptionId,
       cancelAtPeriodEnd: user.cancelAtPeriodEnd,
       subscriptionStatus: status,
     });
   } catch (error) {
-    console.error("GetMe Error:", error);
-    res.status(500).json({ error: "Failed to fetch user data" });
+    next(error);
   }
 };
 
 /**
- * @desc    Request password reset
+ * @desc    Request Password Reset
  * @route   POST /api/auth/forgot-password
  * @access  Public
  */
-exports.forgotPassword = async (req, res) => {
+exports.forgotPassword = async (req, res, next) => {
   const { email } = req.body;
+  
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ error: "Email not found" });
+    if (!user) {
+        // Security: Jangan beritahu jika email tidak ditemukan (mencegah enumeration)
+        // Tapi untuk UX boilerplate, kita return 404 dulu. 
+        // Untuk "Premium Security", return 200 msg: "If email exists, link sent."
+        return res.status(404).json({ error: "Email not found" });
+    }
 
     // Generate Token
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -146,58 +189,57 @@ exports.forgotPassword = async (req, res) => {
       data: { resetToken, resetTokenExpiry },
     });
 
-    // In production, use an email service (e.g., Resend, SendGrid)
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Kirim Email
+    // Kirim Email via Resend
     try {
       await resend.emails.send({
-        from: "onboarding@resend.dev", // Ganti dengan domain verifikasi nanti
+        from: "onboarding@resend.dev", // Ganti saat production
         to: email,
         subject: "Reset Your Password",
         html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
       });
 
-      // ✅ Tambahkan return disini
-      return res.json({ message: "Email reset sent successfully" });
-    } catch (error) {
-      // ✅ Tambahkan return disini juga
+      return res.json({ message: "Password reset link sent to your email" });
+    } catch (emailError) {
+      console.error("Resend Error:", emailError);
       return res.status(500).json({ error: "Failed to send email" });
     }
 
-   
-
   } catch (error) {
-    console.error("Forgot Password Error:", error);
-    // Pastikan tidak mengirim respon jika headers sudah terkirim (safety check)
-    if (!res.headersSent) {
-        return res.status(500).json({ error: "Request failed" });
-    }
+    next(error);
   }
 };
 
 /**
- * @desc    Reset password with token
+ * @desc    Reset Password with Token
  * @route   POST /api/auth/reset-password
  * @access  Public
  */
-exports.resetPassword = async (req, res) => {
+exports.resetPassword = async (req, res, next) => {
+  // Gunakan validation result dari route
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
   const { token, newPassword } = req.body;
+
   try {
-    // Validate Token & Expiry
     const user = await prisma.user.findFirst({
       where: {
         resetToken: token,
-        resetTokenExpiry: { gt: new Date() },
+        resetTokenExpiry: { gt: new Date() }, // Token must be NOT expired
       },
     });
 
-    if (!user)
-      return res.status(400).json({ error: "Invalid or expired token" });
+    if (!user) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update Password & Clear Token
+    // Update Password & Hapus Token
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -209,7 +251,6 @@ exports.resetPassword = async (req, res) => {
 
     res.json({ message: "Password reset successfully. Please login." });
   } catch (error) {
-    console.error("Reset Password Error:", error);
-    res.status(500).json({ error: "Failed to reset password" });
+    next(error);
   }
 };

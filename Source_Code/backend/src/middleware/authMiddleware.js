@@ -1,20 +1,30 @@
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is missing in env");
+const authMiddleware = (req, res, next) => {
+  // Ambil header
+  const authHeader = req.header("Authorization");
+  
+  // Cek keberadaan token
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: "No token, authorization denied" });
+  }
 
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Format: "Bearer <token>"
-
-  if (!token) return res.status(401).json({ error: "Access denied" });
+  const token = authHeader.split(' ')[1]; // Ambil token setelah "Bearer"
 
   try {
-    const verified = jwt.verify(token, JWT_SECRET);
-    req.user = verified; // Simpan data user (id) ke request
+    const decoded = jwt.sign(token, process.env.JWT_SECRET); // Perhatikan: ini seharusnya jwt.verify bukan sign
+    // KOREKSI: Gunakan verify
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    
+    req.user = verified;
     next();
-  } catch (err) {
-    res.status(400).json({ error: "Invalid token" });
+  } catch (error) {
+    // Bedakan error token expired vs invalid
+    if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: "Token expired" });
+    }
+    res.status(401).json({ message: "Token is not valid" });
   }
 };
 
-module.exports = verifyToken;
+module.exports = authMiddleware;

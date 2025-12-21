@@ -1,26 +1,72 @@
-// backend/server.js
-require("dotenv").config();
 const express = require("express");
+const dotenv = require("dotenv");
 const cors = require("cors");
-const Stripe = require("stripe");
-const prisma = require("./src/prismaClient");
+const helmet = require("helmet"); // Security Headers
+const rateLimit = require("express-rate-limit"); // Brute force protection
+const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
+// HAPUS xss-clean karena deprecated
+// const xss = require("xss-clean"); 
 
-// Import Routes
 const authRoutes = require("./src/routes/authRoutes");
 const paymentRoutes = require("./src/routes/paymentRoutes");
 const aiRoutes = require("./src/routes/aiRoutes");
 const teamRoutes = require("./src/routes/teamRoutes");
+const prisma = require("./src/prismaClient"); // WAJIB IMPORT PRISMA
+require("./src/config/passport");
+
+dotenv.config();
+
+// WAJIB IMPORT STRIPE LIBRARY
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const PORT = process.env.PORT || 5000;
 
 // ==================================================================
-// 1. STRIPE WEBHOOK (WAJIB DI ATAS BODY PARSER)
+// 1. SECURITY & CONFIG (ENVATO COMPLIANT)
+// ==================================================================
+
+// A. Security Headers
+app.use(helmet());
+
+// B. Rate Limiting (Mencegah Brute Force)
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 menit
+  max: 100, // Limit request per IP
+  message: { success: false, message: "Terlalu banyak request, coba lagi nanti." }
+});
+app.use("/api", limiter);
+
+// C. CORS Configuration (Strict)
+const allowedOrigins = [
+  process.env.CLIENT_URL, // e.g. https://myapp.vercel.app
+  "http://localhost:5173", // Local Frontend
+  "http://localhost:5001"  // Local Backend test
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow request with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      // Block request dari origin asing
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+  },
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+}));
+
+// ==================================================================
+// 2. STRIPE WEBHOOK (PENTING: Harus SEBELUM express.json)
 // ==================================================================
 app.post(
   "/api/webhook",
-  express.raw({ type: "application/json" }),
+  express.raw({ type: "application/json" }), // Gunakan raw body
   async (req, res) => {
     const sig = req.headers["stripe-signature"];
     let event;
@@ -32,7 +78,7 @@ app.post(
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
-      console.error(`Webhook Error: ${err.message}`);
+      console.error(`⚠️  Webhook Signature Error: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -40,8 +86,9 @@ app.post(
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       
-      const userId = parseInt(session.metadata.userId, 10);
-      const planType = session.metadata.planType;
+      // Ambil metadata dengan aman
+      const userId = session.metadata?.userId ? parseInt(session.metadata.userId, 10) : null;
+      const planType = session.metadata?.planType;
 
       if (userId) {
         try {
@@ -67,37 +114,21 @@ app.post(
 );
 
 // ==================================================================
-// 2. MIDDLEWARE & ROUTES
+// 3. BODY PARSER & GENERAL MIDDLEWARE
 // ==================================================================
 
-// --- PERBAIKAN CORS DISINI ---
-// Kita izinkan Frontend Production DAN Localhost sekaligus
-const allowedOrigins = [
-  process.env.CLIENT_URL, // URL Vercel Frontend
-  "http://localhost:5173", // Local Development
-  "http://localhost:5001"
-];
+// Parsing Body JSON (Hanya berjalan setelah Webhook lewat)
+app.use(express.json({ limit: '10kb' })); 
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      // Jika origin tidak ada di daftar, tetap izinkan (opsional) atau block
-      // Untuk debugging yang lebih mudah, kita bisa return true sementara
-      // return callback(null, true); 
-    }
-    return callback(null, true);
-  },
-  credentials: true, // PENTING: Agar header auth/cookies bisa lewat
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-}));
+// Parameter Pollution Protection
+app.use(hpp());
 
-app.use(express.json());
+// ==================================================================
+// 4. API ROUTES
+// ==================================================================
 
-// API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/payment", paymentRoutes);
+app.use("/api/payments", paymentRoutes); // Konsisten pakai 'payments' jamak
 app.use("/api/ai", aiRoutes);
 app.use("/api/teams", teamRoutes);
 
@@ -107,13 +138,26 @@ app.get("/", (req, res) => {
 });
 
 // ==================================================================
-// 3. SERVER START (PERBAIKAN LOGIKA DEPLOY)
+// 5. GLOBAL ERROR HANDLER (WAJIB PALING BAWAH)
+// ==================================================================
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Server Error",
+    // Jangan tampilkan stack di production (Envato requirement)
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+  });
+});
+
+// ==================================================================
+// 6. SERVER START
 // ==================================================================
 
-// Jika dijalankan langsung (node server.js), jalankan app.listen
-// Ini penting agar Render bisa menjalankan servernya.
 if (require.main === module) {
-  app.listen(PORT,"0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`\n🚀 SERVER RUNNING ON PORT ${PORT}`);
     if (process.env.NODE_ENV !== 'production') {
       console.log(`👉 Webhook URL: http://localhost:${PORT}/api/webhook`);
@@ -121,5 +165,4 @@ if (require.main === module) {
   });
 }
 
-// Export app untuk Vercel (Serverless)
 module.exports = app;
