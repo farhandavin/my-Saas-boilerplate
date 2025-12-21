@@ -1,17 +1,10 @@
-// 1. IMPORT (Selalu paling atas)
 const express = require("express");
 const passport = require("../config/passport");
 const jwt = require("jsonwebtoken");
 const { register, login, getMe, forgotPassword, resetPassword } = require("../controllers/authController");
 const verifyToken = require("../middleware/authMiddleware");
 
-// 2. INISIALISASI ROUTER
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-
-// =========================================================
-// 3. DEFINISI ROUTE & DOKUMENTASI
-// =========================================================
 
 /**
  * @swagger
@@ -85,7 +78,7 @@ router.post("/register", register);
  * 401:
  * description: Invalid email or password.
  */
-router.post("/login", login); // <-- PERHATIKAN: Komentar di atas menempel ke baris ini
+router.post("/login", login);
 
 /**
  * @swagger
@@ -103,11 +96,10 @@ router.post("/login", login); // <-- PERHATIKAN: Komentar di atas menempel ke ba
  */
 router.get("/me", verifyToken, getMe);
 
-// --- Route Lupa Password (Bisa ditambahkan dokumentasinya nanti) ---
+// Route lainnya (tanpa swagger dulu agar aman, atau tambahkan dengan hati-hati)
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
-// --- Google OAuth Routes (Biasanya tidak butuh Swagger karena redirect browser) ---
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })

@@ -4,8 +4,9 @@ const cors = require("cors");
 const helmet = require("helmet"); // Security Headers
 const rateLimit = require("express-rate-limit"); // Brute force protection
 const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
-// HAPUS xss-clean karena deprecated
-// const xss = require("xss-clean"); 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+ 
 
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -20,6 +21,7 @@ dotenv.config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = process.env.PORT || 5000;
 
 // ==================================================================
