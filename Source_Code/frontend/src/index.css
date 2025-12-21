@@ -1,31 +1,49 @@
-@import url('https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    font-family: 'Poppins', sans-serif;
-    /* Style default & transisi halus */
-    @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden transition-colors duration-300;
+  :root {
+    /* Smooth Scrolling untuk seluruh halaman */
+    scroll-behavior: smooth;
   }
 
-  /* Style khusus saat Dark Mode aktif */
-  :root.dark body {
+  body {
+    /* Font rendering agar terlihat tajam di layar Retina/Mac */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-slate-50 text-slate-800 transition-colors duration-300;
+  }
+
+  /* Style khusus Dark Mode */
+  .dark body {
     @apply bg-slate-950 text-slate-100;
   }
 }
 
-/* Custom Scrollbar (Support Dark Mode) */
+@layer utilities {
+  /* Utility untuk efek kaca (Glassmorphism) - Tren 2025 */
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border border-white/20 dark:border-slate-700/30;
+  }
+  
+  /* Text Gradient untuk Judul */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-purple-600;
+  }
+}
+
+/* Custom Scrollbar yang elegan (bukan default browser yang jelek) */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-slate-100 dark:bg-slate-800;
+  @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-blue-200 dark:bg-slate-600 rounded-full;
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-blue-400 dark:bg-slate-500;
+  @apply bg-slate-400 dark:bg-slate-600;
 }

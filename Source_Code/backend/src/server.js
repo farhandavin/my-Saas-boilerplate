@@ -7,12 +7,12 @@ const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
 // HAPUS xss-clean karena deprecated
 // const xss = require("xss-clean"); 
 
-const authRoutes = require("./src/routes/authRoutes");
-const paymentRoutes = require("./src/routes/paymentRoutes");
-const aiRoutes = require("./src/routes/aiRoutes");
-const teamRoutes = require("./src/routes/teamRoutes");
-const prisma = require("./src/prismaClient"); // WAJIB IMPORT PRISMA
-require("./src/config/passport");
+const authRoutes = require("./routes/authRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const teamRoutes = require("./routes/teamRoutes");
+const prisma = require("./prismaClient"); // WAJIB IMPORT PRISMA
+require("./config/passport");
 
 dotenv.config();
 
