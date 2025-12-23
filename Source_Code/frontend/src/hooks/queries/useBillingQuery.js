@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../../../backend/src/services/api';
+import api from '../../services/api';
 
 export const useBillingMutation = () => {
   const queryClient = useQueryClient();

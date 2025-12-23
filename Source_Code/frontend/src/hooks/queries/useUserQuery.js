@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import api from '../../../../backend/src/services/api';
+import api from '../../services/api';
 
 // Fetch User Profile
 export const useUserProfile = () => {

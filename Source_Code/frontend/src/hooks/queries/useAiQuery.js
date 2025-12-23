@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import api from '../../../../backend/src/services/api';
+import api from '../../services/api';
 
 export const useGenerateContent = () => {
   return useMutation({
