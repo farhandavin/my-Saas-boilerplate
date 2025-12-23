@@ -1,5 +1,5 @@
 // backend/src/controllers/teamController.js
-const prisma = require("../prismaClient");
+const prisma = require("../config/prismaClient");
 
 // Helper simpel untuk membuat slug (misal: "Nama Tim" -> "nama-tim")
 const createSlug = (name) => {

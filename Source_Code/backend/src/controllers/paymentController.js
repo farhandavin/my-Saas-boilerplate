@@ -1,6 +1,6 @@
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const prisma = require("../prismaClient");
+const prisma = require("../config/prismaClient");
 
 const PLANS = {
   Pro: process.env.STRIPE_PRICE_PRO,

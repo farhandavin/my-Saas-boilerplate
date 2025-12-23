@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-   "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.12",
     "axios": "1.13.2",
     "lucide-react": "0.561.0",
     "react": "19.2.0",

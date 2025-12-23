@@ -1,6 +1,6 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const prisma = require("../prismaClient");
+const prisma = require("./prismaClient");
 
 // --- REKOMENDASI ---
 // Ambil URL dari Environment Variable yang Anda set di Vercel/Render.

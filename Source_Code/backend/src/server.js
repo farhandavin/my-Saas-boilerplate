@@ -4,15 +4,15 @@ const cors = require("cors");
 const helmet = require("helmet"); // Security Headers
 const rateLimit = require("express-rate-limit"); // Brute force protection
 const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger');
+
+
  
 
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const teamRoutes = require("./routes/teamRoutes");
-const prisma = require("./prismaClient"); // WAJIB IMPORT PRISMA
+const prisma = require("./config/prismaClient"); // WAJIB IMPORT PRISMA
 require("./config/passport");
 
 dotenv.config();
@@ -21,7 +21,6 @@ dotenv.config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = process.env.PORT || 5000;
 
 // ==================================================================
