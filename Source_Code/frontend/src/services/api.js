@@ -12,14 +12,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-});
+}); 
 
 // 1. Request Interceptor: Otomatis tempel Token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token'); // <--- PASTIKAN INI MENGAMBIL 'token'
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`; // <--- TEMPEL DISINI
     }
     return config;
   },

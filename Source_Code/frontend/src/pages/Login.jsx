@@ -63,7 +63,7 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
         <input
           type="checkbox"
           name="show-password"
-          class="show-password a11y-hidden"
+          className="show-password a11y-hidden"
           id="show-password"
         />
         <label className="label-show-password" htmlFor="show-password">

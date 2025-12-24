@@ -1,432 +1,389 @@
-// src/pages/Dashboard.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  LogOut,
-  Home,
-  Settings,
-  CreditCard,
-  CheckCircle,
-  Loader2,
-  Sun,
-  Moon,
-  Sparkles,
-  Users,
-  Bot,
-  Plus,
-  ArrowRight,
-} from "lucide-react";
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, Users, CreditCard, Sparkles, LogOut, 
+  Plus, Loader2, CheckCircle, AlertCircle, Copy 
+} from 'lucide-react';
+import { 
+  useUserProfile, useTeams, useCreateTeam, useInviteMember, 
+  useGenerateAI, useCreateCheckout, usePortal 
+} from '../hooks/useQueries';
 
-// --- HOOKS (Sistem Baru) ---
-import useTheme from "../hooks/useTheme";
-import { useUserProfile } from "../hooks/queries/useUserQuery";
-import { useTeams, useCreateTeam } from "../hooks/queries/useTeamQuery";
-import { useGenerateContent } from "../hooks/queries/useAiQuery";
-import { useBillingMutation } from "../hooks/queries/useBillingQuery";
+// Konfigurasi Tools AI (Sesuai Backend Tahap 1)
+const AI_TOOLS = [
+  {
+    id: 'business-email',
+    label: 'Professional Email',
+    desc: 'Generate formal business emails instantly.',
+    inputs: [
+      { name: 'recipientName', label: 'Recipient Name', placeholder: 'e.g. John Doe' },
+      { name: 'topic', label: 'Topic', placeholder: 'e.g. Project Proposal' },
+      { name: 'keyPoints', label: 'Key Points', type: 'textarea', placeholder: '- Budget $5k\n- Deadline Friday' }
+    ]
+  },
+  {
+    id: 'blog-outline',
+    label: 'Blog Post Outline',
+    desc: 'Create SEO-friendly outlines for your articles.',
+    inputs: [
+      { name: 'title', label: 'Blog Title', placeholder: 'e.g. Top 10 SaaS Trends' },
+      { name: 'audience', label: 'Target Audience', placeholder: 'e.g. Startup Founders' }
+    ]
+  },
+];
 
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-
-  // --- STATE UI (Hanya untuk Tampilan, bukan Data) ---
-  const [activeTab, setActiveTab] = useState("overview");
-  const [prompt, setPrompt] = useState("");
-  const [newTeamName, setNewTeamName] = useState("");
-  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
-
-  // --- 1. DATA FETCHING (React Query) ---
-  // Otomatis fetch data, cache, dan handle loading
-  const { data: user, isLoading: userLoading, error: userError } = useUserProfile();
-  const { data: teams = [] } = useTeams(); // Default array kosong agar tidak error
-
-  // --- 2. MUTATIONS (Aksi Tombol) ---
-  const createTeamMutation = useCreateTeam();
-  const aiMutation = useGenerateContent();
-  const { createCheckout, cancelSubscription, resumeSubscription } = useBillingMutation();
-
-  // --- LOGIC HANDLERS ---
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('ai'); // Default tab
   
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/auth");
-  };
-
-  const handleCreateTeam = () => {
-    if (!newTeamName) return;
-    createTeamMutation.mutate(newTeamName, {
-      onSuccess: () => {
-        setShowCreateTeamModal(false);
-        setNewTeamName("");
-      }
-    });
-  };
-
-  const handleGenerateAI = () => {
-    if (!prompt) return;
-    aiMutation.mutate(prompt);
-  };
-
-  // --- BILLING HANDLERS ---
-  const PLAN_PRICES = {
-    Pro: import.meta.env.VITE_STRIPE_PRICE_PRO,
-    Team: import.meta.env.VITE_STRIPE_PRICE_TEAM,
-  };
-
-  const handleUpgrade = (planName) => {
-    const priceId = PLAN_PRICES[planName];
-    if (!priceId) return alert("Paket belum tersedia di .env");
-    createCheckout.mutate({ userId: user.id, priceId });
-  };
-
-  const handleCancel = () => {
-    if (confirm("Yakin ingin membatalkan langganan?")) {
-      cancelSubscription.mutate({ userId: user.id });
-    }
-  };
-
-  const handleResume = () => {
-    resumeSubscription.mutate({ userId: user.id });
-  };
-
-  // --- LOADING SCREEN ---
-  // Tampilkan loader full screen hanya saat mengambil data User awal
-  if (userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="animate-spin text-primary-600 w-8 h-8" />
-      </div>
-    );
-  }
-
-  // Jika error (misal token expired atau server mati)
-  if (userError) {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950">
-            <p className="text-red-500 mb-4">Gagal memuat profil.</p>
-            <button onClick={() => navigate('/auth')} className="text-primary-600 underline">Kembali ke Login</button>
-        </div>
-    )
-  }
-
-  // Helper Variables
-  const isPremium = user.plan !== "Free" && user.plan !== "free";
-  const isActive = user.subscriptionStatus === "active" && !user.cancelAtPeriodEnd;
-
-  // --- CONTENT RENDERER ---
-  const renderContent = () => {
-    switch (activeTab) {
-      case "overview":
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* GRID SUMMARY */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Card 1: Billing */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-primary-600">
-                    <CreditCard size={20} />
-                  </div>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full uppercase ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
-                    {isActive ? "Active" : "Basic"}
-                  </span>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Current Plan</p>
-                <h3 className="text-2xl font-bold text-slate-800 dark:text-white mt-1 capitalize">{user.plan}</h3>
-                <button onClick={() => setActiveTab("billing")} className="text-sm text-primary-600 mt-4 font-medium hover:underline flex items-center gap-1">
-                  Manage Subscription <ArrowRight size={14} />
-                </button>
-              </div>
-
-              {/* Card 2: Teams */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600">
-                    <Users size={20} />
-                  </div>
-                  <span className="text-xs font-bold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
-                    {teams?.length || 0} Teams
-                  </span>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Collaborations</p>
-                <h3 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">
-                  {teams?.length > 0 ? `${teams.length} Active Groups` : "No Teams Yet"}
-                </h3>
-              </div>
-
-              {/* Card 3: AI CTA */}
-              <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg text-white">
-                <div className="p-2 bg-white/20 rounded-lg text-white w-fit mb-4">
-                  <Sparkles size={20} />
-                </div>
-                <h3 className="text-xl font-bold text-white mt-1">Generate Content</h3>
-                <p className="text-indigo-100 text-sm mt-1 leading-relaxed">Need ideas? Use our AI to write instantly.</p>
-                <button onClick={() => setActiveTab("ai")} className="mt-4 w-full py-2 bg-white text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors">
-                  Open AI Tools
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "ai":
-        return (
-          <div className="max-w-4xl mx-auto animate-in fade-in zoom-in duration-300">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">AI Content Generator</h2>
-                <p className="text-slate-500 dark:text-slate-400">Unlimited generation for Pro members.</p>
-              </div>
-
-              <textarea
-                className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-slate-700 dark:text-slate-200 resize-none min-h-[150px]"
-                placeholder="What do you want to create today?"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-              />
-
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={handleGenerateAI}
-                  disabled={aiMutation.isPending || !prompt}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-all disabled:opacity-50"
-                >
-                  {aiMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Bot size={20} />}
-                  {aiMutation.isPending ? "Generating..." : "Generate Content"}
-                </button>
-              </div>
-
-              {/* Error Box */}
-              {aiMutation.isError && (
-                 <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100">
-                    Error: {aiMutation.error?.response?.data?.error || "Something went wrong"}
-                 </div>
-              )}
-
-              {/* Result Box */}
-              {aiMutation.isSuccess && aiMutation.data && (
-                <div className="mt-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Result</p>
-                  <div className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
-                    {/* Parsing JSON response dari backend */}
-                    {JSON.parse(aiMutation.data.result)}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      case "team":
-        return (
-          <div className="max-w-4xl mx-auto animate-in fade-in zoom-in duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Team Management</h2>
-              <button onClick={() => setShowCreateTeamModal(true)} className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-medium transition-all">
-                <Plus size={18} /> New Team
-              </button>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-              {teams.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                    <Users size={32} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">No teams yet</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Create a team to organize your projects.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {teams.map((team) => (
-                    <div key={team.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg">
-                          {team.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-800 dark:text-white">{team.name}</h4>
-                          <span className="text-xs text-slate-500 capitalize bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                            {team.role}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
-                        Active Member
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      case "billing":
-        return (
-          <div className="animate-in fade-in zoom-in duration-300">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Subscription Plans</h2>
-              <p className="text-slate-500 dark:text-slate-400 mt-2">Pilih paket yang sesuai dengan kebutuhan tim Anda.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              <PricingCard
-                name="Free" price="$0" userPlan={user.plan}
-                features={["Basic Analytics", "3 AI Credits/day", "1 Team Member"]}
-              />
-              <PricingCard
-                name="Pro" price="$24" userPlan={user.plan} isPopular
-                features={["Unlimited AI", "Priority Support", "5 Team Members"]}
-                onUpgrade={() => handleUpgrade("Pro")}
-                loading={createCheckout.isPending} // Gunakan state loading dari mutation
-              />
-              <PricingCard
-                name="Team" price="$72" userPlan={user.plan}
-                features={["Unlimited Everything", "SSO Integration", "Unlimited Teams"]}
-                onUpgrade={() => handleUpgrade("Team")}
-                loading={createCheckout.isPending} // Gunakan state loading dari mutation
-              />
-            </div>
-
-            {isPremium && (
-              <div className="max-w-3xl mx-auto mt-12 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-full ${user.cancelAtPeriodEnd ? "bg-yellow-100 text-yellow-600" : "bg-emerald-100 text-emerald-600"}`}>
-                    <CreditCard size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800 dark:text-white">Status Langganan</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {user.cancelAtPeriodEnd ? "Langganan akan berakhir pada akhir periode ini." : "Langganan Anda aktif (Auto-renew)."}
-                    </p>
-                  </div>
-                </div>
-
-                {user.cancelAtPeriodEnd ? (
-                  <button onClick={handleResume} disabled={resumeSubscription.isPending} className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm transition-all shadow-md">
-                    {resumeSubscription.isPending ? "Memproses..." : "Lanjutkan Langganan"}
-                  </button>
-                ) : (
-                  <button onClick={handleCancel} disabled={cancelSubscription.isPending} className="px-5 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium text-sm transition-all">
-                    {cancelSubscription.isPending ? "Memproses..." : "Batalkan Langganan"}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-
-      case "settings":
-        return (
-          <div className="max-w-2xl mx-auto text-center py-20 text-slate-400 animate-in fade-in zoom-in duration-300">
-            <Settings size={48} className="mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">Settings Coming Soon</h3>
-            <p>Profile and notification preferences will be here.</p>
-          </div>
-        );
-
-      default: return null;
-    }
-  };
+  // Data Fetching
+  const { data: user, isLoading: userLoading } = useUserProfile();
+  
+  if (userLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-blue-600 w-10 h-10"/></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex font-poppins transition-colors duration-300">
-      {/* SIDEBAR & HEADER (Hampir sama, hanya fungsi logout dirapikan) */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 hidden md:flex flex-col p-6 fixed h-full z-10">
-        <div className="text-2xl font-bold text-blue-700 mb-10 tracking-tight">
-          SaaS<span className="text-slate-800 dark:text-white">Board</span>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+            <Sparkles className="fill-blue-600" /> SaaS<span className="text-slate-800">Kit</span>
+          </h1>
         </div>
-        <nav className="flex-1 space-y-2">
-          {['overview', 'ai', 'team', 'billing', 'settings'].map(tab => (
-              <NavItem 
-                key={tab} 
-                label={tab.charAt(0).toUpperCase() + tab.slice(1)} 
-                active={activeTab === tab} 
-                onClick={() => setActiveTab(tab)} 
-                // Icon mapping sederhana, bisa disesuaikan
-                icon={tab === 'overview' ? <Home size={20}/> : tab === 'ai' ? <Sparkles size={20}/> : tab === 'team' ? <Users size={20}/> : tab === 'billing' ? <CreditCard size={20}/> : <Settings size={20}/>}
-              />
-          ))}
+        
+        <nav className="flex-1 px-4 space-y-2">
+          <SidebarItem icon={<LayoutDashboard size={20}/>} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+          <SidebarItem icon={<Sparkles size={20}/>} label="AI Tools" active={activeTab === 'ai'} onClick={() => setActiveTab('ai')} />
+          <SidebarItem icon={<Users size={20}/>} label="Team Management" active={activeTab === 'team'} onClick={() => setActiveTab('team')} />
+          <SidebarItem icon={<CreditCard size={20}/>} label="Billing" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
         </nav>
-        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 mt-auto">
-          <button onClick={handleLogout} className="flex items-center gap-3 text-slate-500 dark:text-slate-400 hover:text-red-500 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-            <LogOut size={18} /> Sign Out
+
+        <div className="p-4 border-t border-slate-100">
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+              {user?.name?.charAt(0)}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-slate-700 truncate">{user?.name}</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.plan} Plan</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => { localStorage.clear(); window.location.href='/auth'; }}
+            className="w-full flex items-center gap-2 text-red-600 hover:bg-red-50 p-2 rounded-lg text-sm transition-colors"
+          >
+            <LogOut size={16} /> Sign Out
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 md:ml-64 p-8 relative">
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white capitalize">{activeTab}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-slate-500 dark:text-slate-400">Welcome, <span className="font-semibold text-slate-700 dark:text-slate-200">{user.name}</span></p>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${isPremium ? "bg-blue-50 text-primary-600 border-blue-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
-                {user.plan} Plan
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={toggleTheme} className="p-2.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-primary-600 transition-all">
-              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <div className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg">
-              {user.name.charAt(0)}
-            </div>
-          </div>
-        </header>
-
-        {renderContent()}
-
-        {/* MODAL (Hanya logic submit yang berubah) */}
-        {showCreateTeamModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Create Team</h3>
-              <input
-                type="text" className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl mb-4 focus:ring-2 focus:ring-primary-500 outline-none text-slate-800 dark:text-white"
-                placeholder="Team Name" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} autoFocus
-              />
-              <div className="flex gap-3 justify-end">
-                <button onClick={() => setShowCreateTeamModal(false)} className="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium">Cancel</button>
-                <button onClick={handleCreateTeam} disabled={createTeamMutation.isPending} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium">
-                  {createTeamMutation.isPending ? "Creating..." : "Create"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        {activeTab === 'ai' && <AITab user={user} />}
+        {activeTab === 'team' && <TeamTab user={user} />}
+        {activeTab === 'billing' && <BillingTab user={user} />}
+        {activeTab === 'overview' && <OverviewTab user={user} />}
       </main>
     </div>
   );
-};
+}
 
-// --- SUB-COMPONENTS (Sama seperti sebelumnya) ---
-const NavItem = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${active ? "bg-blue-50 text-primary-600 dark:bg-blue-900/20 dark:text-blue-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
-    {icon} {label}
-  </button>
-);
+// --- SUB COMPONENTS (Agar file rapi) ---
 
-const PricingCard = ({ name, price, userPlan, features, isPopular, onUpgrade, loading }) => {
-  const plan = userPlan ? userPlan.toLowerCase() : "free";
-  const currentCardName = name.toLowerCase();
-  const isCurrent = plan === currentCardName || (plan === "free" && (currentCardName === "beginner" || currentCardName === "free"));
+function SidebarItem({ icon, label, active, onClick }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+        active ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
+      }`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+// 1. AI TOOLS TAB
+function AITab({ user }) {
+  const [selectedTool, setSelectedTool] = useState(null);
+  const [formData, setFormData] = useState({});
+  const generate = useGenerateAI();
+
+  const handleGenerate = () => {
+    generate.mutate({ templateId: selectedTool.id, inputData: formData });
+  };
 
   return (
-    <div className={`p-6 rounded-2xl border transition-all relative flex flex-col h-full ${isCurrent ? "border-blue-500 ring-2 ring-primary-500/10 bg-white dark:bg-slate-800" : "border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-200 dark:hover:border-blue-600"}`}>
-      {isPopular && <div className="absolute top-0 right-0 bg-primary-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>}
-      <h4 className="text-lg font-bold text-slate-700 dark:text-slate-200">{name}</h4>
-      <div className="my-2"><span className="text-3xl font-bold text-slate-800 dark:text-white">{price}</span></div>
-      <ul className="space-y-2 mb-6 flex-1">
-        {features.map((f, i) => (<li key={i} className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><CheckCircle size={14} className="text-blue-500 flex-shrink-0" /> {f}</li>))}
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-800">AI Generator</h2>
+        <p className="text-slate-500">Create professional content in seconds.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* LIST TOOLS */}
+        <div className="space-y-4">
+          {AI_TOOLS.map(tool => (
+            <div 
+              key={tool.id}
+              onClick={() => { setSelectedTool(tool); setFormData({}); generate.reset(); }}
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                selectedTool?.id === tool.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-slate-200 bg-white hover:border-blue-300'
+              }`}
+            >
+              <h3 className="font-semibold text-slate-800">{tool.label}</h3>
+              <p className="text-xs text-slate-500 mt-1">{tool.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* FORM & RESULT AREA */}
+        <div className="md:col-span-2">
+          {selectedTool ? (
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <h3 className="font-bold mb-4">{selectedTool.label}</h3>
+              <div className="space-y-4">
+                {selectedTool.inputs.map(input => (
+                  <div key={input.name}>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{input.label}</label>
+                    {input.type === 'textarea' ? (
+                      <textarea 
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        rows={3}
+                        onChange={e => setFormData({...formData, [input.name]: e.target.value})}
+                      />
+                    ) : (
+                      <input 
+                        type="text" 
+                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder={input.placeholder}
+                        onChange={e => setFormData({...formData, [input.name]: e.target.value})}
+                      />
+                    )}
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={handleGenerate}
+                  disabled={generate.isPending}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {generate.isPending ? <Loader2 className="animate-spin" size={18}/> : <Sparkles size={18}/>}
+                  Generate Content
+                </button>
+
+                {generate.isError && (
+                  <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+                    {generate.error.response?.data?.error || "Failed to generate."}
+                  </div>
+                )}
+
+                {generate.isSuccess && (
+                  <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 relative group">
+                    <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans">{generate.data.data.data}</pre>
+                    <button 
+                      className="absolute top-2 right-2 text-slate-400 hover:text-blue-600"
+                      onClick={() => navigator.clipboard.writeText(generate.data.data.data)}
+                    >
+                      <Copy size={16}/>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-10">
+              <Sparkles size={48} className="mb-4 opacity-20" />
+              <p>Select a tool to start creating</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 2. TEAMS TAB
+function TeamTab({ user }) {
+  const { data: teams } = useTeams();
+  const createTeam = useCreateTeam();
+  const invite = useInviteMember();
+  const [newTeamName, setNewTeamName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+
+  return (
+    <div className="max-w-4xl mx-auto">
+       <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Team Management</h2>
+          <p className="text-slate-500">Collaborate with your organization.</p>
+        </div>
+      </div>
+
+      {/* CREATE TEAM INPUT */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+        <h3 className="font-bold text-sm uppercase text-slate-500 mb-4">Create New Team</h3>
+        <div className="flex gap-4">
+          <input 
+            type="text" 
+            placeholder="Team Name (e.g. Marketing)" 
+            className="flex-1 p-2 border border-slate-300 rounded-lg"
+            value={newTeamName}
+            onChange={e => setNewTeamName(e.target.value)}
+          />
+          <button 
+            onClick={() => { createTeam.mutate(newTeamName); setNewTeamName(''); }}
+            disabled={createTeam.isPending || !newTeamName}
+            className="bg-slate-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-900"
+          >
+            {createTeam.isPending ? 'Creating...' : 'Create Team'}
+          </button>
+        </div>
+      </div>
+
+      {/* TEAM LIST */}
+      <div className="space-y-6">
+        {teams?.map(team => (
+          <div key={team.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">{team.name}</h3>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full uppercase font-bold tracking-wide">
+                  {team._count.members} Members
+                </span>
+              </div>
+              {/* INVITE FORM PER TEAM */}
+              <div className="flex gap-2">
+                 <input 
+                  type="email" 
+                  placeholder="Invite Email" 
+                  className="p-2 border border-slate-300 rounded-lg text-sm w-64"
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                 />
+                 <button 
+                  onClick={() => invite.mutate({ teamId: team.id, email: inviteEmail })}
+                  className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700"
+                 >
+                   Invite
+                 </button>
+              </div>
+            </div>
+            
+            {invite.isError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                 <AlertCircle size={16}/> {invite.error.response?.data?.error}
+              </div>
+            )}
+            
+            {invite.isSuccess && invite.data?.data?.token && (
+              <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg border border-green-200">
+                <b>Dev Mode Only:</b> Invitation Token: {invite.data.data.token}
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {teams?.length === 0 && (
+           <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+             <Users className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+             <h3 className="text-slate-500 font-medium">No teams yet</h3>
+             <p className="text-slate-400 text-sm">Create your first team above to get started.</p>
+           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 3. BILLING TAB
+function BillingTab({ user }) {
+  const checkout = useCreateCheckout();
+  const portal = usePortal();
+  
+  // Ambil Price ID dari environment variable Frontend
+  // Pastikan Anda set di .env: VITE_PRICE_PRO=price_xxx, VITE_PRICE_TEAM=price_yyy
+  const PRICE_PRO = import.meta.env.VITE_PRICE_PRO; 
+  const PRICE_TEAM = import.meta.env.VITE_PRICE_TEAM;
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-800">Subscription Plan</h2>
+        <p className="text-slate-500">Upgrade to unlock unlimited AI & Team members.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* FREE PLAN */}
+        <PlanCard 
+          name="Free" price="$0" features={['2 Team Members', 'Limited AI Usage']}
+          current={user.plan === 'Free'} 
+        />
+        
+        {/* PRO PLAN */}
+        <PlanCard 
+          name="Pro" price="$29" features={['5 Team Members', 'Unlimited AI', 'Priority Support']}
+          current={user.plan === 'Pro'}
+          popular
+          onUpgrade={() => checkout.mutate(PRICE_PRO)}
+          loading={checkout.isPending}
+        />
+        
+        {/* TEAM PLAN */}
+        <PlanCard 
+          name="Team" price="$79" features={['Unlimited Members', 'Unlimited AI', 'API Access']}
+          current={user.plan === 'Team'}
+          onUpgrade={() => checkout.mutate(PRICE_TEAM)}
+          loading={checkout.isPending}
+        />
+      </div>
+
+      {user.stripeCustomerId && (
+        <div className="mt-8 p-6 bg-slate-100 rounded-xl flex justify-between items-center">
+          <div>
+            <h4 className="font-bold text-slate-700">Billing Portal</h4>
+            <p className="text-sm text-slate-500">Download invoices or cancel subscription.</p>
+          </div>
+          <button 
+            onClick={() => portal.mutate()}
+            className="text-blue-600 font-medium hover:underline"
+          >
+            Manage Billing &rarr;
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanCard({ name, price, features, current, popular, onUpgrade, loading }) {
+  return (
+    <div className={`p-6 rounded-2xl border flex flex-col relative ${current ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50' : 'bg-white border-slate-200'}`}>
+      {popular && <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">POPULAR</div>}
+      <h3 className="text-lg font-bold text-slate-800">{name}</h3>
+      <div className="my-4"><span className="text-3xl font-bold">{price}</span>/mo</div>
+      <ul className="space-y-3 mb-8 flex-1">
+        {features.map((f, i) => (
+          <li key={i} className="flex gap-2 text-sm text-slate-600"><CheckCircle size={16} className="text-green-500"/> {f}</li>
+        ))}
       </ul>
-      <button disabled={isCurrent || loading} onClick={onUpgrade} className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${isCurrent ? "bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-default" : "bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/30"}`}>
-        {isCurrent ? "Current Plan" : loading ? "Processing..." : "Upgrade Now"}
+      <button 
+        disabled={current || loading}
+        onClick={onUpgrade}
+        className={`w-full py-2 rounded-lg font-medium transition-all ${
+          current ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
+      >
+        {current ? 'Current Plan' : loading ? 'Processing...' : 'Upgrade'}
       </button>
     </div>
   );
-};
+}
 
-export default Dashboard;
+function OverviewTab({ user }) {
+  return (
+    <div className="text-center py-20">
+      <h2 className="text-3xl font-bold text-slate-800 mb-4">Welcome back, {user.name}!</h2>
+      <p className="text-slate-500 max-w-lg mx-auto">
+        Your dashboard is ready. Start by generating some content using AI or invite your team members.
+      </p>
+    </div>
+  );
+}

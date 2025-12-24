@@ -1,27 +1,29 @@
+// src/app.js (atau server.js)
+
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet"); // Security Headers
 const rateLimit = require("express-rate-limit"); // Brute force protection
 const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
+const stripe = require("stripe"); // Import Stripe Library langsung disini untuk webhook
 
 
- 
-
+// Load Routes
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const teamRoutes = require("./routes/teamRoutes");
-const prisma = require("./config/prismaClient"); // WAJIB IMPORT PRISMA
+const prisma = require("./config/prismaClient");
 require("./config/passport");
 
 dotenv.config();
-
-// WAJIB IMPORT STRIPE LIBRARY
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const webhookController = require("./controllers/webhookController");
+// Inisialisasi Stripe dengan Secret Key
+const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // ==================================================================
 // 1. SECURITY & CONFIG (ENVATO COMPLIANT)
@@ -67,51 +69,8 @@ app.use(cors({
 // ==================================================================
 app.post(
   "/api/webhook",
-  express.raw({ type: "application/json" }), // Gunakan raw body
-  async (req, res) => {
-    const sig = req.headers["stripe-signature"];
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (err) {
-      console.error(`⚠️  Webhook Signature Error: ${err.message}`);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    // Handle Event
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      
-      // Ambil metadata dengan aman
-      const userId = session.metadata?.userId ? parseInt(session.metadata.userId, 10) : null;
-      const planType = session.metadata?.planType;
-
-      if (userId) {
-        try {
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              plan: planType, 
-              stripeCustomerId: session.customer,
-              stripeSubscriptionId: session.subscription,
-              subscriptionStatus: "active",
-              cancelAtPeriodEnd: false
-            },
-          });
-          console.log(`✅ User ${userId} upgraded to ${planType}`);
-        } catch (dbError) {
-          console.error("❌ Database Update Failed:", dbError);
-        }
-      }
-    }
-
-    res.json({ received: true });
-  }
+  express.raw({ type: "application/json" }),
+  webhookController.handleStripeWebhook
 );
 
 // ==================================================================

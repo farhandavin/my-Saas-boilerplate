@@ -206,7 +206,7 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
                   </button>
 
                   <p className="mt-4 text-sm text-slate-500">
-                    <a href="/forgot-password" class="hover:text-blue-600 transition-colors">Forgot your password?</a>
+                    <a href="/forgot-password" className="hover:text-blue-600 transition-colors">Forgot your password?</a>
                   </p>
                 </div>
               </div>

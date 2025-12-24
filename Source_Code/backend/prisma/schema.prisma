@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,51 +10,74 @@ datasource db {
 }
 
 model User {
-  id                   Int          @id @default(autoincrement())
+  id                   Int       @id @default(autoincrement())
   name                 String
-  email                String       @unique
+  email                String    @unique
   password             String?
-  googleId             String?      @unique
+  googleId             String?   @unique
   avatar               String?
   
-  // --- PERBAIKAN: KOLOM BILLING DITAMBAHKAN DI SINI ---
+  // --- BILLING & LIMITS (PENTING) ---
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  plan                 String       @default("Free") // Default huruf besar 'Free' agar cocok dengan frontend
-  subscriptionStatus   String       @default("active")
-  cancelAtPeriodEnd    Boolean      @default(false)
-  // ----------------------------------------------------
-
-  teams                TeamMember[]
-  currentTeamId        Int?      
+  plan                 String    @default("Free") 
+  subscriptionStatus   String    @default("active")
+  cancelAtPeriodEnd    Boolean   @default(false) // Tambahan untuk UX billing
   
-  createdAt            DateTime     @default(now())
-  resetToken           String?
-  resetTokenExpiry     DateTime?
+  // Menyimpan kuota saat ini (agar tidak perlu hitung ulang terus menerus)
+  aiUsageCount         Int       @default(0) 
+  
+  // Relasi
+  teams               TeamMember[] // Tim yang diikuti
+  ownedTeams          Team[]       @relation("TeamOwner") // Tim yang dimiliki
+  
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 }
 
 model Team {
-  id                   Int          @id @default(autoincrement())
-  name                 String
-  slug                 String       @unique
-  ownerId              Int
+  id          Int          @id @default(autoincrement())
+  name        String
+  slug        String       @unique // Untuk URL ramah SEO (misal: app.com/team/google)
+  ownerId     Int
+  owner       User         @relation("TeamOwner", fields: [ownerId], references: [id])
   
-  // Opsi: Anda bisa menghapus billing dari Team jika billing per-user
-  // atau biarkan saja jika nanti ingin fitur 'Team Billing' terpisah.
-  // Untuk sekarang kita fokus User Billing agar Dashboard jalan.
+  members     TeamMember[]
+  invitations Invitation[] // [BARU] Sistem Invite Aman
   
-  members              TeamMember[]
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model TeamMember {
   id        Int      @id @default(autoincrement())
   userId    Int
   teamId    Int
-  role      String   @default("member") 
+  role      String   @default("member") // "owner", "admin", "member"
+  
   user      User     @relation(fields: [userId], references: [id])
   team      Team     @relation(fields: [teamId], references: [id])
 
-  @@unique([userId, teamId])
+  @@unique([userId, teamId]) // Mencegah user masuk tim yang sama 2x
+}
+
+// [BARU] Model Undangan (Security Best Practice)
+// Mencegah user ditambahkan paksa. Harus via email token.
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  teamId    Int
+  role      String   @default("member")
+  token     String   @unique
+  expiresAt DateTime
+  
+  team      Team     @relation(fields: [teamId], references: [id])
+  
+  @@unique([email, teamId])
+}
+
+// [BARU] Webhook Idempotency (Wajib untuk Stripe)
+model WebhookEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
 }

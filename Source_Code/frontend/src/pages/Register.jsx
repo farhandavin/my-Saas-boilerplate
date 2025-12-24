@@ -79,7 +79,7 @@ export default function Register() {
           </label>
         </div>
 
-        <input type="checkbox" name="show-password" class="show-password a11y-hidden" id="show-password" />
+        <input type="checkbox" name="show-password" className="show-password a11y-hidden" id="show-password" />
         <label className="label-show-password" htmlFor="show-password">
           <span>Show Password</span>
         </label>

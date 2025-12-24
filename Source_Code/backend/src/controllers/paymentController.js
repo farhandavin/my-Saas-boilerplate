@@ -1,3 +1,5 @@
+// src/controllers/paymentController.js
+
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../config/prismaClient");
@@ -7,18 +9,16 @@ const PLANS = {
   Team: process.env.STRIPE_PRICE_TEAM
 };
 
-if (!PLANS.Pro || !PLANS.Team) {
-  console.warn("WARNING: Stripe Price IDs are missing in .env file.");
-}
-
 exports.createCheckoutSession = async (req, res) => {
-  const { userId, priceId } = req.body;
-const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
   try {
+    const userId = req.user.userId; 
+    const { priceId } = req.body;
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Tentukan nama plan berdasarkan priceId
+    // Validasi Price ID
     let planName = "Pro";
     if (priceId === PLANS.Team) planName = "Team";
 
@@ -26,24 +26,51 @@ const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
       payment_method_types: ["card"],
       mode: "subscription",
       customer_email: user.email,
+      // Gunakan customer ID lama jika ada, agar tidak duplikat customer di dashboard Stripe
+      customer: user.stripeCustomerId || undefined, 
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${clientUrl}/dashboard?success=true`,
       cancel_url: `${clientUrl}/dashboard?canceled=true`,
       metadata: {
-        userId: userId.toString(), // PENTING: ID ini dipakai webhook untuk update DB
-        planType: planName         // PENTING: Nama plan yang akan disimpan ke DB
+        userId: userId.toString(),
+        planType: planName
       },
     });
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error("Stripe Checkout Error:", error);
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
 
+// [FITUR PREMIUM] Customer Portal
+// Memungkinkan user ganti kartu kredit / download invoice sendiri
+exports.createPortalSession = async (req, res) => {
+  const userId = req.user.userId;
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || !user.stripeCustomerId) {
+      return res.status(400).json({ error: "No billing history found." });
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${clientUrl}/dashboard`,
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// [FITUR PREMIUM] Cancel Subscription via API
 exports.cancelSubscription = async (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.userId;
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -52,13 +79,13 @@ exports.cancelSubscription = async (req, res) => {
       return res.status(400).json({ error: "No active subscription found." });
     }
 
-    // Call Stripe: "Cancel at period end"
+    // Call Stripe: "Cancel at period end" (User tetap bisa pakai sampai masa aktif habis)
     const subscription = await stripe.subscriptions.update(
       user.stripeSubscriptionId,
       { cancel_at_period_end: true }
     );
 
-    // Update Local DB immediately (for faster UI updates)
+    // Update Local DB segera (Optimistic UI)
     await prisma.user.update({
       where: { id: userId },
       data: { cancelAtPeriodEnd: true },
@@ -73,20 +100,17 @@ exports.cancelSubscription = async (req, res) => {
   }
 };
 
-// ADDITION: RESUME SUBSCRIPTION
+// [FITUR PREMIUM] Resume Subscription
 exports.resumeSubscription = async (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.userId;
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user || !user.stripeSubscriptionId) {
-      return res
-        .status(400)
-        .json({ error: "No subscription to resume." });
+      return res.status(400).json({ error: "No subscription to resume." });
     }
 
-    // Call Stripe: "Do not cancel (cancel_at_period_end = false)"
     const subscription = await stripe.subscriptions.update(
       user.stripeSubscriptionId,
       { cancel_at_period_end: false }
@@ -99,36 +123,6 @@ exports.resumeSubscription = async (req, res) => {
 
     res.json({ message: "Subscription resumed successfully!", subscription });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.createPortalSession = async (req, res) => {
-  const { userId } = req.body;
-
-  try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user || !user.stripeSubscriptionId) {
-      return res
-        .status(400)
-        .json({ error: "User does not have an active subscription." });
-    }
-
-    // We need the Stripe Customer ID.
-    // Note: Since we only stored Subscription ID, we fetch the subscription object first.
-    const subscription = await stripe.subscriptions.retrieve(
-      user.stripeSubscriptionId
-    );
-
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: subscription.customer,
-      return_url: `${process.env.FRONTEND_URL}/dashboard`,
-    });
-
-    res.json({ url: portalSession.url });
-  } catch (error) {
-    console.error("Failed to create portal session:", error);
     res.status(500).json({ error: error.message });
   }
 };

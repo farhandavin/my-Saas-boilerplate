@@ -27,45 +27,59 @@ class AuthController {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
         plan: user.plan
       }
     });
   });
 
-  // 3. Get Me (Profile) - WAJIB ADA
+  // 3. Get Me (Profile) - UPDATED
+  // Mengambil data lengkap termasuk status langganan dan penggunaan AI
   getMe = catchAsync(async (req, res, next) => {
-    // req.user diset oleh authMiddleware
-    const userId = req.user.userId; 
-    if (!userId) {
-      return next(new AppError('Invalid token payload: userId missing', 401));
+     console.log("👉 User dari Token:", req.user);
+    try {
+    // DEBUG: Cek apa isi req.user hasil decode middleware
+    // 1. Cek apakah req.user ada? (Jaga-jaga jika middleware lolos)
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized: Token valid but payload missing" });
     }
+
+    // 2. Ambil ID dengan aman (Support 'id' ATAU 'userId')
+    // Ini menangani inkonsistensi antara login Google vs Login Biasa
+    const id = req.user.userId || req.user.id;
+
+    if (!id) {
+       return res.status(400).json({ error: "Invalid Token: No User ID found inside token" });
+    }
+
+    // 3. Cari User ke Database
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: parseInt(id) }, // Pastikan integer
       select: { 
         id: true, 
         name: true, 
         email: true, 
-        role: true, 
         plan: true,
         subscriptionStatus: true,
-        cancelAtPeriodEnd: true,
-        stripeSubscriptionId: true
+        cancelAtPeriodEnd: true, 
+        aiUsageCount: true,
+        avatar: true
       }
     });
 
     if (!user) {
-      return next(new AppError('User not found', 404));
+      return res.status(404).json({ error: 'User not found in database' });
     }
 
     res.status(200).json(user);
+  } catch (error) {
+    console.error("❌ Error di getMe:", error);
+    res.status(500).json({ error: error.message });
+  }
   });
 
-  // 4. Forgot Password (Placeholder agar tidak error)
+  // 4. Forgot Password (Placeholder)
   forgotPassword = catchAsync(async (req, res, next) => {
-    // TODO: Implementasi logika kirim email reset password
     const { email } = req.body;
-    // Mock response agar route tidak crash
     if (!email) return next(new AppError('Email is required', 400));
     
     res.status(200).json({ 
@@ -74,9 +88,8 @@ class AuthController {
     });
   });
 
-  // 5. Reset Password (Placeholder agar tidak error)
+  // 5. Reset Password (Placeholder)
   resetPassword = catchAsync(async (req, res, next) => {
-    // TODO: Implementasi logika update password
     const { token, newPassword } = req.body;
     
     res.status(200).json({ 
