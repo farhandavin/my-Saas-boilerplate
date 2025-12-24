@@ -12,7 +12,6 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(' ')[1]; // Ambil token setelah "Bearer"
 
   try {
-    const decoded = jwt.sign(token, process.env.JWT_SECRET); // Perhatikan: ini seharusnya jwt.verify bukan sign
     // KOREKSI: Gunakan verify
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     

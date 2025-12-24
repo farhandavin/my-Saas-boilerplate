@@ -36,7 +36,10 @@ class AuthController {
   // 3. Get Me (Profile) - WAJIB ADA
   getMe = catchAsync(async (req, res, next) => {
     // req.user diset oleh authMiddleware
-    const userId = req.user.id; 
+    const userId = req.user.userId; 
+    if (!userId) {
+      return next(new AppError('Invalid token payload: userId missing', 401));
+    }
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { 
