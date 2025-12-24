@@ -6,7 +6,7 @@ import {
 import { 
   useUserProfile, useTeams, useCreateTeam, useInviteMember, 
   useGenerateAI, useCreateCheckout, usePortal 
-} from '../hooks/useQueries';
+} from '../hooks/queries/useQueries';
 
 // Konfigurasi Tools AI (Sesuai Backend Tahap 1)
 const AI_TOOLS = [
