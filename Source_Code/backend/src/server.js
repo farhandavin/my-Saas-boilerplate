@@ -23,6 +23,7 @@ const webhookController = require("./controllers/webhookController");
 const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5001;
 
 // ==================================================================

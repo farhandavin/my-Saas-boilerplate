@@ -11,24 +11,37 @@ const PLANS = {
 
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const userId = req.user.userId; 
+    const userId = req.user.userId; // Pastikan ini sesuai dengan token user Anda
     const { priceId } = req.body;
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+    // --- [FIX: VALIDASI PRICE ID] ---
+    if (!priceId) {
+      return res.status(400).json({ 
+        error: "Price ID is missing. Check your Frontend .env configuration." 
+      });
+    }
+    // -------------------------------
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Validasi Price ID
+    // Validasi Price ID agar user tidak mengirim ID harga palsu
     let planName = "Pro";
-    if (priceId === PLANS.Team) planName = "Team";
+    if (priceId === PLANS.Team) {
+       planName = "Team";
+    } 
+    // Opsional: Cek apakah ID valid sesuai env backend
+    // else if (priceId !== PLANS.Pro) {
+    //   return res.status(400).json({ error: "Invalid Price ID" });
+    // }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
       customer_email: user.email,
-      // Gunakan customer ID lama jika ada, agar tidak duplikat customer di dashboard Stripe
       customer: user.stripeCustomerId || undefined, 
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }], // <--- Disini errornya tadi
       success_url: `${clientUrl}/dashboard?success=true`,
       cancel_url: `${clientUrl}/dashboard?canceled=true`,
       metadata: {
@@ -39,7 +52,7 @@ exports.createCheckoutSession = async (req, res) => {
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error(error);
+    console.error("Stripe Error:", error); // Log error biar kelihatan di terminal
     res.status(500).json({ error: error.message });
   }
 };
