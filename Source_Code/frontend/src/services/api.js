@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 // Gunakan Env Variable. Fallback ke localhost jika dev.
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Ambil URL dasar (Root), misal: https://mysaas-api.vercel.app
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+// Kita tambahkan '/api' di sini secara otomatis
+const API_URL = `${BASE_URL}/api`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -22,15 +26,14 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 2. Response Interceptor: Global Error Handling (misal 401 Unauthorized)
+// 2. Response Interceptor: Global Error Handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Jika token expired (401), otomatis logout agar user tidak bingung
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/auth'; // Redirect paksa ke login
+      window.location.href = '/auth'; 
     }
     return Promise.reject(error);
   }
