@@ -273,10 +273,14 @@ function BillingTab({ activeTeam }) {
           features={["10 Members", "Unlimited AI", "Priority"]}
           current={activeTeam.plan === "Pro"}
           popular
-          onUpgrade={() => checkout.mutate(import.meta.env.VITE_PRICE_PRO)}
+          // PERBAIKAN DISINI: Kirim object { priceId, teamId }
+          onUpgrade={() => checkout.mutate({ 
+            priceId: import.meta.env.VITE_PRICE_PRO, 
+            teamId: activeTeam.id 
+          })}
           loading={checkout.isPending}
         />
-        {/* ... Plan Card lainnya ... */}
+        {/* Tambahkan Plan Team jika ada */}
       </div>
 
       {activeTeam.stripeCustomerId && (
@@ -286,7 +290,8 @@ function BillingTab({ activeTeam }) {
             <p className="opacity-80 text-sm">Update payment method or download invoices.</p>
           </div>
           <button
-            onClick={() => portal.mutate()}
+            // PERBAIKAN DISINI: Kirim teamId ke portal
+            onClick={() => portal.mutate(activeTeam.id)}
             className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-slate-100 transition-all"
           >
             Open Stripe Portal
@@ -545,6 +550,53 @@ function ActivityItem({ text, time, icon }) {
         <p className="text-sm text-slate-700 font-medium">{text}</p>
         <p className="text-[10px] text-slate-400">{time}</p>
       </div>
+    </div>
+  );
+}
+
+function PlanCard({ name, price, features, current, popular, onUpgrade, loading }) {
+  return (
+    <div className={`relative p-8 rounded-3xl border transition-all duration-300 flex flex-col ${
+      popular 
+        ? "border-blue-600 bg-white shadow-xl scale-105 z-10" 
+        : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg"
+    }`}>
+      {popular && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide shadow-md">
+          Most Popular
+        </div>
+      )}
+      
+      <div className="mb-6">
+        <h3 className="text-lg font-bold text-slate-500 uppercase tracking-wider mb-2">{name}</h3>
+        <div className="text-4xl font-black text-slate-900 flex items-baseline gap-1">
+          {price}<span className="text-sm font-medium text-slate-400">/bulan</span>
+        </div>
+      </div>
+
+      <ul className="space-y-4 mb-8 flex-1">
+        {features.map((feat, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm text-slate-600 font-medium">
+            <CheckCircle className={`w-5 h-5 shrink-0 ${current || popular ? "text-blue-600" : "text-slate-400"}`} />
+            {feat}
+          </li>
+        ))}
+      </ul>
+
+      <button
+        onClick={onUpgrade}
+        disabled={current || loading}
+        className={`w-full py-4 rounded-xl font-bold text-sm transition-all flex justify-center items-center gap-2 ${
+          current
+            ? "bg-slate-100 text-slate-400 cursor-default border border-slate-200"
+            : popular
+            ? "bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 active:scale-95"
+            : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95"
+        }`}
+      >
+        {loading && <Loader2 className="animate-spin w-4 h-4" />}
+        {current ? "Paket Saat Ini" : "Upgrade Sekarang"}
+      </button>
     </div>
   );
 }

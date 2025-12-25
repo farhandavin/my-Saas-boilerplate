@@ -13,7 +13,7 @@ const aiRoutes = require("./routes/aiRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 
-dotenv.config();
+  dotenv.config();
 
 const app = express();
 app.set("trust proxy", 1); // Penting jika dideploy di balik proxy (Vercel/Heroku/Nginx)

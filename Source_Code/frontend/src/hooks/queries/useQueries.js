@@ -50,18 +50,27 @@ export const useGenerateAI = () => {
 // --- BILLING ---
 export const useCreateCheckout = () => {
   return useMutation({
-    mutationFn: (priceId) => api.post('/payments/create-checkout-session', { priceId }),
+    // Perubahan: Menerima objek { priceId, teamId }
+    mutationFn: ({ priceId, teamId }) => api.post('/payments/create-checkout-session', { priceId, teamId }),
     onSuccess: (response) => {
       if (response.data.url) window.location.href = response.data.url;
     },
+    onError: (error) => {
+      console.error("Checkout Failed:", error.response?.data || error.message);
+      alert(error.response?.data?.error || "Gagal memproses pembayaran.");
+    }
   });
 };
 
 export const usePortal = () => {
   return useMutation({
-    mutationFn: () => api.post('/payments/create-portal-session'),
+    // Perubahan: Menerima teamId agar server tahu portal tim mana yang dibuka
+    mutationFn: (teamId) => api.post('/payments/create-portal-session', { teamId }),
     onSuccess: (response) => {
       if (response.data.url) window.location.href = response.data.url;
     },
+    onError: (error) => {
+      alert(error.response?.data?.error || "Gagal membuka portal billing.");
+    }
   });
 };
