@@ -81,6 +81,7 @@ const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
   // --- LOGIKA REGISTER ---
   const handleRegister = async (e) => {
+    console.log("Menghubungi URL:", `${api_url}/api/auth/register`);
     e.preventDefault();
     setError('');
     setIsLoading(true);

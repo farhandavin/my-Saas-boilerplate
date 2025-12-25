@@ -1,5 +1,5 @@
 // src/utils/securityUtils.js
-
+const prisma = require("../config/prismaClient");
 // Pola Regex sederhana untuk data sensitif Indonesia/Global
 const PII_PATTERNS = {
   EMAIL: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
@@ -8,34 +8,36 @@ const PII_PATTERNS = {
   CURRENCY: /Rp\s?[\d,.]+/g // Deteksi nominal Rupiah
 };
 
+/**
+ * Privacy Layer: Masking Data Sensitif (PII)
+ * Menghapus/Menyensor Email, No HP (+62), dan pola NIK.
+ */
 exports.maskPII = (text) => {
-  let maskedText = text;
-  
-  maskedText = maskedText.replace(PII_PATTERNS.EMAIL, '[EMAIL_REDACTED]');
-  maskedText = maskedText.replace(PII_PATTERNS.PHONE, '[PHONE_REDACTED]');
-  maskedText = maskedText.replace(PII_PATTERNS.NIK, '[ID_REDACTED]');
-  // Opsional: Sensor gaji/uang untuk privasi keuangan
-  // maskedText = maskedText.replace(PII_PATTERNS.CURRENCY, '[MONEY_REDACTED]');
-  
-  return maskedText;
+  if (!text) return "";
+
+  // 1. Masking Email
+  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+  let masked = text.replace(emailRegex, "[EMAIL REDACTED]");
+
+  // 2. Masking No HP Indonesia (08xx atau +628xx)
+  const phoneRegex = /(\+62|08)[0-9]{8,12}/g;
+  masked = masked.replace(phoneRegex, "[PHONE REDACTED]");
+
+  // 3. Masking Angka Panjang (Potensi NIK/KK - 16 digit)
+  const nikRegex = /\b\d{16}\b/g;
+  masked = masked.replace(nikRegex, "[NIK REDACTED]");
+
+  return masked;
 };
 
-// Fungsi helper untuk mencatat Audit Log
-const prisma = require("../config/prismaClient");
-
-exports.createAuditLog = async (teamId, userId, action, details, req) => {
-  try {
-    await prisma.auditLog.create({
-      data: {
-        teamId,
-        userId,
-        action,
-        details: JSON.stringify(details),
-        ipAddress: req.ip || req.connection.remoteAddress
-      }
-    });
-  } catch (err) {
-    console.error("Audit Log Error:", err);
-    // Jangan crash aplikasi cuma karena gagal log
-  }
+exports.createAuditLog = async (prisma, { teamId, userId, action, details, ipAddress }) => {
+  return prisma.auditLog.create({
+    data: {
+      teamId,
+      userId,
+      action,
+      details,
+      ipAddress
+    }
+  });
 };

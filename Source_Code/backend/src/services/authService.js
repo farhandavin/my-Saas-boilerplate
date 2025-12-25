@@ -1,52 +1,81 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const UserRepository = require('../repositories/userRepository');
-const AppError = require('../utils/AppError');
+// services/authService.js
+const prisma = require("../config/prismaClient");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 class AuthService {
   async registerUser({ name, email, password }) {
-    // 1. Cek User Exist
-    const existingUser = await UserRepository.findByEmail(email);
-    if (existingUser) {
-      throw new AppError('Email already registered', 400);
-    }
+    console.log(`[DEBUG] Memulai proses registrasi untuk: ${email}`);
+    
+    // Gunakan Transaction: Jika satu gagal, semua batal (Clean & Safe)
+    return await prisma.$transaction(async (tx) => {
+      // 1. Cek user eksis
+      const existingUser = await tx.user.findUnique({ where: { email } });
+      if (existingUser) throw new Error("Email sudah terdaftar");
 
-    // 2. Hash Password (Logika Bisnis)
-    const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Create User
-    const newUser = await UserRepository.create({
-      name,
-      email,
-      password: hashedPassword,
+      // 2. Buat User & Team Baru (Pilar B2B: Setiap register punya lapak sendiri)
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          // Otomatis buat Team Default untuk user ini
+          teamMembers: {
+            create: {
+              role: "OWNER",
+              team: {
+                create: {
+                  name: `${name}'s Team`,
+                  slug: `team-${Date.now()}`, // Logic slug sederhana
+                  tier: "Free", // Default tier
+                }
+              }
+            }
+          }
+        },
+        include: {
+          teamMembers: { include: { team: true } }
+        }
+      });
+
+      console.log(`[DEBUG] User & Team berhasil dibuat: ${user.id}`);
+      return user;
     });
-
-    // 4. Return data bersih (tanpa password)
-    const { password: _, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
   }
 
   async loginUser({ email, password }) {
-    // 1. Cek User
-    const user = await UserRepository.findByEmail(email);
-    if (!user || !user.password) {
-      throw new AppError('Invalid credentials', 401);
+    console.log(`[DEBUG] Mencoba login: ${email}`);
+    
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        teamMembers: {
+          include: { team: true }
+        }
+      }
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new Error("Kredensial salah");
     }
 
-    // 2. Cek Password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new AppError('Invalid credentials', 401);
-    }
+    // Ambil tim pertama sebagai default context (bisa dikembangkan untuk multi-team)
+    const activeTeam = user.teamMembers[0];
 
-    // 3. Generate Token
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { 
+        userId: user.id, 
+        role: activeTeam.role, 
+        teamId: activeTeam.teamId,
+        tier: activeTeam.team.tier 
+      },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '1d' }
     );
 
-    return { user, token };
+    return { user, token, activeTeam };
   }
 }
 

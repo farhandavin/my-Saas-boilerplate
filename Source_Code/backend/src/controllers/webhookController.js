@@ -1,10 +1,11 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../config/prismaClient");
+const { startMigrationJob } = require("../services/migrationService"); // Import Service
 
 const PLAN_LIMITS = {
   Free: 10,
   Pro: 500,
-  Team: 2000
+  Enterprise: 999999 // Unlimited / Custom
 };
 
 exports.handleStripeWebhook = async (req, res) => {
@@ -22,35 +23,88 @@ exports.handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Idempotency Check (Opsional tapi bagus)
-  // ... (kode idempotency Anda oke)
-
   try {
-    // Handle Checkout Success
+    // ====================================================
+    // 1. HANDLE CHECKOUT (Upgrade Plan)
+    // ====================================================
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-      const teamId = session.metadata?.teamId; // Ambil Team ID
-      const planType = session.metadata?.planType || "Pro";
+      const teamId = session.metadata?.teamId;
+      const planType = session.metadata?.planType || "Pro"; // Pastikan metadata dikirim dari frontend
 
       if (teamId) {
-        // UPDATE TEAM, BUKAN USER
+        console.log(`💰 Payment received for Team ${teamId} -> Plan ${planType}`);
+
+        // Update Data Dasar dulu
         await prisma.team.update({
           where: { id: teamId },
           data: {
-            plan: planType,
+            plan: planType, // Nama Plan untuk display
+            tier: planType === 'Enterprise' ? 'ENTERPRISE' : 'PRO', // Logic Tier
             stripeCustomerId: session.customer,
             stripeSubscriptionId: session.subscription,
             aiLimitMax: PLAN_LIMITS[planType] || 10
           },
         });
-        console.log(`✅ Team ${teamId} upgraded to ${planType}`);
+
+        // TRIGGER MIGRATION KHUSUS ENTERPRISE
+        if (planType === 'Enterprise') {
+            // Jalankan di background (setImmediate) agar Webhook tidak timeout (Stripe timeout 30s)
+            setImmediate(() => {
+                startMigrationJob(teamId);
+            });
+            console.log(`⚙️ Enterprise Migration triggered for ${teamId}`);
+        }
       }
     }
 
-    // Handle Subscription Deleted / Cancelled
+    // ====================================================
+    // 2. HANDLE RECURRING PAYMENT (Reset AI Quota)
+    // ====================================================
+    if (event.type === "invoice.payment_succeeded") {
+      const subscriptionId = event.data.object.subscription;
+      
+      // Cari tim yang punya subscription ini
+      const team = await prisma.team.findFirst({
+        where: { stripeSubscriptionId: subscriptionId }
+      });
+
+      if (team) {
+        // Reset Usage Count jadi 0 setiap bulan saat bayar sukses
+        await prisma.team.update({
+          where: { id: team.id },
+          data: { aiUsageCount: 0 }
+        });
+        console.log(`🔄 Monthly Quota Reset for Team ${team.id}`);
+      }
+    }
+
+    // ====================================================
+    // 3. HANDLE PAYMENT FAILED (Lock Account)
+    // ====================================================
+    if (event.type === "invoice.payment_failed") {
+      const subscriptionId = event.data.object.subscription;
+      const team = await prisma.team.findFirst({
+        where: { stripeSubscriptionId: subscriptionId }
+      });
+
+      if (team) {
+        // Downgrade atau Kunci
+        await prisma.team.update({
+          where: { id: team.id },
+          data: { 
+            aiLimitMax: 0 // Stop akses AI sampai lunas
+          }
+        });
+        console.log(`⚠️ Payment Failed. Service paused for Team ${team.id}`);
+      }
+    }
+
+    // ====================================================
+    // 4. HANDLE CANCELLATION
+    // ====================================================
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
-      // Cari tim berdasarkan subscription ID
       const team = await prisma.team.findFirst({
         where: { stripeSubscriptionId: subscription.id }
       });
@@ -60,11 +114,13 @@ exports.handleStripeWebhook = async (req, res) => {
           where: { id: team.id },
           data: {
             plan: "Free",
+            tier: "Free",
             aiLimitMax: PLAN_LIMITS["Free"],
-            stripeSubscriptionId: null
+            stripeSubscriptionId: null,
+            // Opsional: Balikin databaseUrl ke null jika downgrade dari Enterprise (Kompleks)
           }
         });
-        console.log(`Team ${team.id} downgraded to Free`);
+        console.log(`📉 Team ${team.id} downgraded to Free`);
       }
     }
 

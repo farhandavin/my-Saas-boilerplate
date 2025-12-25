@@ -4,7 +4,7 @@ model User {
   email         String       @unique
   name          String?
   image         String?
-  
+  password      String?
   // Relasi
   teamMembers   TeamMember[]
   auditLogs     AuditLog[]
@@ -14,18 +14,24 @@ model User {
 
 // --- TEAM MODEL (Pusat B2B & Billing) ---
 model Team {
-  id                   String       @id @default(cuid())
+ id                   String       @id @default(cuid())
   name                 String
   slug                 String       @unique
   
-  // Billing & AI Usage (Level Tim)
+  // --- PILAR PAYMENT & B2B ---
   stripeCustomerId     String?      @unique
   stripeSubscriptionId String?
-  plan                 String       @default("Free")
+  
+  // Tier menentukan isolasi data: "FREE" (Shared), "PRO" (Schema), "ENTERPRISE" (Isolated DB)
+  tier                 String       @default("Free")
+  migrationStatus      String       @default("NONE")
+  // --- PILAR AI ---
   aiUsageCount         Int          @default(0)
   aiLimitMax           Int          @default(10)
+  
+  // Konfigurasi Database untuk Tier Enterprise (Simulasi Router)
+  databaseUrl          String?      // Jika null, pakai shared DB. Jika ada isi, pakai DB khusus.
 
-  // Relasi
   members              TeamMember[]
   invitations          Invitation[]
   auditLogs            AuditLog[]
@@ -70,8 +76,8 @@ model Document {
   title     String
   content   String   @db.Text
   
-  // Untuk AI (Vector Search)
-  // Jika pakai pgvector, kolom ini akan menyimpan array angka
+  // --- PILAR AI (RAG) ---
+  // Kolom ini menyimpan representasi vector dari content untuk pencarian semantik
   embedding Unsupported("vector(1536)")? 
 
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -90,4 +96,16 @@ model Invitation {
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, email])
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"] // Penting untuk pgvector
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  extensions = [vector] // Mengaktifkan ekstensi vector di Postgres
 }

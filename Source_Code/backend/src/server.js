@@ -1,3 +1,4 @@
+
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -5,7 +6,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
 require("./config/passport"); // Load konfigurasi passport
-
+ dotenv.config();
 // Load Routes
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -13,7 +14,6 @@ const aiRoutes = require("./routes/aiRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 
-  dotenv.config();
 
 const app = express();
 app.set("trust proxy", 1); // Penting jika dideploy di balik proxy (Vercel/Heroku/Nginx)
@@ -34,8 +34,8 @@ app.use("/api", limiter);
 
 // CORS Configuration
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "http://localhost:5173",
+  "http://localhost:5173", // Pastikan ini persis sama dengan URL di browser Anda
+  process.env.CLIENT_URL
 ];
 
 app.use(cors({
