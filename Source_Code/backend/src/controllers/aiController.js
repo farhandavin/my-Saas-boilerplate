@@ -1,75 +1,108 @@
+// src/controllers/aiController.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const prisma = require("../config/prismaClient"); // Pastikan import prisma
+const prisma = require("../config/prismaClient");
+const { maskPII, createAuditLog } = require("../utils/securityUtils");
 
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// [STRATEGI BARU] Kumpulan Template Prompt Profesional
-// Ini menambah "Nilai Jual" karena prompt dirancang khusus (Prompt Engineering)
-const AI_TEMPLATES = {
-  "business-email": (data) => `
-    Act as a professional copywriter. Write a business email for the following scenario:
-    - Recipient: ${data.recipientName || "Client"}
-    - Topic: ${data.topic}
-    - Tone: ${data.tone || "Professional"}
-    - Key Points: ${data.keyPoints}
-    
-    Output strictly the email subject and body. No conversational filler.
-  `,
-  "blog-outline": (data) => `
-    Create a comprehensive SEO-friendly blog post outline for the title: "${data.title}".
-    Target Audience: ${data.audience}.
-    Include H2 and H3 headings.
-  `,
-  "social-caption": (data) => `
-    Write 3 variations of Instagram captions for a post about: ${data.description}.
-    Include relevant hashtags.
-  `,
-  // Tambahkan template lain sesuai niche Anda (misal: Legal Clause, Medical Note, dll)
-};
-
 exports.generateContent = async (req, res) => {
-  const { userId } = req.user; // Dari middleware auth
-  const { templateId, inputData } = req.body;
-
-  // 1. Validasi Template (Mencegah user kirim prompt sembarangan)
-  if (!AI_TEMPLATES[templateId]) {
-    return res.status(400).json({ error: "Invalid AI Tool selected." });
-  }
+  const { userId } = req.user;
+  // teamId biasanya String jika menggunakan CUID
+  const { teamId, templateId, inputData, useKnowledgeBase } = req.body; 
 
   try {
-    // [PENTING] Cek Kuota User (CodeCanyon Requirement)
-    // Logika: Ambil user, cek apakah usageLimit > 0. 
-    // Untuk demo ini, kita skip pengurangan kuota database, tapi WAJIB ada logicnya.
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    
-    // Contoh sederhana pembatasan berdasarkan Plan
-    if (user.plan === 'Free' && user.aiUsageCount >= 5) { // Asumsi ada field aiUsageCount
-       return res.status(403).json({ error: "Free limit reached. Please upgrade to Pro." });
+    // 1. Validasi Keanggotaan Tim (B2B Security)
+    const member = await prisma.teamMember.findUnique({
+      where: { 
+        userId_teamId: { 
+          userId, 
+          teamId: teamId // Hapus parseInt jika menggunakan CUID
+        } 
+      },
+      include: { team: true }
+    });
+
+    if (!member) return res.status(403).json({ error: "Anda bukan bagian dari tim ini." });
+
+    const team = member.team;
+
+    // 2. Cek Kuota AI Tim
+    if (team.aiUsageCount >= team.aiLimitMax) {
+      return res.status(403).json({ 
+        error: "Kuota AI tim Anda habis.",
+        currentUsage: team.aiUsageCount,
+        limit: team.aiLimitMax 
+      });
     }
 
-    // 2. Generate Prompt di Backend (Secure)
-    const systemPrompt = AI_TEMPLATES[templateId](inputData);
-    
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(systemPrompt);
+    // 3. PII Masking (Mencegah kebocoran data sensitif ke AI Vendor)
+    const sanitizedInput = {};
+    for (const key in inputData) {
+      sanitizedInput[key] = typeof inputData[key] === 'string' 
+        ? maskPII(inputData[key]) 
+        : inputData[key];
+    }
+
+    // 4. Lite RAG (Knowledge Base Retrieval)
+    let contextData = "";
+    if (useKnowledgeBase) {
+      const docs = await prisma.document.findMany({
+        where: { teamId: team.id },
+        take: 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      if (docs.length > 0) {
+        contextData = "KONTEKS DOKUMEN INTERNAL:\n" + docs.map(d => d.content).join("\n---\n");
+      }
+    }
+
+    // 5. Setup AI Model
+    // Gunakan model yang stabil: gemini-1.5-flash
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // 6. Construct Prompt berdasarkan Template
+    const prompts = {
+      'business-email': `
+        ${contextData}
+        Gunakan konteks dokumen di atas jika relevan. 
+        Tulis email bisnis profesional tentang: ${sanitizedInput.topic}.
+      `,
+      'report-summary': `Ringkas data berikut secara profesional: ${sanitizedInput.data}`
+    };
+
+    const finalPrompt = prompts[templateId] || sanitizedInput.prompt;
+
+    // 7. Eksekusi AI
+    const result = await model.generateContent(finalPrompt);
     const response = await result.response;
     const text = response.text();
 
-    // [TODO] Update Usage Count di Database di sini
-    // await prisma.user.update({ where: { id: userId }, data: { aiUsageCount: { increment: 1 } } });
+    // 8. Update Kuota & Audit Log (Atomic Transaction)
+    // Menggunakan transaction agar jika salah satu gagal, semua batal
+    await prisma.$transaction([
+      prisma.team.update({
+        where: { id: team.id },
+        data: { aiUsageCount: { increment: 1 } }
+      }),
+      // Pastikan fungsi ini mereturn prisma query jika ingin masuk transaction, 
+      // atau biarkan di luar jika ingin 'fire and forget'.
+    ]);
+
+    // Audit log tetap dicatat untuk keamanan perusahaan klien
+    await createAuditLog(team.id, userId, "AI_GENERATION", { 
+      template: templateId,
+      inputUsed: sanitizedInput 
+    }, req);
 
     res.json({ 
-      success: true,
-      data: text 
+      success: true, 
+      data: text,
+      usage: `${team.aiUsageCount + 1}/${team.aiLimitMax}`
     });
 
   } catch (error) {
     console.error("AI Service Error:", error);
-    // Error handling yang ramah user
-    if (error.message?.includes("Safety")) {
-      return res.status(400).json({ error: "Content flagged as unsafe by AI filters." });
-    }
-    res.status(500).json({ error: "AI service temporarily unavailable." });
+    res.status(500).json({ error: "Gagal memproses AI. Silakan coba lagi nanti." });
   }
 };

@@ -1,83 +1,93 @@
-// prisma/schema.prisma
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
+// --- USER MODEL ---
 model User {
-  id                   Int       @id @default(autoincrement())
-  name                 String
-  email                String    @unique
-  password             String?
-  googleId             String?   @unique
-  avatar               String?
-  
-  // --- BILLING & LIMITS (PENTING) ---
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  plan                 String    @default("Free") 
-  subscriptionStatus   String    @default("active")
-  cancelAtPeriodEnd    Boolean   @default(false) // Tambahan untuk UX billing
-  
-  // Menyimpan kuota saat ini (agar tidak perlu hitung ulang terus menerus)
-  aiUsageCount         Int       @default(0) 
+  id            String       @id @default(cuid()) // Menggunakan CUID lebih aman
+  email         String       @unique
+  name          String?
+  image         String?
   
   // Relasi
-  teams               TeamMember[] // Tim yang diikuti
-  ownedTeams          Team[]       @relation("TeamOwner") // Tim yang dimiliki
+  teamMembers   TeamMember[]
+  auditLogs     AuditLog[]
   
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt     DateTime     @default(now())
 }
 
+// --- TEAM MODEL (Pusat B2B & Billing) ---
 model Team {
-  id          Int          @id @default(autoincrement())
-  name        String
-  slug        String       @unique // Untuk URL ramah SEO (misal: app.com/team/google)
-  ownerId     Int
-  owner       User         @relation("TeamOwner", fields: [ownerId], references: [id])
+  id                   String       @id @default(cuid())
+  name                 String
+  slug                 String       @unique
   
-  members     TeamMember[]
-  invitations Invitation[] // [BARU] Sistem Invite Aman
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  // Billing & AI Usage (Level Tim)
+  stripeCustomerId     String?      @unique
+  stripeSubscriptionId String?
+  plan                 String       @default("Free")
+  aiUsageCount         Int          @default(0)
+  aiLimitMax           Int          @default(10)
+
+  // Relasi
+  members              TeamMember[]
+  invitations          Invitation[]
+  auditLogs            AuditLog[]
+  documents            Document[]
+
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 }
 
+// --- TEAM MEMBER (Junction Table untuk Role) ---
 model TeamMember {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  teamId    Int
-  role      String   @default("member") // "owner", "admin", "member"
+  id      String @id @default(cuid())
+  role    String @default("MEMBER") // OWNER, ADMIN, MEMBER
   
+  userId  String
+  teamId  String
+  
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId]) // Satu user hanya boleh jadi satu member di satu tim
+}
+
+// --- AUDIT LOG (Enterprise Requirement) ---
+model AuditLog {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  action    String   // "DOC_CREATED", "MEMBER_INVITED", "PAYMENT_SUCCESS"
+  details   String?  @db.Text
+  ipAddress String?
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
-  team      Team     @relation(fields: [teamId], references: [id])
-
-  @@unique([userId, teamId]) // Mencegah user masuk tim yang sama 2x
-}
-
-// [BARU] Model Undangan (Security Best Practice)
-// Mencegah user ditambahkan paksa. Harus via email token.
-model Invitation {
-  id        String   @id @default(uuid())
-  email     String
-  teamId    Int
-  role      String   @default("member")
-  token     String   @unique
-  expiresAt DateTime
-  
-  team      Team     @relation(fields: [teamId], references: [id])
-  
-  @@unique([email, teamId])
-}
-
-// [BARU] Webhook Idempotency (Wajib untuk Stripe)
-model WebhookEvent {
-  id        String   @id
   createdAt DateTime @default(now())
+}
+
+// --- DOCUMENT (Foundation for RAG/Knowledge Base) ---
+model Document {
+  id        String   @id @default(cuid())
+  teamId    String
+  title     String
+  content   String   @db.Text
+  
+  // Untuk AI (Vector Search)
+  // Jika pakai pgvector, kolom ini akan menyimpan array angka
+  embedding Unsupported("vector(1536)")? 
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// --- INVITATION (Fitur B2B) ---
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  role      String   @default("MEMBER")
+  token     String   @unique
+  expires   DateTime
+  
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, email])
 }
