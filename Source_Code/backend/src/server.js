@@ -1,64 +1,49 @@
-// src/app.js (atau server.js)
-
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const helmet = require("helmet"); // Security Headers
-const rateLimit = require("express-rate-limit"); // Brute force protection
-const hpp = require("hpp"); // Prevent HTTP Parameter Pollution
-const stripe = require("stripe"); // Import Stripe Library langsung disini untuk webhook
-
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const hpp = require("hpp");
+require("./config/passport"); // Load konfigurasi passport
 
 // Load Routes
 const authRoutes = require("./routes/authRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const teamRoutes = require("./routes/teamRoutes");
-const prisma = require("./config/prismaClient");
-require("./config/passport");
+const webhookRoutes = require("./routes/webhookRoutes");
 
 dotenv.config();
-const webhookController = require("./controllers/webhookController");
-// Inisialisasi Stripe dengan Secret Key
-const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", 1); // Penting jika dideploy di balik proxy (Vercel/Heroku/Nginx)
 const PORT = process.env.PORT || 5001;
 
 // ==================================================================
-// 1. SECURITY & CONFIG (ENVATO COMPLIANT)
+// 1. SECURITY MIDDLEWARE
 // ==================================================================
-
-// A. Security Headers
 app.use(helmet());
 
-// B. Rate Limiting (Mencegah Brute Force)
+// Rate Limiting
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 menit
-  max: 100, // Limit request per IP
+  windowMs: 10 * 60 * 1000, 
+  max: 100, 
   message: { success: false, message: "Terlalu banyak request, coba lagi nanti." }
 });
 app.use("/api", limiter);
 
-// C. CORS Configuration (Strict)
+// CORS Configuration
 const allowedOrigins = [
-  process.env.CLIENT_URL, // e.g. https://myapp.vercel.app
-  "http://localhost:5173", // Local Frontend
-  "http://localhost:5001"  // Local Backend test
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow request with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
-      // Block request dari origin asing
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+      callback(new Error('Blocked by CORS policy'), false);
     }
   },
   credentials: true,
@@ -66,63 +51,50 @@ app.use(cors({
 }));
 
 // ==================================================================
-// 2. STRIPE WEBHOOK (PENTING: Harus SEBELUM express.json)
+// 2. STRIPE WEBHOOK (KHUSUS: RAW BODY)
 // ==================================================================
-app.post(
-  "/api/webhook",
-  express.raw({ type: "application/json" }),
-  webhookController.handleStripeWebhook
-);
+// Gunakan .use jika didalam webhookRoutes.js sudah ada definisi router.post('/')
+app.use("/api/webhook", express.raw({ type: "application/json" }), webhookRoutes);
 
 // ==================================================================
-// 3. BODY PARSER & GENERAL MIDDLEWARE
+// 3. BODY PARSER (SETELAH WEBHOOK)
 // ==================================================================
-
-// Parsing Body JSON (Hanya berjalan setelah Webhook lewat)
 app.use(express.json({ limit: '10kb' })); 
-
-// Parameter Pollution Protection
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(hpp());
 
 // ==================================================================
 // 4. API ROUTES
 // ==================================================================
-
 app.use("/api/auth", authRoutes);
-app.use("/api/payments", paymentRoutes); // Konsisten pakai 'payments' jamak
+app.use("/api/payments", paymentRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/teams", teamRoutes);
 
 // Health Check
 app.get("/", (req, res) => {
-  res.send("🚀 SaaS Boilerplate API is running...");
+  res.json({ status: "success", message: "🚀 SaaS Boilerplate API is running..." });
 });
 
 // ==================================================================
-// 5. GLOBAL ERROR HANDLER (WAJIB PALING BAWAH)
+// 5. GLOBAL ERROR HANDLER
 // ==================================================================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
-    message: err.message || "Server Error",
-    // Jangan tampilkan stack di production (Envato requirement)
+    message: err.message || "Internal Server Error",
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 });
 
 // ==================================================================
-// 6. SERVER START
+// 6. START SERVER
 // ==================================================================
-
 if (require.main === module) {
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`\n🚀 SERVER RUNNING ON PORT ${PORT}`);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`👉 Webhook URL: http://localhost:${PORT}/api/webhook`);
-    }
+    console.log(`\n✅ SERVER ACTIVE ON PORT ${PORT}`);
+    console.log(`📡 ENVIRONMENT: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 

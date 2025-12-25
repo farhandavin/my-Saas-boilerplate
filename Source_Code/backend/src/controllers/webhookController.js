@@ -1,61 +1,76 @@
-// backend/src/controllers/webhookController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../config/prismaClient");
+
+// Limit AI berdasarkan Plan (Sesuaikan dengan kebijakan bisnis Anda)
+const PLAN_AI_LIMITS = {
+  Free: 10,
+  Pro: 500,
+  Team: 2000
+};
 
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
   try {
+    // Verifikasi event asli dari Stripe
     event = stripe.webhooks.constructEvent(
-      req.body,
+      req.body, // Pastikan body-parser di server.js menggunakan {type: 'application/json'} untuk route ini atau raw buffer
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error(`⚠️  Webhook Signature Error: ${err.message}`);
+    console.error(`Webhook Error: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // 1. IDEMPOTENCY CHECK
-  const eventExists = await prisma.webhookEvent.findUnique({
-    where: { id: event.id },
-  });
-
-  if (eventExists) {
-    return res.json({ received: true });
-  }
-
-  // 2. HANDLE EVENT
-  try {
-    if (event.type === "checkout.session.completed") {
+  // Handle Event
+  switch (event.type) {
+    // 1. Checkout Berhasil (Subscription Baru)
+    case "checkout.session.completed":
       const session = event.data.object;
-      const userId = session.metadata?.userId ? parseInt(session.metadata.userId, 10) : null;
-      const planType = session.metadata?.planType;
-
-      if (userId) {
-        await prisma.user.update({
-          where: { id: userId },
+      const teamId = session.metadata.teamId;
+      const planType = session.metadata.planType || "Pro";
+      
+      if (teamId) {
+        await prisma.team.update({
+          where: { id: teamId },
           data: {
-            plan: planType,
-            stripeCustomerId: session.customer,
             stripeSubscriptionId: session.subscription,
-            subscriptionStatus: "active",
-            cancelAtPeriodEnd: false
-          },
+            plan: planType,
+            aiLimitMax: PLAN_AI_LIMITS[planType] || 10
+          }
         });
-        console.log(`✅ User ${userId} upgraded to ${planType}`);
+        console.log(`Team ${teamId} upgraded to ${planType}`);
       }
-    }
+      break;
 
-    // 3. SIMPAN EVENT ID
-    await prisma.webhookEvent.create({
-      data: { id: event.id }
-    });
+    // 2. Pembayaran Gagal / Subscription Dibatalkan
+    case "customer.subscription.deleted":
+      const subscription = event.data.object;
+      const teamIdSub = subscription.metadata.teamId; // Pastikan metadata ada saat create sub
+      
+      // Jika metadata kosong, kita cari berdasarkan stripeSubscriptionId
+      const teamToDowngrade = teamIdSub 
+        ? { id: teamIdSub } 
+        : await prisma.team.findFirst({ where: { stripeSubscriptionId: subscription.id } });
 
-    res.json({ received: true });
-  } catch (err) {
-    console.error("❌ Webhook Logic Error:", err);
-    res.status(200).json({ error: "Webhook processed with internal errors" });
+      if (teamToDowngrade) {
+        await prisma.team.update({
+          where: { id: teamToDowngrade.id },
+          data: {
+            plan: "Free",
+            aiLimitMax: PLAN_AI_LIMITS["Free"],
+            stripeSubscriptionId: null
+          }
+        });
+        console.log(`Team ${teamToDowngrade.id || teamIdSub} downgraded to Free`);
+      }
+      break;
+
+    default:
+      console.log(`Unhandled event type ${event.type}`);
   }
+
+  res.send();
 };

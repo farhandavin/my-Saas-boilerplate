@@ -6,7 +6,7 @@ const express = require("express");
 const { 
   createCheckoutSession, 
   createPortalSession, 
-  cancelSubscription, 
+  cancelSubscription,   
   resumeSubscription 
 } = require("../controllers/paymentController");
 

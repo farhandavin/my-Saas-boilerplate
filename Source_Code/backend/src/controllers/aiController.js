@@ -8,35 +8,36 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 exports.generateContent = async (req, res) => {
   const { userId } = req.user;
-  // teamId biasanya String jika menggunakan CUID
   const { teamId, templateId, inputData, useKnowledgeBase } = req.body; 
 
   try {
-    // 1. Validasi Keanggotaan Tim (B2B Security)
+    // 1. VALIDASI KEANGGOTAAN TIM (B2B Security)
+    // Mencari apakah user terdaftar di tim tersebut
     const member = await prisma.teamMember.findUnique({
       where: { 
         userId_teamId: { 
           userId, 
-          teamId: teamId // Hapus parseInt jika menggunakan CUID
+          teamId: teamId 
         } 
       },
       include: { team: true }
     });
 
-    if (!member) return res.status(403).json({ error: "Anda bukan bagian dari tim ini." });
+    if (!member) {
+      return res.status(403).json({ error: "Akses ditolak. Anda bukan bagian dari tim ini." });
+    }
 
     const team = member.team;
 
-    // 2. Cek Kuota AI Tim
+    // 2. CEK KUOTA AI TIM
     if (team.aiUsageCount >= team.aiLimitMax) {
       return res.status(403).json({ 
         error: "Kuota AI tim Anda habis.",
-        currentUsage: team.aiUsageCount,
-        limit: team.aiLimitMax 
+        usage: `${team.aiUsageCount}/${team.aiLimitMax}` 
       });
     }
 
-    // 3. PII Masking (Mencegah kebocoran data sensitif ke AI Vendor)
+    // 3. PII MASKING (Keamanan Data)
     const sanitizedInput = {};
     for (const key in inputData) {
       sanitizedInput[key] = typeof inputData[key] === 'string' 
@@ -44,7 +45,7 @@ exports.generateContent = async (req, res) => {
         : inputData[key];
     }
 
-    // 4. Lite RAG (Knowledge Base Retrieval)
+    // 4. LITE RAG (Ambil Konteks Dokumen Tim)
     let contextData = "";
     if (useKnowledgeBase) {
       const docs = await prisma.document.findMany({
@@ -53,51 +54,47 @@ exports.generateContent = async (req, res) => {
         orderBy: { createdAt: 'desc' }
       });
       if (docs.length > 0) {
-        contextData = "KONTEKS DOKUMEN INTERNAL:\n" + docs.map(d => d.content).join("\n---\n");
+        contextData = "KONTEKS DOKUMEN INTERNAL TIM:\n" + docs.map(d => d.content).join("\n---\n");
       }
     }
 
-    // 5. Setup AI Model
-    // Gunakan model yang stabil: gemini-1.5-flash
+    // 5. SETUP AI MODEL & PROMPT
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    // 6. Construct Prompt berdasarkan Template
     const prompts = {
-      'business-email': `
-        ${contextData}
-        Gunakan konteks dokumen di atas jika relevan. 
-        Tulis email bisnis profesional tentang: ${sanitizedInput.topic}.
-      `,
-      'report-summary': `Ringkas data berikut secara profesional: ${sanitizedInput.data}`
+      'business-email': `${contextData}\n\nTulis email bisnis tentang: ${sanitizedInput.topic}`,
+      'report-summary': `Ringkas data berikut: ${sanitizedInput.data}`
     };
-
     const finalPrompt = prompts[templateId] || sanitizedInput.prompt;
 
-    // 7. Eksekusi AI
+    // 6. EKSEKUSI AI
     const result = await model.generateContent(finalPrompt);
     const response = await result.response;
-    const text = response.text();
+    const generatedText = response.text();
 
-    // 8. Update Kuota & Audit Log (Atomic Transaction)
-    // Menggunakan transaction agar jika salah satu gagal, semua batal
-    await prisma.$transaction([
-      prisma.team.update({
+    // 7. ATOMIC TRANSACTION (Update Kuota & Log)
+    await prisma.$transaction(async (tx) => {
+      // Update pemakaian AI tim
+      await tx.team.update({
         where: { id: team.id },
         data: { aiUsageCount: { increment: 1 } }
-      }),
-      // Pastikan fungsi ini mereturn prisma query jika ingin masuk transaction, 
-      // atau biarkan di luar jika ingin 'fire and forget'.
-    ]);
+      });
 
-    // Audit log tetap dicatat untuk keamanan perusahaan klien
-    await createAuditLog(team.id, userId, "AI_GENERATION", { 
-      template: templateId,
-      inputUsed: sanitizedInput 
-    }, req);
+      // Simpan jejak audit untuk transparansi tim
+      await tx.auditLog.create({
+        data: {
+          teamId: team.id,
+          userId: userId,
+          action: "AI_GENERATION",
+          details: JSON.stringify({ template: templateId, input: sanitizedInput }),
+          ipAddress: req.ip
+        }
+      });
+    });
 
+    // 8. RESPONSE BERHASIL
     res.json({ 
       success: true, 
-      data: text,
+      data: generatedText,
       usage: `${team.aiUsageCount + 1}/${team.aiLimitMax}`
     });
 
