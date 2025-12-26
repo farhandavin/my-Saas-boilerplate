@@ -1,49 +1,69 @@
-// 1. IMPORT (Selalu paling atas)
+// backend/src/routes/authRoutes.js
 const express = require("express");
 const passport = require("../config/passport");
 const jwt = require("jsonwebtoken");
-const { register, login, getMe, forgotPassword, resetPassword } = require("../controllers/authController");
 const verifyToken = require("../middleware/authMiddleware");
 
-// 2. INISIALISASI ROUTER
+// Import Controllers
+const { 
+  register, 
+  login, 
+  getMe, 
+  forgotPassword, 
+  resetPassword 
+} = require("../controllers/authController");
+
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
 // =========================================================
-// 3. DEFINISI ROUTE & DOKUMENTASI
+// 1. STANDARD AUTH (Email/Password)
 // =========================================================
 
-
+// Registration
 router.post("/register", register);
 
+// Login
+router.post("/login", login);
 
-router.post("/login", login); // <-- PERHATIKAN: Komentar di atas menempel ke baris ini
-
-
+// Get Current User (Protected)
 router.get("/me", verifyToken, getMe);
 
-// --- Route Lupa Password (Bisa ditambahkan dokumentasinya nanti) ---
+// Password Recovery
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 
-// --- Google OAuth Routes (Biasanya tidak butuh Swagger karena redirect browser) ---
+// =========================================================
+// 2. SOCIAL AUTH (Google OAuth)
+// =========================================================
+
+// A. Trigger: Redirects user to Google's Consent Screen
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+// B. Callback: Google sends the user back here
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
   (req, res) => {
+    // 1. Get User from Passport (req.user is set by the strategy)
     const user = req.user;
+
+    // 2. Generate Token Manually
+    // We do this here because we bypassed the standard login controller
     const token = jwt.sign(
-      { id: user.id }, 
+      { userId: user.id }, // Payload matches your authMiddleware
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "7d" }  // Token validity
     );
-    const frontendURL = process.env.CLIENT_URL || "http://localhost:5173";
-    res.redirect(`${frontendURL}/auth?token=${token}`);
+
+    // 3. Safe Redirect Logic
+    // Uses CLIENT_URL from .env, falls back to localhost for dev
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    
+    // Redirect to a dedicated success page on frontend with the token
+    res.redirect(`${clientUrl}/auth/success?token=${token}`);
   }
 );
 

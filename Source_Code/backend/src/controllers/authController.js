@@ -1,24 +1,31 @@
+// file: backend/src/controllers/authController.js
 const AuthService = require("../services/authService");
 const catchAsync = require("../utils/catchAsync");
-const prisma = require("../config/prismaClient"); // Pastikan path ini benar
-const AppError = require("../utils/AppError");
+const prisma = require("../config/prismaClient");
 
 class AuthController {
-  // 1. Register
-  register = catchAsync(async (req, res, next) => {
-    const { name, email, password } = req.body;
-    const user = await AuthService.registerUser({ name, email, password });
+  register = catchAsync(async (req, res) => {
+    // Terima companyName dari frontend (opsional, kalau kosong auto-generate)
+    const { name, email, password, companyName } = req.body;
+    
+    const result = await AuthService.registerUser({ 
+      name, 
+      email, 
+      password, 
+      companyName 
+    });
+
     res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      data: user,
+      message: "Organization & Account created successfully",
+      data: result,
     });
   });
 
-  // 2. Login
-  login = catchAsync(async (req, res, next) => {
+  login = catchAsync(async (req, res) => {
     const { email, password } = req.body;
-    const { user, token } = await AuthService.loginUser({ email, password });
+    const { user, token, team, role } = await AuthService.loginUser({ email, password });
+
     res.status(200).json({
       success: true,
       token,
@@ -26,79 +33,50 @@ class AuthController {
         id: user.id,
         name: user.name,
         email: user.email,
-        plan: user.plan,
+        image: user.image,
       },
+      // Kirim konteks tim saat login agar UI langsung menyesuaikan
+      team: {
+        id: team.id,
+        name: team.name,
+        slug: team.slug,
+        tier: team.tier,
+        role: role, 
+      }
     });
   });
 
-  // 3. Get Me (Profile) - UPDATED
-  // Mengambil data lengkap termasuk status langganan dan penggunaan AI
-  getMe = catchAsync(async (req, res, next) => {
-    console.log("👉 User dari Token:", req.user);
-    try {
-      // DEBUG: Cek apa isi req.user hasil decode middleware
-      // 1. Cek apakah req.user ada? (Jaga-jaga jika middleware lolos)
-      if (!req.user) {
-        return res
-          .status(401)
-          .json({ error: "Unauthorized: Token valid but payload missing" });
-      }
-
-      // 2. Ambil ID dengan aman (Support 'id' ATAU 'userId')
-      // Ini menangani inkonsistensi antara login Google vs Login Biasa
-      const id = req.user.userId || req.user.id;
-
-      if (!id) {
-        return res
-          .status(400)
-          .json({ error: "Invalid Token: No User ID found inside token" });
-      }
-
-      // 3. Cari User ke Database
-      const user = await prisma.user.findUnique({
-        where: {
-          id: String(req.user.id), // Pastikan tetap String
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true, // Gunakan 'image' bukan 'avatar' (sesuai saran log error Anda)
-          createdAt: true,
-          // HAPUS plan, subscriptionStatus, aiUsageCount dari sini!
-          // Data tersebut nantinya diambil dari tabel Team.
-        },
-      });
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found in database" });
-      }
-
-      res.status(200).json(user);
-    } catch (error) {
-      console.error("❌ Error di getMe:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // 4. Forgot Password (Placeholder)
-  forgotPassword = catchAsync(async (req, res, next) => {
-    const { email } = req.body;
-    if (!email) return next(new AppError("Email is required", 400));
-
-    res.status(200).json({
-      success: true,
-      message: `Reset link sent to ${email} (Feature pending implementation)`,
+  getMe = catchAsync(async (req, res) => {
+    // Endpoint ini dipakai Frontend untuk "Re-hydrate" session saat reload
+    // Kita ambil data fresh dari database berdasarkan token
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, name: true, email: true, image: true },
     });
-  });
+    
+    // Ambil info Team terkini (karena Tier mungkin baru saja di-upgrade)
+    const membership = await prisma.teamMember.findUnique({
+      where: {
+        userId_teamId: {
+          userId: req.user.userId,
+          teamId: req.user.teamId
+        }
+      },
+      include: { team: true }
+    });
 
-  // 5. Reset Password (Placeholder)
-  resetPassword = catchAsync(async (req, res, next) => {
-    const { token, newPassword } = req.body;
+    if (!user || !membership) return res.status(401).json({ error: "User or Team not found" });
 
     res.status(200).json({
-      success: true,
-      message: "Password reset successfully (Feature pending implementation)",
+      user,
+      team: {
+        id: membership.team.id,
+        name: membership.team.name,
+        tier: membership.team.tier,
+        role: membership.role,
+        aiTokenLimit: membership.team.aiTokenLimit,
+        aiUsageCount: membership.team.aiUsageCount
+      }
     });
   });
 }

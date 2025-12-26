@@ -1,110 +1,161 @@
-// src/pages/Register.jsx
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
-import './AuthLayout.css'; 
+// frontend/src/pages/Register.jsx
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Loader2, AlertCircle } from 'lucide-react';
 
-// --- DEFINISI URL API ---
-const api_url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-
-export default function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+const Register = () => {
+  // 1. State Management: Unified object for cleaner code
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    companyName: '' // Required to create the initial Team/Workspace
+  });
+  
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // 2. Hooks
+  const { register } = useAuth(); // Uses the centralized AuthContext we discussed earlier
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  // 3. Handlers
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
     try {
-      // --- UPDATE URL DISINI ---
-      const res = await axios.post(`${api_url}/api/auth/register`, {
-        name,
-        email,
-        password,
-      });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      navigate("/login");
+      // Call register from AuthContext (handles API URL & Token saving internally)
+      await register(
+        formData.name, 
+        formData.email, 
+        formData.password, 
+        formData.companyName
+      );
+      
+      // On success, redirect to login
+      navigate('/login');
     } catch (err) {
-      alert(err.response?.data?.error || "Register Gagal");
+      // Handle errors (e.g., "Email already in use")
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-wrapper">
-      <form className="auth-form" onSubmit={handleRegister}>
-        <h1 className="a11y-hidden">Register Form</h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+        
+        {/* Header Section */}
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Start Your Journey
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Create your <span className="font-bold text-indigo-600">BusinessOS</span> workspace in seconds.
+          </p>
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Error Banner */}
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-red-700 text-sm font-medium">{error}</p>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            {/* Name Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Full Name</label>
+              <input
+                name="name"
+                type="text"
+                required
+                className="appearance-none rounded-xl relative block w-full px-4 py-3 bg-slate-50 border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all sm:text-sm"
+                placeholder="e.g. Elon Musk"
+                onChange={handleChange}
+              />
+            </div>
 
-        <figure aria-hidden="true">
-          <div className="person-body"></div>
-          <div className="neck skin"></div>
-          <div className="head skin">
-            <div className="eyes"></div>
-            <div className="mouth"></div>
+            {/* Email Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Work Email</label>
+              <input
+                name="email"
+                type="email"
+                required
+                className="appearance-none rounded-xl relative block w-full px-4 py-3 bg-slate-50 border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all sm:text-sm"
+                placeholder="name@company.com"
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Company Name (New & Critical) */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Company / Workspace Name</label>
+              <input
+                name="companyName"
+                type="text"
+                required
+                className="appearance-none rounded-xl relative block w-full px-4 py-3 bg-slate-50 border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all sm:text-sm"
+                placeholder="e.g. Tesla Corp"
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Password</label>
+              <input
+                name="password"
+                type="password"
+                required
+                className="appearance-none rounded-xl relative block w-full px-4 py-3 bg-slate-50 border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all sm:text-sm"
+                placeholder="••••••••"
+                onChange={handleChange}
+              />
+            </div>
           </div>
-          <div className="hair"></div>
-          <div className="ears"></div>
-          <div className="shirt-1"></div>
-          <div className="shirt-2"></div>
-        </figure>
 
-        {/* --- NAME INPUT --- */}
-        <div>
-          <label>
-            <input
-              type="text"
-              className="text"
-              name="name"
-              placeholder="Name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <span className="required">Name</span>
-          </label>
-        </div>
-
-        <div>
-          <label className="label-email">
-            <input
-              type="email"
-              className="text"
-              name="email"
-              placeholder="Email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <span className="required">Email</span>
-          </label>
-        </div>
-
-        <input type="checkbox" name="show-password" className="show-password a11y-hidden" id="show-password" />
-        <label className="label-show-password" htmlFor="show-password">
-          <span>Show Password</span>
-        </label>
-
-        <div>
-          <label className="label-password">
-            <input
-              type="text"
-              className="text"
-              name="password"
-              placeholder="Password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span className="required">Password</span>
-          </label>
-        </div>
-
-        <input type="submit" value="Sign Up" />
-
-        <div className="email-link">
-          <Link to="/login">Already have an account? Log In</Link>
-        </div>
-      </form>
+          {/* Submit Button */}
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={18} /> Creating Workspace...
+                </span>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </div>
+          
+          {/* Footer Link */}
+          <div className="text-center mt-4">
+              <p className="text-sm text-slate-500">
+                Already have an account?{' '}
+                <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-500 hover:underline">
+                  Sign in here
+                </Link>
+              </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
-}
+};
+
+export default Register;

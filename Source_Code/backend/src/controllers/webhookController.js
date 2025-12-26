@@ -1,17 +1,51 @@
+// backend/src/controllers/webhookController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const prisma = require("../config/prismaClient");
-const { startMigrationJob } = require("../services/migrationService"); // Import Service
+const { startMigrationJob } = require("../services/migrationService");
 
-const PLAN_LIMITS = {
-  Free: 10,
-  Pro: 500,
-  Enterprise: 999999 // Unlimited / Custom
+/**
+ * CONFIGURATION: Map Stripe Price IDs to your Internal Tier Logic
+ */
+const PLAN_CONFIG = {
+  [process.env.STRIPE_PRICE_PRO_MONTHLY]: { 
+    tier: "PRO", 
+    limit: 50000, 
+    name: "Pro Monthly" 
+  },
+  [process.env.STRIPE_PRICE_ENT_YEARLY]: { 
+    tier: "ENTERPRISE", 
+    limit: 1000000, 
+    name: "Enterprise Yearly" 
+  },
+  "DEFAULT_FREE": { 
+    tier: "FREE", 
+    limit: 1000, 
+    name: "Free Plan" 
+  }
 };
 
+/**
+ * HELPER: Determine plan details from the session
+ */
+const getPlanDetails = (session) => {
+  // Check metadata first (if you passed it during checkout creation)
+  const metaTier = session.metadata?.planType?.toUpperCase();
+  
+  if (metaTier === 'ENTERPRISE') return PLAN_CONFIG[process.env.STRIPE_PRICE_ENT_YEARLY];
+  if (metaTier === 'PRO') return PLAN_CONFIG[process.env.STRIPE_PRICE_PRO_MONTHLY];
+
+  // Fallback to Pro if unknown
+  return PLAN_CONFIG[process.env.STRIPE_PRICE_PRO_MONTHLY] || PLAN_CONFIG["DEFAULT_FREE"];
+};
+
+/**
+ * MAIN WEBHOOK HANDLER
+ */
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
+  // 1. SECURITY: Verify the event is actually from Stripe
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -19,114 +53,163 @@ exports.handleStripeWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error(`Webhook Error: ${err.message}`);
+    console.error(`⚠️ Webhook Signature Error: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // 2. ROUTING: Handle specific event types
   try {
-    // ====================================================
-    // 1. HANDLE CHECKOUT (Upgrade Plan)
-    // ====================================================
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const teamId = session.metadata?.teamId;
-      const planType = session.metadata?.planType || "Pro"; // Pastikan metadata dikirim dari frontend
+    switch (event.type) {
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(event.data.object);
+        break;
 
-      if (teamId) {
-        console.log(`💰 Payment received for Team ${teamId} -> Plan ${planType}`);
+      case "invoice.payment_succeeded":
+        // Reset usage for the new billing cycle
+        await handleInvoiceSucceeded(event.data.object);
+        break;
 
-        // Update Data Dasar dulu
-        await prisma.team.update({
-          where: { id: teamId },
-          data: {
-            plan: planType, // Nama Plan untuk display
-            tier: planType === 'Enterprise' ? 'ENTERPRISE' : 'PRO', // Logic Tier
-            stripeCustomerId: session.customer,
-            stripeSubscriptionId: session.subscription,
-            aiLimitMax: PLAN_LIMITS[planType] || 10
-          },
-        });
+      case "invoice.payment_failed":
+        // Notify user or lock account features
+        await handlePaymentFailed(event.data.object);
+        break;
 
-        // TRIGGER MIGRATION KHUSUS ENTERPRISE
-        if (planType === 'Enterprise') {
-            // Jalankan di background (setImmediate) agar Webhook tidak timeout (Stripe timeout 30s)
-            setImmediate(() => {
-                startMigrationJob(teamId);
-            });
-            console.log(`⚙️ Enterprise Migration triggered for ${teamId}`);
-        }
-      }
+      case "customer.subscription.deleted":
+        // User canceled or subscription ended
+        await handleSubscriptionDeleted(event.data.object);
+        break;
+
+      default:
+        console.log(`ℹ️ Unhandled event type: ${event.type}`);
     }
 
-    // ====================================================
-    // 2. HANDLE RECURRING PAYMENT (Reset AI Quota)
-    // ====================================================
-    if (event.type === "invoice.payment_succeeded") {
-      const subscriptionId = event.data.object.subscription;
-      
-      // Cari tim yang punya subscription ini
-      const team = await prisma.team.findFirst({
-        where: { stripeSubscriptionId: subscriptionId }
-      });
-
-      if (team) {
-        // Reset Usage Count jadi 0 setiap bulan saat bayar sukses
-        await prisma.team.update({
-          where: { id: team.id },
-          data: { aiUsageCount: 0 }
-        });
-        console.log(`🔄 Monthly Quota Reset for Team ${team.id}`);
-      }
-    }
-
-    // ====================================================
-    // 3. HANDLE PAYMENT FAILED (Lock Account)
-    // ====================================================
-    if (event.type === "invoice.payment_failed") {
-      const subscriptionId = event.data.object.subscription;
-      const team = await prisma.team.findFirst({
-        where: { stripeSubscriptionId: subscriptionId }
-      });
-
-      if (team) {
-        // Downgrade atau Kunci
-        await prisma.team.update({
-          where: { id: team.id },
-          data: { 
-            aiLimitMax: 0 // Stop akses AI sampai lunas
-          }
-        });
-        console.log(`⚠️ Payment Failed. Service paused for Team ${team.id}`);
-      }
-    }
-
-    // ====================================================
-    // 4. HANDLE CANCELLATION
-    // ====================================================
-    if (event.type === "customer.subscription.deleted") {
-      const subscription = event.data.object;
-      const team = await prisma.team.findFirst({
-        where: { stripeSubscriptionId: subscription.id }
-      });
-
-      if (team) {
-        await prisma.team.update({
-          where: { id: team.id },
-          data: {
-            plan: "Free",
-            tier: "Free",
-            aiLimitMax: PLAN_LIMITS["Free"],
-            stripeSubscriptionId: null,
-            // Opsional: Balikin databaseUrl ke null jika downgrade dari Enterprise (Kompleks)
-          }
-        });
-        console.log(`📉 Team ${team.id} downgraded to Free`);
-      }
-    }
-
+    // 3. ACKNOWLEDGMENT: Stripe needs a 200 response within a few seconds
     res.json({ received: true });
+
   } catch (err) {
-    console.error("Webhook Logic Error:", err);
-    res.status(500).json({ error: "Internal Error" });
+    console.error("❌ Webhook Logic Error:", err);
+    // We return 200 even on logic errors to stop Stripe from retrying 
+    // indefinitely, while we fix the bug based on logs.
+    res.status(200).json({ error: "Internal processing error logged." });
   }
 };
+
+// ==============================================================================
+// HANDLER LOGIC
+// ==============================================================================
+
+/**
+ * SCENARIO: Initial Purchase or Manual Upgrade
+ */
+async function handleCheckoutCompleted(session) {
+  const teamId = session.client_reference_id || session.metadata?.teamId;
+  
+  if (!teamId) {
+    console.error("❌ Error: No teamId found in session metadata or client_reference_id");
+    return;
+  }
+
+  const planDetails = getPlanDetails(session);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.team.update({
+      where: { id: teamId },
+      data: {
+        tier: planDetails.tier,
+        plan: planDetails.name,
+        aiTokenLimit: planDetails.limit,
+        aiUsageCount: 0, // Reset usage on upgrade
+        stripeCustomerId: session.customer,
+        stripeSubscriptionId: session.subscription,
+        migrationStatus: planDetails.tier === 'ENTERPRISE' ? 'PENDING' : 'NONE'
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        teamId,
+        userId: "SYSTEM_WEBHOOK",
+        action: "SUBSCRIPTION_UPGRADE",
+        details: `Upgraded to ${planDetails.tier}. Limit: ${planDetails.limit}.`,
+      }
+    });
+  });
+
+  // Background Job for heavy Enterprise migration
+  if (planDetails.tier === 'ENTERPRISE') {
+    setImmediate(() => {
+      startMigrationJob(teamId).catch(err => console.error("Migration Error:", err));
+    });
+  }
+}
+
+/**
+ * SCENARIO: Recurring Monthly Payment Successful
+ */
+async function handleInvoiceSucceeded(invoice) {
+  const subscriptionId = invoice.subscription;
+  if (!subscriptionId) return;
+
+  const team = await prisma.team.findFirst({
+    where: { stripeSubscriptionId: subscriptionId }
+  });
+
+  if (team) {
+    await prisma.team.update({
+      where: { id: team.id },
+      data: { aiUsageCount: 0 } // Reset token usage for the new month
+    });
+    console.log(`🔄 Quota reset for Team ${team.id}`);
+  }
+}
+
+/**
+ * SCENARIO: Payment failed (e.g., expired card)
+ */
+async function handlePaymentFailed(invoice) {
+  const subscriptionId = invoice.subscription;
+  const team = await prisma.team.findFirst({ where: { stripeSubscriptionId: subscriptionId } });
+
+  if (team) {
+    // Optionally: reduce limit or set a 'payment_failed' flag
+    await prisma.team.update({
+      where: { id: team.id },
+      data: { aiTokenLimit: 0 } 
+    });
+    console.log(`⚠️ Payment failed for Team ${team.id}. Access restricted.`);
+  }
+}
+
+/**
+ * SCENARIO: Subscription Cancelled or Expired
+ */
+async function handleSubscriptionDeleted(subscription) {
+  const team = await prisma.team.findFirst({
+    where: { stripeSubscriptionId: subscription.id }
+  });
+
+  if (team) {
+    const freePlan = PLAN_CONFIG["DEFAULT_FREE"];
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.team.update({
+        where: { id: team.id },
+        data: {
+          tier: freePlan.tier,
+          plan: freePlan.name,
+          aiTokenLimit: freePlan.limit,
+          stripeSubscriptionId: null,
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          teamId: team.id,
+          userId: "SYSTEM_WEBHOOK",
+          action: "SUBSCRIPTION_CANCELED",
+          details: "Subscription ended. Reverted to Free tier."
+        }
+      });
+    });
+  }
+}

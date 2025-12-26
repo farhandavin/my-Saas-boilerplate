@@ -1,225 +1,223 @@
+// backend/src/controllers/aiController.js
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../utils/AppError");
 
-// src/controllers/aiController.js
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const prisma = require("../config/prismaClient");
-const { maskPII } = require("../utils/securityUtils");
-const { getPrismaClientForTeam } = require("../config/dbRouter");
+// Services
+const AiService = require("../services/aiService");
+const BillingService = require("../services/billingService");
+const AuditLogService = require("../services/auditLogService");
+const PiiService = require("../services/piiService");
+const AnalyticsService = require("../services/analyticsService");
+const DocumentService = require("../services/documentService");
+const NotificationService = require("../services/notificationService"); // <--- NEW: For Upselling
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
+// Configuration: Token Costs per Action
 const TEMPLATE_COSTS = {
   'business-email': 1,
   'grammar-check': 1,
   'idea-generator': 2,
   'report-summary': 5,
-  'ceo-digest': 10, // Cost lebih mahal karena process heavy
+  'ceo-digest': 10,
+  'pre-check': 3,
   'default': 1
 };
 
-exports.generateContent = async (req, res) => {
-  const userId = req.user.userId || req.user.id;
-  const { teamId, templateId, inputData, useKnowledgeBase } = req.body; 
-  
-  const cost = TEMPLATE_COSTS[templateId] || TEMPLATE_COSTS['default'];
+class AiController {
 
-  try {
-    // 1. Validasi Member
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId: parseInt(userId), teamId: parseInt(teamId) } },
-      include: { team: true }
-    });
+  /**
+   * 1. GENERAL ANALYSIS (Ad-hoc)
+   */
+  analyzeData = catchAsync(async (req, res, next) => {
+    const { prompt } = req.body;
+    const { teamId, userId } = req.user;
 
-    if (!member) return res.status(403).json({ error: "Akses ditolak." });
-    const { team } = member;
+    if (!prompt) return next(new AppError("Prompt is required", 400));
 
-    // 2. Smart Quota Check
-    const isEnterprise = team.tier === 'ENTERPRISE';
-    if (!isEnterprise && (team.aiUsageCount + cost) > team.aiLimitMax) {
-      return res.status(429).json({ error: "Kuota kredit tidak mencukupi." });
-    }
-
-    // 3. DB Routing
-    const teamPrisma = await getPrismaClientForTeam(teamId);
+    // A. Intelligence
+    const safePrompt = PiiService.mask(prompt);
+    const aiResponse = await AiService.generateText(safePrompt);
     
-    // --- LOGIKA KHUSUS CEO DIGEST (BARU) ---
-    let specialContext = "";
+    // B. Billing (Atomic)
+    const tokenCost = BillingService.calculateCost(safePrompt, aiResponse);
+    const updatedQuota = await BillingService.deductToken(teamId, tokenCost);
+
+    // C. Compliance
+    await AuditLogService.log({
+      teamId, userId, action: "AI_ANALYZE", details: `Tokens: ${tokenCost}`, ip: req.ip
+    });
+
+    // D. UPSELL TRIGGER (Background)
+    this._triggerBackgroundUpsell(teamId, updatedQuota);
+
+    res.status(200).json({
+      success: true,
+      data: { answer: aiResponse, meta: { remaining: updatedQuota.remaining } }
+    });
+  });
+
+  /**
+   * 2. CEO DIGEST (Automated Strategy)
+   */
+  getCeoDigest = catchAsync(async (req, res, next) => {
+    const { teamId, userId } = req.user;
+    const cost = TEMPLATE_COSTS['ceo-digest'];
+
+    // A. Gather Intelligence
+    const [stats, logs] = await Promise.all([
+        AnalyticsService.getDailyStats(teamId),
+        AuditLogService.getRecentActivity(teamId, 24)
+    ]);
+
+    const dataContext = JSON.stringify({ stats, recent_logs: logs }, null, 2);
+
+    // B. Prompt Engineering
+    const systemPrompt = `
+      Role: Senior Business Consultant.
+      Task: Create a "CEO Morning Brief" based on the data below.
+      Output Rules: 3-4 Bullet points ONLY. Highlight anomalies. Tone: Executive summary.
+      Data: ${dataContext}
+    `;
+
+    const aiResponse = await AiService.generateText(systemPrompt);
+
+    // C. Billing
+    const updatedQuota = await BillingService.deductToken(teamId, cost);
+
+    await AuditLogService.log({
+      teamId, userId, action: "CEO_DIGEST", details: `Charged ${cost} tokens`, ip: req.ip
+    });
+
+    // D. UPSELL TRIGGER
+    this._triggerBackgroundUpsell(teamId, updatedQuota);
+
+    res.status(200).json({
+      success: true,
+      data: { digest: aiResponse, meta: { cost, remaining: updatedQuota.remaining } }
+    });
+  });
+
+  /**
+   * 3. AI PRE-CHECK (Assistant Editor)
+   */
+  validateReport = catchAsync(async (req, res, next) => {
+    const { title, content } = req.body;
+    const { teamId, userId } = req.user;
+    const cost = TEMPLATE_COSTS['pre-check'];
+
+    if (!content) return next(new AppError("Report content is required", 400));
+
+    // A. Security Masking
+    const safeContent = PiiService.mask(content);
+
+    // B. Specialized Prompt
+    const systemPrompt = `
+      ROLE: Senior Business Editor & Auditor.
+      TASK: Validate this draft report.
+      REPORT TITLE: ${title || "Untitled"}
+      CONTENT: """${safeContent}"""
+      REQUIREMENTS: Typos/Grammar, Consistency check, PII Check.
+      OUTPUT FORMAT: Readiness Score, Critical Findings, Suggestions.
+    `;
+
+    const aiResponse = await AiService.generateText(systemPrompt);
+
+    // C. Billing
+    const updatedQuota = await BillingService.deductToken(teamId, cost);
+
+    await AuditLogService.log({
+      teamId, userId, action: "AI_PRE_CHECK", details: `Report: ${title}`, ip: req.ip
+    });
+
+    // D. UPSELL TRIGGER
+    this._triggerBackgroundUpsell(teamId, updatedQuota);
+
+    res.status(200).json({
+      success: true,
+      data: { analysis: aiResponse, meta: { cost, remaining: updatedQuota.remaining } }
+    });
+  });
+
+  /**
+   * 4. DOCUMENT CHAT (RAG)
+   */
+  chatWithDocs = catchAsync(async (req, res, next) => {
+    const { question } = req.body;
+    const { teamId, userId } = req.user;
+
+    if (!question) return next(new AppError("Question is required", 400));
+
+    // A. Retrieval
+    const context = await DocumentService.findRelevantContext(teamId, question);
+
+    const systemPrompt = `
+      You are an internal expert. Answer based ONLY on this context:
+      ${context || "No relevant info found."}
+      Question: ${question}
+    `;
+
+    // B. Generation
+    const aiResponse = await AiService.generateText(systemPrompt);
     
-    if (templateId === 'ceo-digest') {
-       // Ambil Log 24 Jam Terakhir
-       const yesterday = new Date();
-       yesterday.setDate(yesterday.getDate() - 1);
-       
-       const recentLogs = await teamPrisma.auditLog.findMany({
-         where: {
-           teamId: String(teamId),
-           createdAt: { gte: yesterday }
-         },
-         orderBy: { createdAt: 'desc' },
-         take: 50 // Batasi agar token tidak jebol
-       });
+    // C. Billing
+    const tokenCost = BillingService.calculateCost(systemPrompt, aiResponse);
+    const updatedQuota = await BillingService.deductToken(teamId, tokenCost);
 
-       if (recentLogs.length === 0) {
-         specialContext = "Tidak ada aktivitas signifikan dalam 24 jam terakhir.";
-       } else {
-         const logSummary = recentLogs.map(l => `- [${l.createdAt.toISOString().split('T')[1]}] ${l.action}: ${l.details}`).join("\n");
-         specialContext = `DATA AKTIVITAS TIM (LOGS):\n${logSummary}\n\nINSTRUKSI: Bertindaklah sebagai Business Intelligence Analyst. Rangkum aktivitas di atas menjadi "CEO Morning Brief" yang singkat, padat, dan menyoroti penggunaan resource atau anomali keamanan. Gunakan format Markdown.`;
-       }
+    await AuditLogService.log({ teamId, userId, action: "DOC_CHAT", details: question });
+
+    // D. UPSELL TRIGGER
+    this._triggerBackgroundUpsell(teamId, updatedQuota);
+
+    res.status(200).json({
+      success: true,
+      data: { answer: aiResponse, sources: context ? "Internal Docs" : "None" }
+    });
+  });
+
+  /**
+   * 5. TEMPLATE DISPATCHER
+   */
+  generateFromTemplate = catchAsync(async (req, res, next) => {
+    const { templateId, inputData } = req.body;
+
+    switch (templateId) {
+      case 'ceo-digest':
+        return this.getCeoDigest(req, res, next);
+      case 'pre-check':
+        req.body.title = inputData.title;
+        req.body.content = inputData.content || inputData.prompt;
+        return this.validateReport(req, res, next);
+      case 'doc-chat':
+        req.body.question = inputData.question || inputData.prompt;
+        return this.chatWithDocs(req, res, next);
+      default:
+        req.body.prompt = inputData.prompt;
+        return this.analyzeData(req, res, next);
     }
-    // ---------------------------------------
+  });
 
-    // 4. Privacy Layer & RAG Biasa
-    const topicText = inputData.topic || inputData.prompt || "";
-    const cleanInput = typeof topicText === 'string' ? maskPII(topicText) : "";
+  // =========================================================================
+  // INTERNAL HELPERS
+  // =========================================================================
 
-    let contextData = "";
-    if (useKnowledgeBase && templateId !== 'ceo-digest') {
-      const docs = await teamPrisma.document.findMany({
-        where: { 
-          teamId: String(teamId),
-          content: { contains: cleanInput.split(' ')[0] || "" } 
-        },
-        take: 2
-      });
-      if (docs.length > 0) {
-        contextData = "REFERENSI INTERNAL:\n" + docs.map(d => d.content).join("\n---\n");
-      }
-    }
+  /**
+   * Checks if quota usage has hit thresholds (e.g., 80%, 100%) and sends alerts.
+   * Runs in background to avoid slowing down the AI response.
+   */
+  _triggerBackgroundUpsell(teamId, quotaData) {
+    // Assuming quotaData contains { aiUsageCount, aiTokenLimit }
+    // If not, BillingService.deductToken should be updated to return these.
+    
+    if (!quotaData || !quotaData.aiTokenLimit) return;
 
-    // 5. Prompt Construction
-    // Jika CEO Digest, specialContext akan menimpa input biasa
-    const finalPrompt = templateId === 'ceo-digest' 
-      ? specialContext 
-      : `
-        ${contextData}
-        Template: ${templateId}
-        Input: ${JSON.stringify(inputData)}
-        Saring Data Sensitif: ${cleanInput}
-        Jawab dengan nada profesional.
-      `;
-
-    // 6. Eksekusi AI
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(finalPrompt);
-    const responseText = result.response.text();
-
-    // 7. Atomic Update
-    await prisma.$transaction(async (tx) => {
-      await tx.team.update({
-        where: { id: team.id },
-        data: { aiUsageCount: { increment: cost } }
-      });
-
-      await teamPrisma.auditLog.create({
-        data: {
-          teamId: String(teamId),
-          userId,
-          action: "AI_GENERATION",
-          details: `Template: ${templateId} | Cost: ${cost}`,
-          ipAddress: req.ip
-        }
-      });
+    NotificationService.checkUpsellTrigger(
+      teamId, 
+      quotaData.aiUsageCount, 
+      quotaData.aiTokenLimit
+    ).catch(err => {
+      // Log silently, don't crash the request
+      console.error(`⚠️ Upsell Trigger Warning for Team ${teamId}:`, err.message);
     });
-
-    res.json({ 
-      success: true, 
-      data: responseText,
-      usage: { used: team.aiUsageCount + cost, limit: team.aiLimitMax, cost }
-    });
-
-  } catch (error) {
-    console.error("AI Error:", error);
-    res.status(500).json({ error: "Gagal memproses AI." });
   }
-};
-// Endpoint Baru: Cek Sisa Kuota (Untuk UI)
-exports.getQuotaStatus = async (req, res) => {
-  const { teamId } = req.query; // atau req.params
-  
-  try {
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      select: { aiUsageCount: true, aiLimitMax: true, plan: true, tier: true }
-    });
+}
 
-    if (!team) return res.status(404).json({ error: "Team not found" });
-
-    const remaining = team.aiLimitMax - team.aiUsageCount;
-    const percentage = Math.round((team.aiUsageCount / team.aiLimitMax) * 100);
-
-    res.json({
-      plan: team.plan,
-      tier: team.tier,
-      used: team.aiUsageCount,
-      limit: team.aiLimitMax,
-      remaining: remaining > 0 ? remaining : 0,
-      percentage: percentage > 100 ? 100 : percentage
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching quota" });
-  }
-};
-
-exports.getUsageHistory = async (req, res) => {
-  const { teamId } = req.query;
-  
-  try {
-    // 1. Tentukan Range Tanggal (30 Hari Terakhir)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    // 2. Ambil Audit Logs khusus aktivitas AI
-    // Catatan: Jika sudah Enterprise (Isolated DB), logic ini harus query ke DB Tenant.
-    // Untuk sekarang kita query ke Shared DB atau DB yang aktif.
-    const logs = await prisma.auditLog.findMany({
-      where: {
-        teamId: teamId,
-        action: "AI_GENERATION",
-        createdAt: {
-          gte: thirtyDaysAgo
-        }
-      },
-      select: {
-        createdAt: true,
-        details: true // Kita butuh ini jika ingin parsing cost
-      },
-      orderBy: {
-        createdAt: 'asc'
-      }
-    });
-
-    // 3. Grouping by Date (Aggregation)
-    // Format data untuk Recharts: { date: "12 Oct", usage: 5 }
-    const usageMap = {};
-
-    logs.forEach(log => {
-      // Format tanggal: "DD Mon" (misal: 25 Dec)
-      const dateKey = log.createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      
-      // Coba parsing cost dari string details "Cost: 5 Credits"
-      // Jika tidak ketemu, anggap 1 request = 1 poin activity
-      let cost = 1;
-      const match = log.details?.match(/Cost:\s*(\d+)/);
-      if (match) {
-        cost = parseInt(match[1], 10);
-      }
-
-      if (usageMap[dateKey]) {
-        usageMap[dateKey] += cost;
-      } else {
-        usageMap[dateKey] = cost;
-      }
-    });
-
-    // Konversi object ke array
-    const chartData = Object.keys(usageMap).map(date => ({
-      date,
-      usage: usageMap[date]
-    }));
-
-    res.json(chartData);
-
-  } catch (error) {
-    console.error("Analytics Error:", error);
-    res.status(500).json({ error: "Gagal mengambil data analitik." });
-  }
-};
+module.exports = new AiController();

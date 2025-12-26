@@ -1,56 +1,54 @@
 // frontend/src/components/CreditBalance.jsx
-import React, { useEffect, useState } from 'react';
-import api from '../services/api'; // Pastikan api.js punya method get (axios)
-import { Zap } from 'lucide-react';
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
-const CreditBalance = ({ teamId }) => {
-  const [quota, setQuota] = useState(null);
+const CreditBalance = () => {
+  const { team } = useAuth();
 
-  const fetchQuota = async () => {
-    try {
-      const res = await api.get(`/ai/quota?teamId=${teamId}`); // Sesuaikan path API client Anda
-      setQuota(res.data);
-    } catch (error) {
-      console.error("Failed to fetch quota", error);
-    }
-  };
+  if (!team) return null;
 
-  useEffect(() => {
-    if (teamId) fetchQuota();
-  }, [teamId]);
-
-  if (!quota) return <div className="animate-pulse h-4 bg-gray-200 rounded w-24"></div>;
-
-  // Warna bar progress
-  let progressColor = "bg-green-500";
-  if (quota.percentage > 70) progressColor = "bg-yellow-500";
-  if (quota.percentage > 90) progressColor = "bg-red-500";
+  // Hitung persentase pemakaian
+  const usage = team.aiUsageCount || 0;
+  const limit = team.aiTokenLimit || 1000;
+  const percentage = Math.min((usage / limit) * 100, 100);
+  
+  // Tentukan warna progress bar (Hijau -> Kuning -> Merah)
+  let colorClass = "bg-green-500";
+  if (percentage > 75) colorClass = "bg-yellow-500";
+  if (percentage > 90) colorClass = "bg-red-500";
 
   return (
-    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm mt-4">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-semibold text-gray-500 uppercase flex items-center gap-1">
-          <Zap size={12} /> AI Credits
-        </span>
-        <span className="text-xs font-bold text-gray-700">
-          {quota.tier === 'ENTERPRISE' ? '∞' : `${quota.used} / ${quota.limit}`}
+        <h3 className="text-gray-500 text-sm font-semibold uppercase tracking-wider">
+          AI Token Balance
+        </h3>
+        <span className={`px-2 py-1 rounded text-xs font-bold ${
+          team.tier === 'ENTERPRISE' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {team.tier} PLAN
         </span>
       </div>
-      
-      {quota.tier !== 'ENTERPRISE' && (
-        <div className="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+
+      <div className="mt-4">
+        <div className="flex justify-between text-sm mb-1">
+          <span className="font-bold text-gray-800">{usage.toLocaleString()} Used</span>
+          <span className="text-gray-500">of {limit.toLocaleString()}</span>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
           <div 
-            className={`${progressColor} h-1.5 rounded-full transition-all duration-500`} 
-            style={{ width: `${quota.percentage}%` }}
+            className={`h-2.5 rounded-full ${colorClass} transition-all duration-500`} 
+            style={{ width: `${percentage}%` }}
           ></div>
         </div>
-      )}
 
-      {quota.remaining < 5 && quota.tier !== 'ENTERPRISE' && (
-        <p className="text-[10px] text-red-500 mt-1 font-medium">
-          Kuota hampir habis!
+        <p className="mt-3 text-xs text-gray-400">
+          Reset otomatis pada tanggal 1 bulan depan. 
+          <a href="/pricing" className="text-indigo-600 hover:underline ml-1">Upgrade Quota &rarr;</a>
         </p>
-      )}
+      </div>
     </div>
   );
 };

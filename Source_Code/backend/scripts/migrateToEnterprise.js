@@ -1,151 +1,210 @@
 // backend/scripts/migrateToEnterprise.js
+/**
+ * 🚀 SEAMLESS MIGRATION ENGINE (Pilar 2 - Infrastructure)
+ * * Script ini memindahkan data Tenant dari Shared DB -> Isolated DB.
+ * Usage: node scripts/migrateToEnterprise.js <TEAM_ID> <NEW_DB_URL>
+ */
 
 const { PrismaClient } = require('@prisma/client');
-const readline = require('readline');
-
-// Client untuk Database Utama (Shared)
+const { execSync } = require('child_process');
+const allTeams = await sourcePrisma.team.findMany({ select: { id: true } });
+console.log("ID Tim yang tersedia di database sumber:", allTeams.map(t => t.id));
+// 1. Koneksi ke Database Utama (Source)
 const sourcePrisma = new PrismaClient();
 
-// Interface untuk input terminal
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
-
-async function migrateTeam(teamId, targetDatabaseUrl) {
-  console.log(`\n🚀 Memulai Migrasi untuk Team ID: ${teamId}`);
-  console.log(`➡️  Target Database: ${targetDatabaseUrl}`);
-
-  // 1. CEK KONEKSI TARGET
-  // Kita membuat client Prisma sementara yang terhubung ke DB baru
-  const targetPrisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: targetDatabaseUrl,
-      },
-    },
-  });
-
-  try {
-    // --- LANGKAH 1: EXTRACT (Ambil Data dari Shared DB) ---
-    console.log('\n📦 [1/4] Mengambil data dari Shared Database...');
-    const teamData = await sourcePrisma.team.findUnique({
-      where: { id: teamId },
-      include: {
-        members: true,
-        documents: true,
-        auditLogs: true,
-        invitations: true,
-      }
-    });
-
-    if (!teamData) {
-      throw new Error("Tim tidak ditemukan di Shared Database!");
-    }
-    console.log(`   ✅ Data ditemukan: ${teamData.documents.length} Dokumen, ${teamData.auditLogs.length} Logs.`);
-
-    // --- LANGKAH 2: LOAD (Masukkan ke Dedicated DB) ---
-    console.log('\n🚚 [2/4] Memindahkan data ke Dedicated Database...');
-    
-    // Kita gunakan Transaction di target DB agar kalau gagal, tidak ada data setengah-setengah
-    await targetPrisma.$transaction(async (tx) => {
-      
-      // A. Buat Record Team (Header)
-      // Kita perlu exclude properti 'members', 'documents', dll dari object teamData 
-      // karena Prisma create() butuh format nested write atau data bersih.
-      const { members, documents, auditLogs, invitations, ...teamFields } = teamData;
-      
-      // Pastikan kita set tier dan databaseUrl di target juga (untuk konsistensi backup)
-      await tx.team.create({
-        data: {
-          ...teamFields,
-          tier: 'ENTERPRISE',
-          databaseUrl: targetDatabaseUrl,
-        }
-      });
-
-      // B. Migrasi Members
-      if (members.length > 0) {
-        await tx.teamMember.createMany({ data: members });
-        console.log(`   - ${members.length} Members dipindahkan`);
-      }
-
-      // C. Migrasi Documents (PENTING: Embedding vector mungkin perlu penanganan khusus jika DB beda versi, tapi text aman)
-      if (documents.length > 0) {
-        await tx.document.createMany({ data: documents });
-        console.log(`   - ${documents.length} Dokumen dipindahkan`);
-      }
-
-      // D. Migrasi Audit Logs
-      if (auditLogs.length > 0) {
-        await tx.auditLog.createMany({ data: auditLogs });
-        console.log(`   - ${auditLogs.length} Audit Logs dipindahkan`);
-      }
-
-      // E. Migrasi Invitations
-      if (invitations.length > 0) {
-        await tx.invitation.createMany({ data: invitations });
-        console.log(`   - ${invitations.length} Undangan dipindahkan`);
-      }
-    });
-    console.log('   ✅ Data berhasil disalin ke Target DB.');
-
-    // --- LANGKAH 3: UPDATE POINTER (Router Logic) ---
-    console.log('\n🔗 [3/4] Mengupdate Routing di Shared Database...');
-    await sourcePrisma.team.update({
-      where: { id: teamId },
-      data: {
-        tier: 'ENTERPRISE',
-        databaseUrl: targetDatabaseUrl
-      }
-    });
-    console.log('   ✅ Router diperbarui. Traffic user sekarang akan diarahkan ke DB baru.');
-
-    // --- LANGKAH 4: CLEANUP (Hapus Data Lama) ---
-    console.log('\n🧹 [4/4] Membersihkan data lama di Shared Database (Opsional)...');
-    const answer = await askQuestion('   ⚠️  Hapus data "anak" (Docs, Logs) di Shared DB untuk hemat space? (y/n): ');
-    
-    if (answer.toLowerCase() === 'y') {
-      await sourcePrisma.$transaction([
-        sourcePrisma.document.deleteMany({ where: { teamId } }),
-        sourcePrisma.auditLog.deleteMany({ where: { teamId } }),
-        sourcePrisma.invitation.deleteMany({ where: { teamId } }),
-        // Member kadang tetap disimpan di shared untuk keperluan query User -> Teams, 
-        // tapi jika arsitektur full terpisah, bisa dihapus. 
-        // Di sini kita KEEP member agar user list di dashboard awal tetap cepat.
-      ]);
-      console.log('   ✅ Data lama dibersihkan.');
-    } else {
-      console.log('   ℹ️  Data lama dibiarkan (Soft Migration).');
-    }
-
-    console.log(`\n✨ MIGRASI SUKSES! Tim ${teamData.name} sekarang Enterprise.`);
-
-  } catch (error) {
-    console.error('\n❌ MIGRASI GAGAL:', error);
-    console.log('   Tidak ada perubahan yang dilakukan pada Source DB (kecuali jika error terjadi di Step 4).');
-  } finally {
-    await sourcePrisma.$disconnect();
-    await targetPrisma.$disconnect();
-    rl.close();
-  }
-}
-
-// Menjalankan Script
 async function main() {
-  console.log("=== SAAS MIGRATION ENGINE (Shared -> Enterprise) ===");
-  
-  const teamId = await askQuestion("Masukkan Team ID yang akan dimigrasi: ");
-  const targetDbUrl = await askQuestion("Masukkan Connection String Database Baru (Target): ");
-
-  if (!teamId || !targetDbUrl) {
-    console.log("Error: Data tidak lengkap.");
+  const args = process.argv.slice(2);
+  if (args.length < 2) {
+    console.error("❌ Usage: node scripts/migrateToEnterprise.js <TEAM_ID> <NEW_DB_URL>");
     process.exit(1);
   }
 
-  await migrateTeam(teamId, targetDbUrl);
+  const [teamId, targetDbUrl] = args;
+
+  console.log(`\n🚀 STARTING MIGRATION PROCESS`);
+  console.log(`Target Team: ${teamId}`);
+  console.log(`Target DB:   ${targetDbUrl.substring(0, 20)}...`);
+
+  try {
+    // ---------------------------------------------------------
+    // STEP 1: VALIDASI & PERSIAPAN
+    // ---------------------------------------------------------
+    console.log(`\n[1/5] Validating Source Data...`);
+    const team = await sourcePrisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        members: { include: { user: true } }, // Kita butuh data User juga
+        documents: true,
+        auditLogs: true,
+        invitations: true
+      }
+    });
+
+    if (!team) throw new Error("Team not found in Source DB");
+    if (team.databaseUrl) throw new Error("Team already migrated (databaseUrl is set)");
+
+    console.log(`✅ Found Team: ${team.name} (${team.members.length} members, ${team.documents.length} docs)`);
+
+    // ---------------------------------------------------------
+    // STEP 2: SCHEMA PUSH (Menyiapkan DB Baru)
+    // ---------------------------------------------------------
+    console.log(`\n[2/5] Initializing Target Database Schema...`);
+    // Kita gunakan CLI Prisma untuk 'push' struktur schema ke DB baru
+    try {
+      execSync(`DATABASE_URL="${targetDbUrl}" npx prisma db push --skip-generate`, { 
+        stdio: 'inherit',
+        env: { ...process.env, DATABASE_URL: targetDbUrl } 
+      });
+      console.log(`✅ Target Database Schema Ready.`);
+    } catch (e) {
+      throw new Error("Failed to push schema to target DB. Check connection string.");
+    }
+
+    // ---------------------------------------------------------
+    // STEP 3: KONEKSI KE TARGET
+    // ---------------------------------------------------------
+    // Kita buat instance Prisma Client kedua khusus untuk DB Target
+    const targetPrisma = new PrismaClient({
+      datasources: {
+        db: { url: targetDbUrl }
+      }
+    });
+
+    // ---------------------------------------------------------
+    // STEP 4: DATA MIGRATION (The Heavy Lifting)
+    // ---------------------------------------------------------
+    console.log(`\n[3/5] Migrating Data...`);
+
+    // A. Migrate USERS (Global Entity)
+    // Kita perlu menyalin User yang ada di tim ini ke DB baru 
+    // agar Foreign Key (userId) tetap valid.
+    console.log(`   -> Copying ${team.members.length} Users...`);
+    for (const member of team.members) {
+      // Gunakan upsert untuk menghindari error jika user sudah ada (misal dia member tim enterprise lain)
+      await targetPrisma.user.upsert({
+        where: { id: member.user.id },
+        update: {}, // Jika ada, biarkan
+        create: {
+          id: member.user.id,
+          email: member.user.email,
+          name: member.user.name,
+          image: member.user.image,
+          password: member.user.password, // Password hash ikut dicopy
+          createdAt: member.user.createdAt
+        }
+      });
+    }
+
+    // B. Migrate TEAM (The Tenant)
+    console.log(`   -> Copying Team Profile...`);
+    await targetPrisma.team.create({
+      data: {
+        id: team.id, // ID HARUS SAMA
+        name: team.name,
+        slug: team.slug,
+        tier: "ENTERPRISE", // Auto upgrade tier di DB baru
+        stripeCustomerId: team.stripeCustomerId,
+        stripeSubscriptionId: team.stripeSubscriptionId,
+        aiUsageCount: team.aiUsageCount,
+        aiTokenLimit: 1000000, // Unlimited / High limit for Enterprise
+        createdAt: team.createdAt,
+        updatedAt: team.updatedAt
+      }
+    });
+
+    // C. Migrate MEMBERS
+    console.log(`   -> Copying Memberships...`);
+    if (team.members.length > 0) {
+      await targetPrisma.teamMember.createMany({
+        data: team.members.map(m => ({
+          id: m.id,
+          userId: m.userId,
+          teamId: m.teamId,
+          role: m.role
+        }))
+      });
+    }
+
+    // D. Migrate DOCUMENTS (Pilar 1 Data)
+    console.log(`   -> Copying ${team.documents.length} Documents...`);
+    if (team.documents.length > 0) {
+      // Vector embedding mungkin tidak bisa dicopy langsung jika formatnya raw
+      // Untuk script dasar ini kita copy data text-nya saja
+      await targetPrisma.document.createMany({
+        data: team.documents.map(d => ({
+          id: d.id,
+          teamId: d.teamId,
+          title: d.title,
+          content: d.content,
+          createdAt: d.createdAt
+        }))
+      });
+    }
+
+    // E. Migrate AUDIT LOGS (Compliance Data)
+    console.log(`   -> Copying ${team.auditLogs.length} Audit Logs...`);
+    if (team.auditLogs.length > 0) {
+      await targetPrisma.auditLog.createMany({
+        data: team.auditLogs.map(l => ({
+          id: l.id,
+          teamId: l.teamId,
+          userId: l.userId,
+          action: l.action,
+          resource: l.resource,
+          details: l.details,
+          ipAddress: l.ipAddress,
+          createdAt: l.createdAt
+        }))
+      });
+    }
+
+    // F. Migrate INVITATIONS
+    console.log(`   -> Copying Pending Invitations...`);
+    if (team.invitations.length > 0) {
+      await targetPrisma.invitation.createMany({
+        data: team.invitations.map(i => ({
+          id: i.id,
+          email: i.email,
+          role: i.role,
+          token: i.token,
+          expires: i.expires,
+          teamId: i.teamId
+        }))
+      });
+    }
+
+    console.log(`✅ Data Migration Complete.`);
+
+    // ---------------------------------------------------------
+    // STEP 5: FINALISASI (Switchover)
+    // ---------------------------------------------------------
+    console.log(`\n[4/5] Updating Router Logic in Source DB...`);
+    
+    // Update Source DB untuk menunjuk ke DB baru
+    await sourcePrisma.team.update({
+      where: { id: teamId },
+      data: {
+        tier: "ENTERPRISE",
+        databaseUrl: targetDbUrl, // Router akan membaca ini nanti
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`\n[5/5] Cleanup (Optional)...`);
+    // Opsional: Hapus data di shared DB agar hemat space.
+    // Untuk keamanan, biasanya kita keep dulu atau soft-delete.
+    console.log(`   -> Keeping old data in shared DB for backup purposes.`);
+
+    console.log(`\n🎉 MIGRATION SUCCESS!`);
+    console.log(`Team ${team.name} is now running on Isolated Database.`);
+    
+  } catch (error) {
+    console.error("\n❌ MIGRATION FAILED:");
+    console.error(error);
+    process.exit(1);
+  } finally {
+    await sourcePrisma.$disconnect();
+  }
 }
 
 main();
