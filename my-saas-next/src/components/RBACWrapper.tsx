@@ -1,4 +1,5 @@
 // components/RBACWrapper.jsx (Frontend)
+'use client';
 import React from 'react';
 import { useAuth } from '../hooks/useAuth'; // Asumsi context provider
 
