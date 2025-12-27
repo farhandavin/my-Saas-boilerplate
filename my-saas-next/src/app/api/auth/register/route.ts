@@ -4,16 +4,16 @@ import { AuthService } from '@/services/authService';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const result = await AuthService.registerUser(body);
+    const result = await AuthService.register(body);
     
     return NextResponse.json({
       success: true,
-      message: "Registration successful",
+      message: "Registrasi berhasil",
       data: result
     }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { success: false, error: error.message },
       { status: 400 }
     );
   }
