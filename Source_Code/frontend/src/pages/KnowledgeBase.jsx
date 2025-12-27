@@ -1,6 +1,6 @@
 // frontend/src/pages/KnowledgeBase.jsx
 import { useState, useEffect } from 'react';
-import api, { uploadDocument } from '../services/api';
+import api, { aiService } from '../services/api';
 
 const KnowledgeBase = () => {
   const [documents, setDocuments] = useState([]);
@@ -32,7 +32,7 @@ const KnowledgeBase = () => {
 
     setUploading(true);
     try {
-      await uploadDocument(file, title);
+      await aiService.uploadDocument(activeTeam.id, selectedFile);
       alert("Dokumen berhasil diunggah! AI sedang memproses embedding...");
       setTitle('');
       setFile(null);

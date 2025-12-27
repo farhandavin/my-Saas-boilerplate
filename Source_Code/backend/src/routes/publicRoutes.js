@@ -9,6 +9,6 @@ router.use(publicApiMiddleware);
 
 // Endpoint Generate AI untuk Developer Luar
 // Client bisa POST ke: https://api.anda.com/v1/generate
-router.post("/generate", aiController.generateContent);
+router.post("/generate", aiController.generateFromTemplate);
 
 module.exports = router;

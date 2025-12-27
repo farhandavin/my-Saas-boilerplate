@@ -81,4 +81,13 @@ class AuthController {
   });
 }
 
+forgotPassword = catchAsync(async (req, res) => {
+  res.status(200).json({ message: "Feature coming soon" });
+});
+
+resetPassword = catchAsync(async (req, res) => {
+  res.status(200).json({ message: "Feature coming soon" });
+});
+
+
 module.exports = new AuthController();

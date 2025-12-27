@@ -99,9 +99,8 @@ router.get(
 // View usage logs (Audit)
 router.get(
   "/usage-history",
-  restrictTo("OWNER", "ADMIN"), // Members don't need to see billing history
-  // aiController.getUsageHistory // Uncomment if implemented in Controller
-  (req, res) => res.json({ message: "Usage history endpoint (Placeholder)" })
+  restrictTo("OWNER", "ADMIN"),
+  aiController.getUsageHistory // <--- Panggil fungsi asli
 );
 
 module.exports = router;

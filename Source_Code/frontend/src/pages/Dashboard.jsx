@@ -234,11 +234,7 @@ function OverviewTab({ activeTeam, user, setActiveTab }) {
           </div>
           
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                 <TrendingUp className="text-indigo-600" size={20}/> AI Usage Trend
-               </h3>
-            </div>
+            {/* Header dihapus karena AiUsageChart sudah memilikinya */}
             <AiUsageChart teamId={activeTeam.id} /> 
           </div>
         </div>

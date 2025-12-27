@@ -1,6 +1,7 @@
 // backend/src/controllers/aiController.js
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const prisma = require("../config/prismaClient"); // Ensure this path matches your project structure
 
 // Services
 const AiService = require("../services/aiService");
@@ -9,21 +10,20 @@ const AuditLogService = require("../services/auditLogService");
 const PiiService = require("../services/piiService");
 const AnalyticsService = require("../services/analyticsService");
 const DocumentService = require("../services/documentService");
-const NotificationService = require("../services/notificationService"); // <--- NEW: For Upselling
+const NotificationService = require("../services/notificationService");
 
 // Configuration: Token Costs per Action
 const TEMPLATE_COSTS = {
-  'business-email': 1,
-  'grammar-check': 1,
-  'idea-generator': 2,
-  'report-summary': 5,
-  'ceo-digest': 10,
-  'pre-check': 3,
-  'default': 1
+  "business-email": 1,
+  "grammar-check": 1,
+  "idea-generator": 2,
+  "report-summary": 5,
+  "ceo-digest": 10,
+  "pre-check": 3,
+  default: 1,
 };
 
 class AiController {
-
   /**
    * 1. GENERAL ANALYSIS (Ad-hoc)
    */
@@ -36,14 +36,18 @@ class AiController {
     // A. Intelligence
     const safePrompt = PiiService.mask(prompt);
     const aiResponse = await AiService.generateText(safePrompt);
-    
+
     // B. Billing (Atomic)
     const tokenCost = BillingService.calculateCost(safePrompt, aiResponse);
     const updatedQuota = await BillingService.deductToken(teamId, tokenCost);
 
     // C. Compliance
     await AuditLogService.log({
-      teamId, userId, action: "AI_ANALYZE", details: `Tokens: ${tokenCost}`, ip: req.ip
+      teamId,
+      userId,
+      action: "AI_ANALYZE",
+      details: `Tokens: ${tokenCost}`,
+      ip: req.ip,
     });
 
     // D. UPSELL TRIGGER (Background)
@@ -51,7 +55,7 @@ class AiController {
 
     res.status(200).json({
       success: true,
-      data: { answer: aiResponse, meta: { remaining: updatedQuota.remaining } }
+      data: { answer: aiResponse, meta: { remaining: updatedQuota.remaining } },
     });
   });
 
@@ -60,12 +64,12 @@ class AiController {
    */
   getCeoDigest = catchAsync(async (req, res, next) => {
     const { teamId, userId } = req.user;
-    const cost = TEMPLATE_COSTS['ceo-digest'];
+    const cost = TEMPLATE_COSTS["ceo-digest"];
 
     // A. Gather Intelligence
     const [stats, logs] = await Promise.all([
-        AnalyticsService.getDailyStats(teamId),
-        AuditLogService.getRecentActivity(teamId, 24)
+      AnalyticsService.getDailyStats(teamId),
+      AuditLogService.getRecentActivity(teamId, 24),
     ]);
 
     const dataContext = JSON.stringify({ stats, recent_logs: logs }, null, 2);
@@ -84,7 +88,11 @@ class AiController {
     const updatedQuota = await BillingService.deductToken(teamId, cost);
 
     await AuditLogService.log({
-      teamId, userId, action: "CEO_DIGEST", details: `Charged ${cost} tokens`, ip: req.ip
+      teamId,
+      userId,
+      action: "CEO_DIGEST",
+      details: `Charged ${cost} tokens`,
+      ip: req.ip,
     });
 
     // D. UPSELL TRIGGER
@@ -92,7 +100,10 @@ class AiController {
 
     res.status(200).json({
       success: true,
-      data: { digest: aiResponse, meta: { cost, remaining: updatedQuota.remaining } }
+      data: {
+        digest: aiResponse,
+        meta: { cost, remaining: updatedQuota.remaining },
+      },
     });
   });
 
@@ -102,7 +113,7 @@ class AiController {
   validateReport = catchAsync(async (req, res, next) => {
     const { title, content } = req.body;
     const { teamId, userId } = req.user;
-    const cost = TEMPLATE_COSTS['pre-check'];
+    const cost = TEMPLATE_COSTS["pre-check"];
 
     if (!content) return next(new AppError("Report content is required", 400));
 
@@ -125,7 +136,11 @@ class AiController {
     const updatedQuota = await BillingService.deductToken(teamId, cost);
 
     await AuditLogService.log({
-      teamId, userId, action: "AI_PRE_CHECK", details: `Report: ${title}`, ip: req.ip
+      teamId,
+      userId,
+      action: "AI_PRE_CHECK",
+      details: `Report: ${title}`,
+      ip: req.ip,
     });
 
     // D. UPSELL TRIGGER
@@ -133,7 +148,10 @@ class AiController {
 
     res.status(200).json({
       success: true,
-      data: { analysis: aiResponse, meta: { cost, remaining: updatedQuota.remaining } }
+      data: {
+        analysis: aiResponse,
+        meta: { cost, remaining: updatedQuota.remaining },
+      },
     });
   });
 
@@ -157,19 +175,24 @@ class AiController {
 
     // B. Generation
     const aiResponse = await AiService.generateText(systemPrompt);
-    
+
     // C. Billing
     const tokenCost = BillingService.calculateCost(systemPrompt, aiResponse);
     const updatedQuota = await BillingService.deductToken(teamId, tokenCost);
 
-    await AuditLogService.log({ teamId, userId, action: "DOC_CHAT", details: question });
+    await AuditLogService.log({
+      teamId,
+      userId,
+      action: "DOC_CHAT",
+      details: question,
+    });
 
     // D. UPSELL TRIGGER
     this._triggerBackgroundUpsell(teamId, updatedQuota);
 
     res.status(200).json({
       success: true,
-      data: { answer: aiResponse, sources: context ? "Internal Docs" : "None" }
+      data: { answer: aiResponse, sources: context ? "Internal Docs" : "None" },
     });
   });
 
@@ -180,19 +203,66 @@ class AiController {
     const { templateId, inputData } = req.body;
 
     switch (templateId) {
-      case 'ceo-digest':
+      case "ceo-digest":
         return this.getCeoDigest(req, res, next);
-      case 'pre-check':
+      case "pre-check":
         req.body.title = inputData.title;
         req.body.content = inputData.content || inputData.prompt;
         return this.validateReport(req, res, next);
-      case 'doc-chat':
+      case "doc-chat":
         req.body.question = inputData.question || inputData.prompt;
         return this.chatWithDocs(req, res, next);
       default:
         req.body.prompt = inputData.prompt;
         return this.analyzeData(req, res, next);
     }
+  });
+
+  /**
+   * 6. USAGE HISTORY (For Analytics Chart)
+   * Aggregates token usage by date for the last 30 days.
+   */
+  getUsageHistory = catchAsync(async (req, res, next) => {
+    const { teamId } = req.user;
+
+    // 1. Calculate Date Range (Last 30 Days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // 2. Fetch Relevant Logs
+    const logs = await prisma.auditLog.findMany({
+      where: {
+        teamId,
+        action: {
+          in: ["AI_ANALYZE", "CEO_DIGEST", "AI_PRE_CHECK", "DOC_CHAT"],
+        },
+        createdAt: { gte: thirtyDaysAgo },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // 3. Aggregate Data (Sum tokens per date)
+    const historyMap = {};
+    
+    logs.forEach((log) => {
+      // Format date as YYYY-MM-DD for grouping
+      const date = log.createdAt.toISOString().split("T")[0]; 
+      
+      // Extract token count from the 'details' string (e.g., "Tokens: 5")
+      // If no number is found, default to 1 usage unit
+      const tokenMatch = log.details ? log.details.match(/\d+/) : null;
+      const tokens = tokenMatch ? parseInt(tokenMatch[0], 10) : 1;
+
+      historyMap[date] = (historyMap[date] || 0) + tokens;
+    });
+
+    // 4. Format for Frontend (Array of Objects)
+    const chartData = Object.keys(historyMap).map((date) => ({
+      date,
+      usage: historyMap[date],
+    }));
+
+    res.status(200).json(chartData);
   });
 
   // =========================================================================
@@ -204,18 +274,18 @@ class AiController {
    * Runs in background to avoid slowing down the AI response.
    */
   _triggerBackgroundUpsell(teamId, quotaData) {
-    // Assuming quotaData contains { aiUsageCount, aiTokenLimit }
-    // If not, BillingService.deductToken should be updated to return these.
-    
     if (!quotaData || !quotaData.aiTokenLimit) return;
 
     NotificationService.checkUpsellTrigger(
-      teamId, 
-      quotaData.aiUsageCount, 
+      teamId,
+      quotaData.aiUsageCount,
       quotaData.aiTokenLimit
-    ).catch(err => {
+    ).catch((err) => {
       // Log silently, don't crash the request
-      console.error(`⚠️ Upsell Trigger Warning for Team ${teamId}:`, err.message);
+      console.error(
+        `⚠️ Upsell Trigger Warning for Team ${teamId}:`,
+        err.message
+      );
     });
   }
 }

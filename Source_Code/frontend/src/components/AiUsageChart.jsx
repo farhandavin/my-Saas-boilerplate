@@ -13,9 +13,16 @@ const AiUsageChart = ({ teamId }) => {
     const fetchData = async () => {
       try {
         const res = await api.get(`/ai/usage-history?teamId=${teamId}`);
-        setData(res.data);
+        // SOLUSI: Pastikan data yang masuk adalah Array agar Recharts tidak crash
+        if (Array.isArray(res.data)) {
+          setData(res.data);
+        } else {
+          console.error("Format data API tidak valid (Bukan Array):", res.data);
+          setData([]); 
+        }
       } catch (error) {
         console.error("Gagal load chart data", error);
+        setData([]); // Set kosong jika error
       } finally {
         setLoading(false);
       }
@@ -32,25 +39,27 @@ const AiUsageChart = ({ teamId }) => {
     );
   }
 
-  if (data.length === 0) {
+  // SOLUSI: Validasi tambahan untuk mencegah error .slice() di internal Recharts
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400">
-        <p>Belum ada aktivitas AI bulan ini.</p>
-        <p className="text-xs mt-2">Mulai generate konten untuk melihat tren.</p>
+      <div className="h-64 flex flex-col items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-300 text-gray-400 text-center p-4">
+        <p className="font-medium text-sm">Belum ada aktivitas AI bulan ini.</p>
+        <p className="text-xs mt-1 italic">Tingkatkan produktivitas dengan fitur AI kami!</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-      <div className="mb-6">
+    <div className="w-full">
+      <div className="mb-4">
         <h3 className="text-lg font-bold text-gray-900">AI Usage Trends</h3>
         <p className="text-sm text-gray-500">Penggunaan kredit token dalam 30 hari terakhir.</p>
       </div>
 
-      <div className="h-64 w-full">
+      {/* SOLUSI: Menggunakan min-h untuk mencegah warning width(-1) height(-1) */}
+      <div className="h-64 w-full min-h-[256px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -62,16 +71,16 @@ const AiUsageChart = ({ teamId }) => {
               dataKey="date" 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 12, fill: '#9ca3af' }} 
+              tick={{ fontSize: 11, fill: '#9ca3af' }} 
               dy={10}
             />
             <YAxis 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 12, fill: '#9ca3af' }} 
+              tick={{ fontSize: 11, fill: '#9ca3af' }} 
             />
             <Tooltip 
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
             />
             <Area 
               type="monotone" 
@@ -80,6 +89,7 @@ const AiUsageChart = ({ teamId }) => {
               strokeWidth={3}
               fillOpacity={1} 
               fill="url(#colorUsage)" 
+              animationDuration={1500}
             />
           </AreaChart>
         </ResponsiveContainer>
