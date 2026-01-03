@@ -97,7 +97,7 @@ npm install
 **Solution:**
 - This is OK for local development
 - Billing features will show "Configure Stripe" placeholder
-- To enable: Follow [STRIPE_SETUP.md](./docs/STRIPE_SETUP.md)
+- To enable: Configure Stripe keys in `.env` (See [Billing Docs](./billing.md))
 
 ### Issue 4: Port 3000 already in use
 **Solution:**
@@ -114,17 +114,15 @@ PORT=3001 npm run dev
 ## 🎉 What's Next?
 
 ### For Developers Building a Product:
-1. **Read Architecture Docs:** [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+1. **Read Architecture Docs:** [Architecture Guide](./ARCHITECTURE.md)
 2. **Configure Integrations:**
-   - [Stripe Setup](./docs/STRIPE_SETUP.md) for billing
-   - [AI Setup](./docs/AI_SETUP.md) for Gemini API
-   - [Email Setup](./docs/EMAIL_SETUP.md) for Resend
-3. **Customize Branding:** [docs/CUSTOMIZATION.md](./docs/CUSTOMIZATION.md)
+   - [Stripe Setup](./billing.md) for billing
+   - [AI Setup](./ai-services.md) for Gemini API
+3. **Customize Branding:** [Branding Guide](./BRANDING.md)
 
 ### For Evaluators/Buyers:
-1. **Compare Features:** [COMPARISON.md](./COMPARISON.md)
-2. **Review Security:** [SECURITY.md](./SECURITY.md)
-3. **Check Roadmap:** [ROADMAP.md](./ROADMAP.md)
+1. **Compare Features:** [Feature Comparison](./COMPARISON.md)
+2. **Review Security:** [Security Policy](./SECURITY.md)
 
 ---
 
