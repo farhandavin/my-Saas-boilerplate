@@ -28,165 +28,165 @@ The Enterprise Business OS is built upon **4 Strategic Pillars** designed to aut
 
 ---
 
-## 🧠 PILAR 1: AI (The Intelligence)
-*Fokus: Menggantikan tugas kognitif berulang dengan kecerdasan mesin.*
+## 🧠 PILLAR 1: AI (The Intelligence)
+*Focus: Replacing repetitive cognitive tasks with machine intelligence.*
 
-### 1. CEO Digest (Rangkuman Eksekutif Otomatis)
-* **Apa**: Asisten pribadi yang membaca ribuan data transaksi kemarin dan menyajikannya dalam 1 paragraf singkat.
-* **Mekanisme**:
-    1.  **Cron Job** (via Inngest) berjalan pukul 05:00 pagi.
-    2.  Mengambil data agregat dari DB (Total Revenue, Top Spending, Pending Tasks).
-    3.  Data mentah dikirim ke **LLM (Gemini)** dengan prompt: *"Bertindaklah sebagai analis bisnis, rangkum data JSON ini menjadi 3 poin wawasan strategis."*
-    4.  Output dikirim via Email atau Dashboard Card.
-* **Nilai**: Menghemat 1-2 jam waktu CEO membaca laporan mentah setiap hari.
+### 1. CEO Digest (Automated Executive Summary)
+* **What**: A personal assistant that analyzes thousands of daily transactions and condenses them into a single concise paragraph.
+* **Mechanism**:
+    1.  **Cron Job** (via Inngest) executes at 05:00 AM.
+    2.  Aggregates data from DB (Total Revenue, Top Spending, Pending Tasks).
+    3.  Raw data is sent to **LLM (Gemini)** with the prompt: *"Act as a business analyst, summarize this JSON data into 3 strategic insights."*
+    4.  Output is delivered via Email or Dashboard Card.
+* **Value**: Saves the CEO 1-2 hours of raw report analysis daily.
 
-### 2. AI Pre-Check (Validasi Input Cerdas)
-* **Apa**: "Satpam Digital" yang memeriksa draf dokumen sebelum disimpan atau diajukan.
-* **Mekanisme**:
-    1.  User mengisi form (misal: Invoice).
-    2.  Saat klik tombol "Pre-check", data dikirim ke **API AI**.
-    3.  AI memvalidasi terhadap Ruleset (SOP): *"Apakah PPN 11%?"*, *"Apakah tanggal jatuh tempo logis?"*, *"Apakah diskon melebihi 20%?"*.
-    4.  Mengembalikan respon JSON: `{ "valid": false, "reason": "Diskon 50% melanggar SOP maksimal 20%" }`.
-* **Nilai**: Mencegah human error yang merugikan finansial secara preventif.
+### 2. AI Pre-Check (Intelligent Input Validation)
+* **What**: A "Digital Gatekeeper" that inspects document drafts before submission or storage.
+* **Mechanism**:
+    1.  User fills out a form (e.g., Invoice).
+    2.  User clicks "Pre-check", sending data to the **AI API**.
+    3.  AI validates against the Ruleset (SOP): *"Is VAT 11%?"*, *"Is the due date logical?"*, *"Does the discount exceed 20%?"*.
+    4.  Returns a JSON response: `{ "valid": false, "reason": "50% discount violates max 20% SOP" }`.
+* **Value**: Preventatively eliminates financially damaging human errors.
 
 ### 3. Internal RAG (Retrieval-Augmented Generation)
-* **Apa**: Chatbot yang hanya menjawab berdasarkan "Otak Perusahaan" (Dokumen Internal), bukan internet umum.
-* **Mekanisme**:
-    1.  User upload PDF (SOP/Kontrak).
-    2.  Sistem memecah teks (**Chunking**) dan mengubahnya menjadi vektor angka (**Embeddings**).
-    3.  Vektor disimpan di PostgreSQL (**pgvector**).
-    4.  Saat user bertanya, sistem mencari vektor yang paling mirip, lalu menyuruh AI menjawab berdasarkan teks tersebut.
-* **Nilai**: Menghapus halusinasi AI dan menjamin jawaban sesuai kebijakan perusahaan.
+* **What**: A chatbot that answers solely based on the "Company Brain" (Internal Documents), excluding external internet data.
+* **Mechanism**:
+    1.  User uploads PDFs (SOPs/Contracts).
+    2.  System breaks text down (**Chunking**) and converts it into number vectors (**Embeddings**).
+    3.  Vectors are stored in PostgreSQL (**pgvector**).
+    4.  When a user asks a question, the system retrieves the most similar vector and prompts the AI to answer based on that text.
+* **Value**: Eliminates AI hallucinations and guarantees answers align with company policy.
 
 ### 4. Privacy Layer (PII Masking)
-* **Apa**: Filter keamanan yang menyensor data pribadi sebelum keluar dari server Anda.
-* **Mekanisme**:
-    1.  **Middleware** mencegat request ke API AI.
-    2.  Menggunakan **Regex** atau **Named Entity Recognition (NER)** untuk mendeteksi NIK, Email, No HP.
-    3.  Menggantinya menjadi `[REDACTED_PHONE]`.
-    4.  Data aman dikirim ke Gemini/OpenAI.
-* **Nilai**: Kepatuhan hukum (UU PDP/GDPR) dan mencegah kebocoran data klien.
+* **What**: A security filter that redacts personal data before it leaves your server.
+* **Mechanism**:
+    1.  **Middleware** intercepts requests to the AI API.
+    2.  Uses **Regex** or **Named Entity Recognition (NER)** to detect NIDs, Emails, Phone Numbers.
+    3.  Replaces them with placeholders like `[REDACTED_PHONE]`.
+    4.  Sanitized data is sent to Gemini/OpenAI.
+* **Value**: Ensures legal compliance (GDPR/PDP) and prevents client data leakage.
 
 ### 5. Operational Intelligence
-* **Apa**: Kalkulator margin keuntungan per user secara real-time.
-* **Mekanisme**:
-    1.  Mencatat setiap token input/output yang dipakai user.
-    2.  Menghitung biaya (**Cost**): Token x Harga API.
-    3.  Membandingkan dengan Harga Langganan User (**Revenue**).
-* **Nilai**: Mencegah "kerugian bandar" (mengetahui kapan harus menaikkan harga atau membatasi user boros).
+* **What**: Real-time profit margin calculator per user.
+* **Mechanism**:
+    1.  Tracks every input/output token used by the user.
+    2.  Calculates **Cost**: Token Count x API Price.
+    3.  Compares against User Subscription Price (**Revenue**).
+* **Value**: Prevents "House Losses" (identifying when to raise prices or limit heavy users).
 
 ---
 
-## 🏗️ PILAR 2: B2B (The Infrastructure)
-*Fokus: Keamanan, Isolasi Data, dan Konektivitas.*
+## 🏗️ PILLAR 2: B2B (The Infrastructure)
+*Focus: Security, Data Isolation, and Connectivity.*
 
 ### 6. Hybrid Multi-Tenancy Architecture
-* **Apa**: Strategi database fleksibel berdasarkan seberapa banyak user membayar.
-* **Mekanisme**:
-    *   **Tier Low (Shared)**: Semua data user A & B ada di tabel yang sama. Dibedakan kolom `tenant_id`. Hemat resource.
-    *   **Tier Medium (Schema)**: Satu Database, tapi User A punya Schema `tenant_a`, User B punya Schema `tenant_b`. Data terpisah secara logika.
-    *   **Tier High (Isolated)**: User Enterprise dibuatkan **Database Fisik baru** (Server terpisah) di Neon/Supabase. Koneksi via URL database khusus.
-* **Nilai**: USP (*Unique Selling Point*) utama untuk menjual ke korporat besar yang paranoid soal keamanan data.
+* **What**: A flexible database strategy based on user tiers.
+* **Mechanism**:
+    *   **Low Tier (Shared)**: Users A & B reside in the same table. Distinguished by a `tenant_id` column. Resource efficient.
+    *   **Medium Tier (Schema)**: Single Database, but User A has Schema `tenant_a`, User B has Schema `tenant_b`. Logically separated data.
+    *   **High Tier (Isolated)**: Enterprise Users get a **New Physical Database** (Dedicated Server) on Neon/Supabase. Connection via a unique database URL.
+* **Value**: A key USP (*Unique Selling Point*) for selling to large corporations concerned with data security.
 
 ### 7. Seamless Migration Engine
-* **Apa**: Fitur "Pindah Rumah" otomatis untuk data (Upgrade Tier).
-* **Mekanisme**:
-    1.  User klik "Upgrade to Enterprise".
-    2.  **Background Job (Inngest)** menyala.
-    3.  Job mengunci data lama (Read-only) -> Copy data dari Shared DB -> Paste ke Isolated DB baru -> Verifikasi -> Update Connection String.
-    4.  User refresh halaman, sudah di server baru.
-* **Nilai**: Skalabilitas tanpa sakit kepala. Memungkinkan user tumbuh dari kecil ke raksasa tanpa ganti aplikasi.
+* **What**: Automated "Moving Service" for data (Tier Upgrades).
+* **Mechanism**:
+    1.  User clicks "Upgrade to Enterprise".
+    2.  **Background Job (Inngest)** triggers.
+    3.  Job locks old data (Read-only) -> Copies data from Shared DB -> Pastes into new Isolated DB -> Verifies -> Updates Connection String.
+    4.  User refreshes the page, now running on the new server.
+* **Value**: Painless scalability. Allows users to grow from startups to giants without changing applications.
 
 ### 8. API-First & Webhooks
-* **Apa**: Pintu akses bagi aplikasi lain untuk berinteraksi dengan OS Anda.
-* **Mekanisme**:
-    *   **API**: Endpoint publik aman (misal: `GET /api/v1/invoices`) dengan API Key.
-    *   **Webhooks**: Sistem mengirim HTTP POST ke URL klien saat event terjadi (misal: `invoice.paid`).
-* **Nilai**: Membuat sistem menjadi pusat ekosistem, terintegrasi dengan ERP/Accounting software lain.
+* **What**: Access gates for other applications to interact with your OS.
+* **Mechanism**:
+    *   **API**: Secure public endpoints (e.g., `GET /api/v1/invoices`) with API Keys.
+    *   **Webhooks**: System sends HTTP POST to client URLs when events occur (e.g., `invoice.paid`).
+* **Value**: Transforms the system into an ecosystem hub, integrated with other ERP/Accounting software.
 
 ### 9. Smart RBAC (Role-Based Access Control)
-* **Apa**: Hierarki izin akses yang granular.
-* **Mekanisme**:
-    1.  Mendefinisikan Role (Admin, Manager, Staff) dan Permission.
-    2.  **Middleware** mengecek setiap request: *"Apakah User X punya izin `delete_invoice`?"*.
-    3.  Jika tidak, tolak (403 Forbidden).
-* **Nilai**: Keamanan internal perusahaan klien (Staf magang tidak bisa melihat gaji CEO).
+* **What**: Granular access permission hierarchy.
+* **Mechanism**:
+    1.  Defines Roles (Admin, Manager, Staff) and Permissions.
+    2.  **Middleware** checks every request: *"Does User X have `delete_invoice` permission?"*.
+    3.  If not, reject (403 Forbidden).
+* **Value**: Internal client corporate security (Interns cannot see CEO salaries).
 
-### 10. Audit Logs (Jejak Digital)
-* **Apa**: CCTV database yang mencatat segala aktivitas.
-* **Mekanisme**:
-    *   Setiap operasi INSERT, UPDATE, DELETE memicu pencatatan ke tabel `audit_logs`.
-    *   Menyimpan: Actor (Siapa), Action (Apa), Old_Value, New_Value, Timestamp.
-* **Nilai**: Transparansi total dan syarat wajib audit untuk perusahaan finansial.
+### 10. Audit Logs (Digital Trail)
+* **What**: A database CCTV recording all activities.
+* **Mechanism**:
+    *   Every INSERT, UPDATE, DELETE triggers a log entry in the `audit_logs` table.
+    *   Stores: Actor (Who), Action (What), Old_Value, New_Value, Timestamp.
+* **Value**: Total transparency and a mandatory requirement for financial audits.
 
 ---
 
-## 💳 PILAR 3: Payment (The Monetization)
-*Fokus: Kelancaran arus kas dan strategi harga.*
+## 💳 PILLAR 3: Payment (The Monetization)
+*Focus: Cash flow smoothness and pricing strategy.*
 
 ### 11. Tiered Subscription & Usage Billing
-* **Apa**: Model bayar gabungan (Langganan tetap + Bayar sesuai pakai).
-* **Mekanisme**:
-    *   Integrasi **Stripe Subscription** untuk biaya bulanan.
-    *   Integrasi **Stripe Metering** untuk biaya variabel (token AI).
-    *   Tagihan digabung di akhir bulan.
-* **Nilai**: Adil bagi user (bayar murah jika jarang pakai AI) dan menguntungkan bagi Anda (pendapatan tak terbatas).
+* **What**: Hybrid payment model (Fixed Subscription + Pay-as-you-go).
+* **Mechanism**:
+    *   **Stripe Subscription** integration for monthly fees.
+    *   **Stripe Metering** integration for variable costs (AI tokens).
+    *   Invoices are consolidated at month-end.
+* **Value**: Fair for users (pay less if AI is rarely used) and profitable for you (uncapped revenue potential).
 
 ### 12. Automated Dunning Management
-* **Apa**: Penanganan otomatis saat kartu kredit user ditolak/kadaluarsa.
-* **Mekanisme**:
-    1.  Stripe mengirim sinyal `payment_failed`.
-    2.  Sistem otomatis mengirim email peringatan.
-    3.  Jika gagal 3x, sistem melakukan **"Soft Lock"** (kunci akses tanpa hapus data).
-* **Nilai**: Mengurangi Churn (kehilangan pelanggan) yang tidak disengaja.
+* **What**: Automated handling of declined/expired credit cards.
+* **Mechanism**:
+    1.  Stripe sends a `payment_failed` signal.
+    2.  System automatically sends warning emails.
+    3.  If failed 3x, system executes a **"Soft Lock"** (access restricted without data deletion).
+* **Value**: Reduces involuntary churn (losing customers accidentally).
 
 ---
 
-## 🛡️ PILAR 4: Operational (The Hidden Pillar)
-*Fokus: Kestabilan dan Pemeliharaan Sistem.*
+## 🛡️ PILLAR 4: Operational (The Hidden Pillar)
+*Focus: Stability and System Maintenance.*
 
-### 13. Schema Sync (Sinkronisasi Database Massal)
-* **Apa**: Cara mengupdate struktur tabel di 100 database Enterprise sekaligus.
-* **Mekanisme**:
-    1.  Script deployment membaca daftar koneksi database aktif.
-    2.  Melakukan looping perintah migrasi (`drizzle-kit push`) ke setiap URL database secara paralel/antrian.
-* **Nilai**: Maintainability. Tanpa ini, update fitur untuk klien Enterprise akan mustahil.
+### 13. Schema Sync (Mass Database Synchronization)
+* **What**: Updating table structures across 100 Enterprise databases simultaneously.
+* **Mechanism**:
+    1.  Deployment script reads the list of active database connections.
+    2.  Loops migration commands (`drizzle-kit push`) to each database URL in parallel/queue.
+* **Value**: Maintainability. Without this, feature updates for Enterprise clients would be impossible.
 
 ### 14. Data Residency Router
-* **Apa**: Logika untuk menentukan lokasi server penyimpanan data.
-* **Mekanisme**:
-    1.  Saat registrasi, user memilih region: "Indonesia" atau "Global".
-    2.  Sistem membuat database di Region AWS/Google Cloud yang sesuai (misal: `ap-southeast-3` untuk Jakarta).
-* **Nilai**: Kepatuhan regulasi lokal (Data Sovereignty) untuk sektor publik.
+* **What**: Logic to determine data storage location.
+* **Mechanism**:
+    1.  During registration, user selects region: "Indonesia" or "Global".
+    2.  System creates a database in the corresponding AWS/Google Cloud Region (e.g., `ap-southeast-3` for Jakarta).
+* **Value**: Local regulatory compliance (Data Sovereignty) for public sectors.
 
 ### 15. Graceful Degradation (Anti-Crash)
-* **Apa**: Strategi "Tetap Jalan Walau Pincang".
-* **Mekanisme**:
-    1.  Jika API AI timeout/error.
-    2.  Sistem menangkap error, menyembunyikan fitur AI, dan menampilkan input manual biasa.
-    3.  Aplikasi utama (CRUD) tetap berfungsi normal.
-* **Nilai**: Reliability. User tetap bisa bekerja meskipun fitur tambahan sedang gangguan.
+* **What**: "Keep Running Even If Limping" strategy.
+* **Mechanism**:
+    1.  If AI API timeouts/errors.
+    2.  System catches the error, hides AI features, and shows standard manual input.
+    3.  Core application (CRUD) remains fully functional.
+* **Value**: Reliability. Users can continue working even if auxiliary features are down.
 
 ### 16. Project & Task Management (Kanban)
-* **Apa**: Sistem manajemen proyek kolaboratif gaya GitHub/Trello.
-* **Mekanisme**:
-    1.  User membuat **Project** dan mengundang member tertentu (Project-level access).
-    2.  User membuat **Tasks** dengan status (Todo, In Progress, Done) dan Priority.
-    3.  Tampilan Visual **Kanban Board** untuk drag-and-drop status update.
-* **Nilai**: Produktivitas tim terpusat. Tidak perlu langganan Trello/Jira terpisah.
+* **What**: GitHub/Trello-style collaborative project management system.
+* **Mechanism**:
+    1.  User creates **Projects** and invites specific members (Project-level access).
+    2.  User creates **Tasks** with status (Todo, In Progress, Done) and Priority.
+    3.  Visual **Kanban Board** for drag-and-drop status updates.
+* **Value**: Centralized team productivity. No need for separate Trello/Jira subscriptions.
 
 ### 17. White-Labeling Engine
-* **Apa**: Kemampuan mengganti Logo, Warna, dan Domain agar terlihat seperti aplikasi milik klien sendiri.
-* **Mekanisme**:
-    1.  Admin mengupload Logo dan memilih Primary Color di Settings.
-    2.  **Custom SMTP**: Mengirim email notifikasi (Invite/Invoice) menggunakan server email klien sendiri.
-    3.  UI otomatis menyesuaikan tema berdasarkan konfigurasi penyewa.
-* **Nilai**: Brand Identity. Klien Enterprise ingin software terasa "milik mereka".
+* **What**: Ability to swap Logos, Colors, and Domains to look like the client's own application.
+* **Mechanism**:
+    1.  Admin uploads Logo and selects Primary Color in Settings.
+    2.  **Custom SMTP**: Sends notification emails (Invites/Invoices) using the client's own email server.
+    3.  UI automatically adapts themes based on tenant configuration.
+* **Value**: Brand Identity. Enterprise clients want software that feels "theirs".
 
 ### 18. Advanced Observability Suite
-* **Apa**: "Dashboard Kokpit" untuk memantau kesehatan sistem secara mikroskopis.
-* **Mekanisme**:
-    *   **OpenTelemetry**: Melacak perjalanan data (Trace) dari frontend ke backend hingga database.
-    *   **PostHog**: Menganalisis perilaku user (Pages, Clicks) untuk perbaikan UX.
-    *   **Sentry**: Menangkap error + rekaman sesi sebelum crash terjadi.
-* **Nilai**: Kecepatan perbaikan bug dan pemahaman mendalam tentang user.
+* **What**: "Cockpit Dashboard" for microscopic system health monitoring.
+* **Mechanism**:
+    *   **OpenTelemetry**: Tracks data journey (Trace) from frontend to backend to database.
+    *   **PostHog**: Analyzes user behavior (Pages, Clicks) for UX improvement.
+    *   **Sentry**: Captures errors + session recordings before crashes occur.
+* **Value**: Rapid bug fixing and deep user understanding.

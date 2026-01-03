@@ -3,34 +3,87 @@ sidebar_label: Frontend Architecture
 title: Frontend Architecture
 ---
 
-# Frontend Architecture
+# 🎨 Frontend Architecture
 
-## React Query (TanStack Query)
+The frontend is built using **Next.js 16 (App Router)**, designed for performance and SEO while maintaining a dynamic user experience.
 
-We do not use `useEffect` for data fetching. Instead, we use **TanStack Query v5**.
+## 🛠️ Core Stack
 
-### Why?
-1. **Automatic Caching:** Reduces server load.
-2. **Background Updates:** Keeps data fresh.
-3. **Loading/Error States:** Built-in flags like `isLoading` and `isError`.
+| Technology | Purpose |
+| :-- | :-- |
+| **Next.js (App Router)** | Framework & Routing |
+| **Tailwind CSS v4** | Styling & Design System |
+| **Next-Intl** | Internationalization (i18n) |
+| **Axios** | Client-side Data Fetching |
+| **Framer Motion** | Animations |
 
-### Creating a New Hook
+---
 
-All API hooks are stored in `src/hooks/queries`.
+## 📂 Directory Structure (`src/app`)
 
-**Example: `useUserQuery.ts`**
+We use the **App Router** with localization support.
 
-```typescript
-import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
-
-export const useUserQuery = () => {
-  return useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await api.get('/auth/me');
-      return data;
-    },
-  });
-};
 ```
+src/app/
+├── [locale]/           # Dynamic route for languages (en, id, etc.)
+│   ├── layout.tsx      # Main layout (Sidebar, Navbar)
+│   ├── page.tsx        # Landing Page
+│   ├── auth/           # Login / Register Pages
+│   └── dashboard/      # Protected App Pages
+├── api/                # Backend API Routes
+└── globals.css         # Global Tailwind Directives
+```
+
+## ⚡ Data Fetching Strategy
+
+We use a mix of **Server Components** for static content and **Client Components** (`use client`) for interactive widgets.
+
+### Client-Side Fetching (Interactive Widgets)
+
+For dynamic dashboards (like the *CEO Digest*), we use `axios` directly within Client Components.
+
+**Pattern:**
+1.  Component is marked `'use client'`.
+2.  State is managed via `useState`.
+3.  Data is fetched on event (click) or mount (`useEffect`).
+
+**Example (`CeoDigestWidget.tsx`):**
+```tsx
+'use client';
+import { useState } from 'react';
+import axios from 'axios';
+
+export default function CeoDigestWidget() {
+  const [data, setData] = useState(null);
+
+  const fetchData = async () => {
+    const res = await axios.get('/api/ai/analyze');
+    setData(res.data);
+  }
+
+  return <button onClick={fetchData}>Refresh</button>;
+}
+```
+
+---
+
+## 🌍 Internationalization (i18n)
+
+We use `next-intl` for translations.
+
+*   **Dictionaries**: Stored in `messages/en.json`, `messages/id.json`.
+*   **Usage**:
+    ```tsx
+    import { useTranslations } from 'next-intl';
+
+    export default function Component() {
+      const t = useTranslations('Dashboard');
+      return <h1>{t('title')}</h1>;
+    }
+    ```
+
+## 🎨 Styling (Tailwind CSS)
+
+*   **Utility-First**: We use utility classes for 99% of styling.
+*   **Dark Mode**: Supported out-of-the-box via `dark:` modifier.
+*   **Colors**: Custom tokens are defined in `globals.css` (CSS Variables).
