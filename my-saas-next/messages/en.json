@@ -1,0 +1,25 @@
+{
+  "Dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "aiHub": "AI Hub",
+    "invoices": "Invoices",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "AI": {
+    "preCheck": "AI Pre-Check",
+    "privacy": "Privacy Layer",
+    "digest": "CEO Digest"
+  },
+  "Error": {
+    "title": "Oops! Something went wrong",
+    "description": "Sorry, an unexpected error occurred. Our team has been notified and is working on it.",
+    "referenceId": "Reference ID (for support)",
+    "retry": "Try Again",
+    "backToDashboard": "Back to Dashboard",
+    "needHelp": "Need help?",
+    "contactSupport": "Contact Support"
+  }
+}

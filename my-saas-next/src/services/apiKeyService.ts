@@ -1,14 +1,17 @@
-// backend/src/services/apiKeyService.js
-const crypto = require("crypto");
-const prisma = require("../config/prismaClient");
 
-class ApiKeyService {
+// src/services/apiKeyService.ts
+import crypto from 'crypto';
+import { db } from '@/db';
+import { apiKeys } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
+export const ApiKeyService = {
   /**
-   * Membuat API Key baru untuk Team.
-   * Hanya mengembalikan key mentah SATU KALI saja.
+   * Mengembalikan key mentah SATU KALI saja.
    */
-  async createKey(teamId, name) {
+  async createKey(teamId: string, name: string) {
     // 1. Generate Random Key (32 bytes hex)
+    // Format: sk_live_...
     const rawKey = 'sk_live_' + crypto.randomBytes(24).toString('hex');
     
     // 2. Hash Key untuk penyimpanan (SHA-256)
@@ -17,27 +20,26 @@ class ApiKeyService {
       .update(rawKey)
       .digest('hex');
 
-    // 3. Ambil 7 karakter pertama untuk display (Prefix)
+    // 3. Ambil e.g. 10 karakter pertama untuk display (Prefix)
     const prefix = rawKey.substring(0, 10) + '...';
 
     // 4. Simpan ke DB
-    const apiKeyRecord = await prisma.apiKey.create({
-      data: {
-        teamId,
-        name,
-        prefix,
-        keyHash
-      }
-    });
+    // Drizzle insert returning
+    const [apiKeyRecord] = await db.insert(apiKeys).values({
+      teamId,
+      name,
+      prefix,
+      keyHash
+    } as any).returning();
 
     // PENTING: Kembalikan rawKey agar bisa ditampilkan ke user SEKALI saja
     return { ...apiKeyRecord, secretKey: rawKey };
-  }
+  },
 
   /**
    * Validasi API Key dari request masuk
    */
-  async validateKey(rawKey) {
+  async validateKey(rawKey: string) {
     if (!rawKey || !rawKey.startsWith('sk_live_')) return null;
 
     // 1. Hash key yang diterima
@@ -47,21 +49,23 @@ class ApiKeyService {
       .digest('hex');
 
     // 2. Cari di DB
-    const apiKey = await prisma.apiKey.findUnique({
-      where: { keyHash: incomingHash },
-      include: { team: true } // Include team untuk konteks billing
+    // Drizzle query API doesn't support automatic relation loading unless using query builder
+    // verify 'with' syntax support
+    const apiKey = await db.query.apiKeys.findFirst({
+      where: eq(apiKeys.keyHash, incomingHash),
+      with: {
+        team: true
+      }
     });
 
     if (!apiKey) return null;
 
     // 3. Update lastUsedAt (Async, fire-and-forget)
-    prisma.apiKey.update({
-      where: { id: apiKey.id },
-      data: { lastUsedAt: new Date() }
-    }).catch(console.error);
+    db.update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, apiKey.id))
+      .catch(console.error);
 
     return apiKey.team;
   }
-}
-
-module.exports = new ApiKeyService();
+};

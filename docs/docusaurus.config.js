@@ -54,10 +54,10 @@ const config = {
       // Ganti dengan gambar social card Anda
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'SaaS Boilerplate Docs',
+        title: 'Enterprise OS',
         logo: {
-          alt: 'SaaS Logo',
-          src: 'img/logo.svg',
+          alt: 'Enterprise OS Logo',
+          src: 'img/logo.svg', 
         },
         items: [
           {
@@ -66,11 +66,17 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          // Link Support/Purchase
           {
-            href: 'https://codecanyon.net/user/your-profile',
-            label: 'Purchase',
+            to: '/docs/backend-architecture',
+            label: 'API Reference',
             position: 'right',
+            className: 'hidden lg:block', // Visibility control via CSS if needed
+          },
+          {
+            href: 'http://localhost:3000/login',
+            label: 'Login',
+            position: 'right',
+            className: 'button button--primary button--lg text-white font-bold ml-2', // Styling as button
           },
         ],
       },
@@ -82,7 +88,7 @@ const config = {
             items: [
               {
                 label: 'Getting Started',
-                to: '/docs/intro',
+                to: '/docs/buyers-guide',
               },
               {
                 label: 'Architecture',
@@ -106,7 +112,27 @@ const config = {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
       },
+      // Remove or comment out the default navbar if we are implementing a custom one in the page
+      // But keeping it for other pages might be safer.
+      // For now, we will hide the default navbar on the homepage using CSS or page layout.
     }),
+
+    // Injeksi Script dan Stylesheet Eksternal
+    scripts: [
+      'https://cdn.tailwindcss.com?plugins=forms,container-queries',
+      {
+        src: 'https://cdn.tailwindcss.com',
+        id: 'tailwind-script',
+      },
+
+      // Tailwind Config Injection (skarang via static file)
+      '/js/tailwind-config.js',
+    ],
+
+    stylesheets: [
+      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap',
+      'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap',
+    ],
 };
 
 export default config;

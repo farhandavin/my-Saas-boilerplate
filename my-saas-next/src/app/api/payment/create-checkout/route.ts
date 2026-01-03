@@ -1,8 +1,11 @@
+
 // src/app/api/payment/create-checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { PaymentService } from '@/services/paymentService';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,9 +24,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user email
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { email: true }
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, payload.userId),
+      columns: { email: true }
     });
 
     if (!user) return unauthorized('User not found');
@@ -33,7 +36,8 @@ export async function POST(req: NextRequest) {
       email: user.email,
       teamId,
       priceId,
-      planType
+      planType,
+      returnUrlBase: req.nextUrl.origin
     });
 
     return NextResponse.json(result);

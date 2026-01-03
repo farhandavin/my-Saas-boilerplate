@@ -1,0 +1,212 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: layers
+        - heading "Enterprise OS" [level=2] [ref=e8]
+      - navigation [ref=e10]:
+        - link "AI Core" [ref=e11] [cursor=pointer]:
+          - /url: "#ai"
+        - link "Infrastructure" [ref=e12] [cursor=pointer]:
+          - /url: "#infrastructure"
+        - link "Payments" [ref=e13] [cursor=pointer]:
+          - /url: "#payments"
+        - link "Operations" [ref=e14] [cursor=pointer]:
+          - /url: "#operations"
+      - generic [ref=e15]:
+        - link "Log In" [ref=e16] [cursor=pointer]:
+          - /url: /auth
+          - button "Log In" [ref=e17]:
+            - generic [ref=e18]: Log In
+        - link "Request Demo" [ref=e19] [cursor=pointer]:
+          - /url: /auth
+          - button "Request Demo" [ref=e20]:
+            - generic [ref=e21]: Request Demo
+    - main [ref=e22]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e28]: v2.4 is live
+          - heading "The Operating System for Modern Enterprise" [level=1] [ref=e29]
+          - paragraph [ref=e30]: Unified AI, Payments, and Operations infrastructure. Built for scale with Next.js and Gemini to power your business logic.
+          - generic [ref=e31]:
+            - link "Start Free Trial" [ref=e32] [cursor=pointer]:
+              - /url: /auth
+              - button "Start Free Trial" [ref=e33]
+            - link "View Documentation" [ref=e34] [cursor=pointer]:
+              - /url: http://localhost:3002
+              - button "View Documentation" [ref=e35]
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]: check_circle
+              - generic [ref=e39]: SOC2 Compliant
+            - generic [ref=e40]:
+              - generic [ref=e41]: check_circle
+              - generic [ref=e42]: 99.99% Uptime
+        - generic [ref=e44]:
+          - generic [ref=e50]: api/v1/enterprise-logic.ts
+          - generic [ref=e51]:
+            - generic [ref=e52]: import
+            - text: "{ EnterpriseClient }"
+            - generic [ref=e53]: from
+            - text: "'@enterprise-os/sdk';"
+            - generic [ref=e54]: const
+            - text: client=
+            - generic [ref=e55]: new
+            - text: "EnterpriseClient({"
+            - text: "apiKey: process.env.EOS_API_KEY,"
+            - text: "region: 'us-east-1',"
+            - text: "modules: ['ai', 'payments', 'ops']"
+            - generic [ref=e56]: "});"
+            - text: // Initialize AI-driven workflow
+            - generic [ref=e57]: await
+            - generic [ref=e58]: "client.workflows.create({"
+            - text: "name: 'Q4 Revenue Forecast',"
+            - text: "model: 'gemini-pro-vision',"
+            - text: "trigger: 'monthly_close'"
+            - text: "});"
+          - generic [ref=e59]:
+            - generic [ref=e60]: bolt
+            - generic [ref=e61]: Connected 12ms
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: Trusted by forward-thinking enterprises
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: change_history
+            - text: ACME Corp
+          - generic [ref=e68]:
+            - generic [ref=e69]: diamond
+            - text: Gemstone
+          - generic [ref=e70]:
+            - generic [ref=e71]: all_inclusive
+            - text: InfiniteLoop
+          - generic [ref=e72]:
+            - generic [ref=e73]: rocket_launch
+            - text: StarSystem
+          - generic [ref=e74]:
+            - generic [ref=e75]: api
+            - text: DataFlow
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - heading "Four Pillars of Infrastructure" [level=2] [ref=e78]
+          - paragraph [ref=e79]: A modular architecture designed to power the next generation of business applications, from startup to IPO.
+        - generic [ref=e80]:
+          - generic [ref=e85]:
+            - generic [ref=e86]:
+              - generic [ref=e88]: auto_awesome
+              - heading "AI-Native Intelligence" [level=3] [ref=e89]
+            - paragraph [ref=e90]: Embedded predictive analytics powered by Gemini. forecast trends, automate support, and generate insights directly from your PostgreSQL database.
+          - generic [ref=e93]:
+            - generic [ref=e95]: payments
+            - heading "Global Payments" [level=3] [ref=e96]
+            - paragraph [ref=e97]: Multi-currency support with instant reconciliation and fraud detection.
+            - generic [ref=e98]:
+              - generic [ref=e99]:
+                - generic [ref=e100]: VIRTUAL CARD
+                - generic [ref=e101]: contactless
+              - generic [ref=e102]: •••• 4242
+              - generic [ref=e104]:
+                - generic [ref=e105]: Card Holder
+                - generic [ref=e106]: Enterprise User
+          - generic [ref=e108]:
+            - generic [ref=e109]:
+              - generic [ref=e111]: hub
+              - heading "B2B Core Logic" [level=3] [ref=e112]
+              - paragraph [ref=e113]: Seamless vendor management, supply chain logic, and inventory synchronization.
+            - generic [ref=e116]:
+              - generic [ref=e118]: inventory_2
+              - generic [ref=e121]: local_shipping
+              - generic [ref=e124]: storefront
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - generic [ref=e128]: settings_suggest
+              - heading "Operational Reliability" [level=3] [ref=e129]
+              - paragraph [ref=e130]: Automated workflows ensuring 99.9% uptime. Built-in compliance and security controls.
+            - generic [ref=e135]:
+              - generic [ref=e136]: System Status
+              - generic [ref=e137]: Operational
+      - generic [ref=e139]:
+        - generic [ref=e140]:
+          - generic [ref=e141]:
+            - heading "Built for diverse industries" [level=2] [ref=e142]
+            - paragraph [ref=e143]: From logistics to fintech, Enterprise OS adapts to your scale.
+          - button "View all case studies arrow_forward" [ref=e144]:
+            - text: View all case studies
+            - generic [ref=e145]: arrow_forward
+        - generic [ref=e146]:
+          - generic [ref=e149]:
+            - heading "Fintech" [level=4] [ref=e150]
+            - paragraph [ref=e151]: Real-time ledgering
+          - generic [ref=e154]:
+            - heading "Logistics" [level=4] [ref=e155]
+            - paragraph [ref=e156]: Route optimization AI
+          - generic [ref=e159]:
+            - heading "Healthcare" [level=4] [ref=e160]
+            - paragraph [ref=e161]: HIPAA compliant data
+          - generic [ref=e164]:
+            - heading "SaaS" [level=4] [ref=e165]
+            - paragraph [ref=e166]: Usage-based billing
+      - generic [ref=e169]:
+        - heading "Ready to upgrade your infrastructure?" [level=2] [ref=e170]
+        - paragraph [ref=e171]: Stop building from scratch. Get your API keys today and deploy your first Enterprise OS instance in minutes.
+        - generic [ref=e172]:
+          - link "Get Started" [ref=e173] [cursor=pointer]:
+            - /url: /auth
+            - button "Get Started" [ref=e174]
+          - button "Contact Sales" [ref=e175] [cursor=pointer]
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - generic [ref=e179]:
+              - generic [ref=e181]: layers
+              - heading "Enterprise OS" [level=2] [ref=e182]
+            - paragraph [ref=e183]: The complete operating system for modern business. Unified, scalable, and secure infrastructure for the next generation of enterprise.
+          - generic [ref=e184]:
+            - heading "Product" [level=4] [ref=e185]
+            - link "AI Core" [ref=e186] [cursor=pointer]:
+              - /url: "#"
+            - link "B2B Infrastructure" [ref=e187] [cursor=pointer]:
+              - /url: "#"
+            - link "Payments" [ref=e188] [cursor=pointer]:
+              - /url: "#"
+            - link "Operations" [ref=e189] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e190]:
+            - heading "Developers" [level=4] [ref=e191]
+            - link "Documentation" [ref=e192] [cursor=pointer]:
+              - /url: "#"
+            - link "API Reference" [ref=e193] [cursor=pointer]:
+              - /url: "#"
+            - link "Status" [ref=e194] [cursor=pointer]:
+              - /url: "#"
+            - link "GitHub" [ref=e195] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e196]:
+            - heading "Company" [level=4] [ref=e197]
+            - link "About" [ref=e198] [cursor=pointer]:
+              - /url: "#"
+            - link "Blog" [ref=e199] [cursor=pointer]:
+              - /url: "#"
+            - link "Careers" [ref=e200] [cursor=pointer]:
+              - /url: "#"
+            - link "Legal" [ref=e201] [cursor=pointer]:
+              - /url: "#"
+        - generic [ref=e202]:
+          - paragraph [ref=e203]: © 2024 Enterprise OS Inc. All rights reserved.
+          - generic [ref=e204]:
+            - link "public" [ref=e205] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e206]: public
+            - link "alternate_email" [ref=e207] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e208]: alternate_email
+            - link "rss_feed" [ref=e209] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e210]: rss_feed
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e216] [cursor=pointer]:
+    - img [ref=e217]
+  - alert [ref=e220]
+```

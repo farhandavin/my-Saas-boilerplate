@@ -1,11 +1,18 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '../services/api';
-import { Loader2 } from 'lucide-react';
 
-const AiUsageChart = ({ teamId }) => {
-  const [data, setData] = useState([]);
+interface UsageData {
+  date: string;
+  usage: number;
+}
+
+interface AiUsageChartProps {
+  teamId: string;
+}
+
+const AiUsageChart = ({ teamId }: AiUsageChartProps) => {
+  const [data, setData] = useState<UsageData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,17 +20,22 @@ const AiUsageChart = ({ teamId }) => {
 
     const fetchData = async () => {
       try {
-        const res = await api.get(`/ai/usage-history?teamId=${teamId}`);
-        // SOLUSI: Pastikan data yang masuk adalah Array agar Recharts tidak crash
-        if (Array.isArray(res.data)) {
-          setData(res.data);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/billing/usage`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        
+        // Use usage history from response or generate mock data
+        if (json.data?.usageHistory && Array.isArray(json.data.usageHistory)) {
+          setData(json.data.usageHistory);
         } else {
-          console.error("Format data API tidak valid (Bukan Array):", res.data);
-          setData([]); 
+          // Generate sample data if no history
+          setData([]);
         }
       } catch (error) {
         console.error("Gagal load chart data", error);
-        setData([]); // Set kosong jika error
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -35,7 +47,7 @@ const AiUsageChart = ({ teamId }) => {
   if (loading) {
     return (
       <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100">
-        <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }

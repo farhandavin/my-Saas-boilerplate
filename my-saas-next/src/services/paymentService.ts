@@ -1,24 +1,30 @@
+
 // src/services/paymentService.ts
 import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { teamMembers, teams, auditLogs, users } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-18.acacia',
+  apiVersion: '2025-02-24.acacia',
 });
 
 export const PaymentService = {
   // Validate team ownership for billing operations
   async validateTeamOwner(userId: string, teamId: string) {
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId, teamId } },
-      include: { team: true }
+    // Check key
+    const member = await db.query.teamMembers.findFirst({
+        where: and(eq(teamMembers.userId, userId), eq(teamMembers.teamId, teamId)),
     });
 
-    if (!member || member.role !== 'OWNER') {
-      throw new Error('Only team owners can manage billing');
+    if (!member || member.role !== 'ADMIN') {
+      throw new Error('Only team admins can manage billing');
     }
 
-    return member.team;
+    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    if (!team) throw new Error('Team not found');
+
+    return team;
   },
 
   // Create Stripe Checkout Session
@@ -28,8 +34,9 @@ export const PaymentService = {
     teamId: string;
     priceId: string;
     planType?: string;
+    returnUrlBase?: string;
   }) {
-    const { userId, email, teamId, priceId, planType = 'PRO' } = data;
+    const { userId, email, teamId, priceId, planType = 'PRO', returnUrlBase } = data;
 
     const team = await this.validateTeamOwner(userId, teamId);
 
@@ -44,11 +51,13 @@ export const PaymentService = {
       });
       customerId = customer.id;
 
-      await prisma.team.update({
-        where: { id: team.id },
-        data: { stripeCustomerId: customerId }
-      });
+      await db.update(teams)
+        .set({ stripeCustomerId: customerId })
+        .where(eq(teams.id, team.id));
     }
+
+    // Use provided origin (e.g. localhost:3001) or fallback to env var
+    const baseUrl = returnUrlBase || process.env.NEXT_PUBLIC_APP_URL;
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -61,24 +70,43 @@ export const PaymentService = {
         teamId: team.id,
         planType
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?payment=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?payment=cancelled`,
+      // Use a consistent default locale for now, or fetch from user preference if available
+      success_url: `${baseUrl}/en/dashboard?payment=success`,
+      cancel_url: `${baseUrl}/en/pricing?payment=cancelled`,
     });
 
     return { url: session.url, id: session.id };
   },
 
   // Create Customer Portal Session
-  async createPortalSession(userId: string, teamId: string) {
+  async createPortalSession(userId: string, teamId: string, returnUrlBase?: string) {
     const team = await this.validateTeamOwner(userId, teamId);
 
+    // FIX: If team has no stripeCustomerId, CREATE one now instead of throwing error
     if (!team.stripeCustomerId) {
-      throw new Error('This team has no billing history');
+       // Fetch user email to use for customer creation
+       const [user] = await db.select().from(users).where(eq(users.id, userId));
+       const email = user?.email || team.supportEmail || `admin-${teamId}@example.com`;
+
+       const customer = await stripe.customers.create({
+         email: email,
+         name: team.name,
+         metadata: { teamId: team.id }
+       });
+       
+       await db.update(teams)
+        .set({ stripeCustomerId: customer.id })
+        .where(eq(teams.id, team.id));
+        
+       team.stripeCustomerId = customer.id;
     }
 
+    // Use provided origin (e.g. localhost:3001) or fallback to env var
+    const baseUrl = returnUrlBase || process.env.NEXT_PUBLIC_APP_URL;
+
     const session = await stripe.billingPortal.sessions.create({
-      customer: team.stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      customer: team.stripeCustomerId!,
+      return_url: `${baseUrl}/en/dashboard`,
     });
 
     return { url: session.url };
@@ -96,13 +124,12 @@ export const PaymentService = {
       cancel_at_period_end: true
     });
 
-    await prisma.auditLog.create({
-      data: {
+    await db.insert(auditLogs).values({
         teamId,
         userId,
         action: 'SUBSCRIPTION_CANCELLED',
+        entity: 'subscription',
         details: 'Subscription will cancel at end of billing period'
-      }
     });
 
     return { message: 'Subscription will cancel at the end of the billing cycle' };
@@ -120,13 +147,12 @@ export const PaymentService = {
       cancel_at_period_end: false
     });
 
-    await prisma.auditLog.create({
-      data: {
+    await db.insert(auditLogs).values({
         teamId,
         userId,
         action: 'SUBSCRIPTION_RESUMED',
+        entity: 'subscription',
         details: 'Subscription cancellation reversed'
-      }
     });
 
     return { message: 'Subscription successfully resumed' };

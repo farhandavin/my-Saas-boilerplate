@@ -1,28 +1,60 @@
 // src/services/aiService.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const apiKey = process.env.GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+import { tool } from "ai";
+import { z } from "zod";
+import { DocumentService } from "./documentService";
+import { AIModelFactory } from "@/lib/ai/factory";
+import { PrivacyLayer } from "@/lib/ai/privacy-layer";
 
 export const AiService = {
-  async generateText(prompt: string) {
-    if (!apiKey) throw new Error("GEMINI_API_KEY belum dikonfigurasi");
-    
+  // 1. CEO Digest & Pre-Check logic moved to Domain Services (ceoDigestService.ts, preCheckService.ts)
+
+  // 3. Privacy Layer (Middleware Helper)
+  // Re-exporting for convenience if widely used, but prefer direct PrivacyLayer usage
+  maskPII: PrivacyLayer.mask,
+
+  // 4. Embedding for RAG
+  async generateEmbedding(text: string): Promise<number[]> {
+    // Embeddings usually WANT semantic meaning, masking might lose context.
+    // But for strict PII, we mask.
+    const { maskedText: sanitizedText } = await PrivacyLayer.mask(text);
+
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const provider = AIModelFactory.getProvider(); // Default Google
+      return await provider.embed(sanitizedText);
     } catch (error) {
-      console.error("AI Error:", error);
-      throw new Error("Gagal menghubungi AI Service");
+      console.error("Embedding Error:", error);
+      return [];
     }
   },
 
-  // Fungsi PII Masking sederhana
-  maskPII(text: string): string {
-    return text
-      .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[REDACTED_EMAIL]')
-      .replace(/(\+62|62|0)8[1-9][0-9]{6,9}\b/g, '[REDACTED_PHONE]');
+  // Legacy wrapper if needed, now using Factory
+  async generateText(prompt: string, teamId: string = 'global', userId?: string) {
+    // 1. Masking (Pre-processing)
+    // We pass teamId to create isolated redis keys if needed
+    const { maskedText, mapId } = await PrivacyLayer.mask(prompt, teamId);
+
+    // Tools definition
+    const tools: any = {};
+
+    const provider = AIModelFactory.getProvider();
+
+    // Convert prompt to message format expected by provider
+    const messages = [{ role: 'user', content: maskedText }] as any;
+
+    try {
+      const result = await provider.generateText(messages, {
+        tools,
+        temperature: 0.7
+      });
+
+      // 2. De-masking (Post-processing)
+      // Restore PII in the response if the AI echoed it back
+      const finalResponse = await PrivacyLayer.unmask(result.text, mapId);
+
+      return finalResponse;
+    } catch (error) {
+      console.error("AI Generation Error:", error);
+      throw error;
+    }
   }
 };

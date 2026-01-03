@@ -1,62 +1,67 @@
-// backend/src/services/complianceService.js
-const prisma = require("../config/prismaClient");
-const archiver = require("archiver");
 
-class ComplianceService {
+// src/services/complianceService.ts
+import { db } from '@/db';
+import { users, auditLogs, teamMembers } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
+export const ComplianceService = {
   /**
    * EXPORT DATA: Gather all info related to a user
    */
-  async exportUserData(userId) {
-    // 1. Get Profile
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { teamMembers: { include: { team: true } } }
+  async exportUserData(userId: string) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      with: { 
+        teamMembers: { 
+           with: { team: true } 
+        } 
+      }
     });
 
-    // 2. Get Audit Logs (Activity)
-    const logs = await prisma.auditLog.findMany({ where: { userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
 
-    // 3. Construct JSON
+    const logs = await db.query.auditLogs.findMany({
+       where: eq(auditLogs.userId, userId)
+    });
+
     const exportData = {
-        generatedAt: new Date(),
-        profile: {
-            name: user.name,
-            email: user.email,
-            provider: user.provider
-        },
-        teams: user.teamMembers.map(tm => ({
-            role: tm.role,
-            teamName: tm.team.name,
-            tier: tm.team.tier
+      generatedAt: new Date(),
+      profile: {
+        name: user.name,
+        email: user.email,
+
+      },
+      teams: user.teamMembers
+        .filter(tm => tm.team)
+        .map(tm => ({
+          role: tm.role,
+          teamName: tm.team!.name,
+          tier: tm.team!.tier
         })),
-        activityHistory: logs
+      activityHistory: logs
     };
 
     return exportData;
-  }
+  },
 
   /**
    * DELETE ACCOUNT: "Right to be Forgotten"
-   * Warning: This is destructive.
    */
-  async deleteAccount(userId) {
-    // Use transaction to ensure complete cleanup
-    return await prisma.$transaction(async (tx) => {
-        // 1. Delete Team Memberships
-        await tx.teamMember.deleteMany({ where: { userId } });
-        
-        // 2. Anonymize Audit Logs (Keep logs for security, but remove user link)
-        await tx.auditLog.updateMany({
-            where: { userId },
-            data: { userId: "DELETED_USER", details: "User requested deletion (GDPR)" }
-        });
+  async deleteAccount(userId: string) {
+    return await db.transaction(async (tx) => {
+      await tx.delete(teamMembers).where(eq(teamMembers.userId, userId));
+      
+      await tx.update(auditLogs)
+        .set({ userId: null, details: "User requested deletion (GDPR)" })
+        .where(eq(auditLogs.userId, userId));
 
-        // 3. Delete User
-        const deletedUser = await tx.user.delete({ where: { id: userId } });
-        
-        return deletedUser;
+      const [deletedUser] = await tx.delete(users)
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return deletedUser;
     });
   }
-}
-
-module.exports = new ComplianceService();
+};

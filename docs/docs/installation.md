@@ -1,46 +1,69 @@
+---
+sidebar_label: Installation Guide
+sidebar_position: 3
+title: Installation Guide
+---
+
 # Installation Guide
 
+Follow these steps to set up the Enterprise OS locally.
+
 ## Prerequisites
+
 Ensure you have the following installed:
-* Node.js (v18 or higher)
-* PostgreSQL (Local or Cloud like Supabase/Neon)
-* NPM or Yarn
+* **Node.js** (v18 or higher)
+* **PostgreSQL** (Local or Cloud like Neon/Supabase)
+* **NPM** or **Yarn**
 
-## Backend Setup
+## Quick Start
 
-1.  Navigate to the backend folder:
-    ```bash
-    cd backend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Configure Environment:
-    Copy the example file.
-    ```bash
-    cp .env.example .env
-    ```
-4.  Database Migration:
-    ```bash
-    npx prisma migrate dev --name init
-    ```
-5.  Start Server:
-    ```bash
-    npm run dev
-    ```
+The Enterprise OS is a unified Next.js application (Fullstack). You only need to run one server.
 
-## Frontend Setup
+### 1. clone the repository & Install Dependencies
 
-1.  Navigate to the frontend folder:
-    ```bash
-    cd frontend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start Client:
-    ```bash
-    npm run dev
-    ```
+Navigate to the application directory:
+
+```bash
+cd my-saas-next
+npm install
+```
+
+### 2. Configure Environment
+
+Copy the example environment file and configure your database credentials:
+
+```bash
+cp .env.example .env
+```
+
+> **Tip:** Edit `.env` and fill in your `DATABASE_URL` and `NEXTAUTH_SECRET`.
+
+### 3. Database Setup
+
+Run the migrations to set up your PostgreSQL schema:
+
+```bash
+npx drizzle-kit push
+```
+*(Or if using Prisma)*
+```bash
+npx prisma migrate dev --name init
+```
+
+### 4. Seed Initial Data (Optional)
+
+Populate the database with default roles and settings:
+
+```bash
+npm run seed
+```
+
+### 5. Start the Development Server
+
+Launch the application:
+
+```bash
+npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).

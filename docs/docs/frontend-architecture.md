@@ -1,6 +1,12 @@
+---
+sidebar_label: Frontend Architecture
+title: Frontend Architecture
+---
+
 # Frontend Architecture
 
 ## React Query (TanStack Query)
+
 We do not use `useEffect` for data fetching. Instead, we use **TanStack Query v5**.
 
 ### Why?
@@ -9,13 +15,14 @@ We do not use `useEffect` for data fetching. Instead, we use **TanStack Query v5
 3. **Loading/Error States:** Built-in flags like `isLoading` and `isError`.
 
 ### Creating a New Hook
+
 All API hooks are stored in `src/hooks/queries`.
 
-**Example: `useUserQuery.js`**
+**Example: `useUserQuery.ts`**
 
-```javascript
+```typescript
 import { useQuery } from '@tanstack/react-query';
-import api from '../../services/api';
+import api from '@/lib/api';
 
 export const useUserQuery = () => {
   return useQuery({
@@ -26,3 +33,4 @@ export const useUserQuery = () => {
     },
   });
 };
+```

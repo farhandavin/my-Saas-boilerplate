@@ -1,30 +1,189 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+/* Fonts are loaded via docusaurus.config.js for better performance */
 
-/* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  /* Brand Colors - Enterprise Blue #135bec */
+  --ifm-color-primary: #135bec;
+  --ifm-color-primary-dark: #1152d4;
+  --ifm-color-primary-darker: #104dc9;
+  --ifm-color-primary-darkest: #0d3f8f;
+  --ifm-color-primary-light: #3b77ef;
+  --ifm-color-primary-lighter: #4f86f1;
+  --ifm-color-primary-lightest: #8db1f6;
+
+  /* Typography */
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --ifm-heading-font-family: 'Inter', sans-serif;
+  --ifm-font-size-base: 16px;
+  --ifm-line-height-base: 1.6;
+
+  /* Layout & Spacing */
+  --ifm-navbar-height: 4.5rem; /* Taller navbar matching design */
+  --ifm-navbar-padding-vertical: 0.75rem;
+  --ifm-spacing-horizontal: 1.5rem;
+  
+  /* Sidebar */
+  --ifm-menu-color: #64748b; /* text-slate-500 */
+  --ifm-menu-color-hover: #0f172a; /* text-slate-900 */
+  --ifm-menu-color-active: #135bec;
+  --ifm-menu-link-padding-vertical: 0.6rem;
+  --ifm-toc-link-color: #64748b;
+  --ifm-toc-border-color: #e2e8f0;
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* Dark Mode Overrides */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-color-primary: #3b82f6;
+  --ifm-background-color: #101622; /* primary-dark-bg matching index.js */
+  --ifm-navbar-background-color: rgba(16, 22, 34, 0.95);
+  
+  --ifm-menu-color: #94a3b8;
+  --ifm-menu-color-hover: #f8fafc;
+  --ifm-toc-link-color: #94a3b8;
+  --ifm-toc-border-color: #1e293b;
+}
+
+/* --- NAVBAR STYLING --- */
+.navbar {
+  border-bottom: 1px solid #e7ebf3;
+  box-shadow: none;
+  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid #1e293b;
+}
+
+.navbar__brand {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 1.25rem;
+  margin-right: 2rem;
+}
+
+.navbar__link {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #64748b; /* text-text-muted */
+}
+.navbar__link:hover, .navbar__link--active {
+  color: var(--ifm-color-primary);
+  background: transparent; /* Remove default gray bg */
+}
+
+/* Custom Login Button in Navbar */
+.navbar__item.button.button--primary {
+  border-radius: 9999px;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: white !important; /* Force white text */
+  margin-left: 1rem;
+}
+.navbar__item.button.button--primary:hover {
+  background-color: var(--ifm-color-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* --- SIDEBAR STYLING --- */
+.theme-doc-sidebar-container {
+  border-right: 1px solid #e7ebf3;
+  background-color: #fff; /* background-light */
+}
+[data-theme='dark'] .theme-doc-sidebar-container {
+  border-right: 1px solid #1e293b;
+  background-color: #101622;
+}
+
+.menu {
+  padding: 1rem;
+  font-weight: 500;
+}
+
+.menu__list-item-collapsible {
+  border-radius: 0.5rem;
+}
+
+.menu__link {
+  border-radius: 0.5rem;
+  color: var(--ifm-menu-color);
+  margin-bottom: 2px;
+}
+
+.menu__link:hover {
+  background-color: #f8f9fc; /* background-subtle */
+  color: var(--ifm-menu-color-hover);
+}
+[data-theme='dark'] .menu__link:hover {
+  background-color: rgba(255,255,255, 0.05);
+}
+
+.menu__link--active {
+  color: var(--ifm-color-primary);
+  background-color: rgba(19, 91, 236, 0.1); /* primary/10 */
+}
+[data-theme='dark'] .menu__link--active {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+/* Sidebar Category Headers */
+.menu__list-item-collapsible .menu__link {
+  font-weight: 600;
+}
+
+/* --- CONTENT AREA STYLING --- */
+main.docPage_... { /* Target main content if class available, generic fallback */ }
+
+.markdown h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+  color: #0f172a;
+}
+[data-theme='dark'] .markdown h1 {
+  color: #f8fafc;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+.breadcrumbs__link {
+  color: #64748b;
+  border-radius: 0.25rem;
+}
+
+/* Admonitions - Rounded & Modern */
+.alert {
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.alert--info {
+  background-color: #eff6ff; /* blue-50 */
+  border-color: #dbeafe;
+  color: #1e40af;
+}
+[data-theme='dark'] .alert--info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* Card Styling match landing page */
+.card {
+  border: 1px solid #e7ebf3;
+  box-shadow: none; 
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+.card:hover {
+  border-color: var(--ifm-color-primary-light);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+[data-theme='dark'] .card {
+  border-color: #1e293b;
+  background-color: #1e293b; /* darker card bg */
 }

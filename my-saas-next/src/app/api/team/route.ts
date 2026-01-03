@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
       tier: team.tier,
       aiUsageCount: team.aiUsageCount,
       aiTokenLimit: team.aiTokenLimit,
-      memberCount: team._count.members,
-      myRole: team.members[0]?.role
+      memberCount: team.memberCount,
+      myRole: team.myRole,
     }));
 
     return NextResponse.json({ success: true, teams: formattedTeams });

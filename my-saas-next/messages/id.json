@@ -1,0 +1,25 @@
+{
+  "Dashboard": {
+    "title": "Dasbor",
+    "overview": "Ringkasan",
+    "aiHub": "Pusat AI",
+    "invoices": "Tagihan",
+    "settings": "Pengaturan",
+    "profile": "Profil",
+    "logout": "Keluar"
+  },
+  "AI": {
+    "preCheck": "Cek Dokumen AI",
+    "privacy": "Lapisan Privasi",
+    "digest": "Ringkasan CEO"
+  },
+  "Error": {
+    "title": "Oops! Terjadi Kesalahan",
+    "description": "Maaf, terjadi kesalahan yang tidak terduga. Tim kami telah diberitahu dan sedang memperbaikinya.",
+    "referenceId": "ID Referensi (untuk bantuan)",
+    "retry": "Coba Lagi",
+    "backToDashboard": "Kembali ke Dashboard",
+    "needHelp": "Butuh bantuan?",
+    "contactSupport": "Hubungi Dukungan"
+  }
+}

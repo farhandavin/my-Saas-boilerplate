@@ -12,12 +12,22 @@ export default function CeoDigestWidget() {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.post('/api/ai/analyze', 
-        { prompt: "Buatkan rangkuman performa bisnis hari ini." },
+        { 
+          prompt: `You are a Chief of Staff. Analyze this daily snapshot and give a 3-bullet executive summary (Growth, Critical, Highlight).
+          
+          Context Data:
+          - Daily Revenue: $15,420 (+12% wow)
+          - Active Users: 1,205 (+5%)
+          - Top Anomaly: unusually high signup rate from Japan region.
+          - System Health: All green, except increased latency in payments API.
+          
+          Tone: Professional, Concise, Insightful.` 
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setResult(res.data.data);
     } catch (error) {
-      alert("Gagal memproses AI");
+      alert("Failed to process AI request");
     } finally {
       setLoading(false);
     }
@@ -37,7 +47,7 @@ export default function CeoDigestWidget() {
       </div>
       
       <div className="bg-gray-50 p-4 rounded-xl min-h-[100px]">
-        {result ? <p className="whitespace-pre-line">{result}</p> : <p className="text-gray-400 italic">Klik refresh untuk analisa...</p>}
+        {result ? <p className="whitespace-pre-line">{result}</p> : <p className="text-gray-400 italic">Click refresh to analyze...</p>}
       </div>
     </div>
   );

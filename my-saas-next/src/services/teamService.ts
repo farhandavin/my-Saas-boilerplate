@@ -1,23 +1,47 @@
+
 // src/services/teamService.ts
-import { prisma } from '@/lib/prisma';
-import { PLAN_LIMITS, Role } from '@/types';
+import { db } from '@/db';
+import { teams, teamMembers, users, invitations, auditLogs } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { PLAN_LIMITS, Role, BrandingSettings, SmtpSettings } from '@/types';
 import crypto from 'crypto';
 
 export const TeamService = {
   // Get all teams for a user
   async getMyTeams(userId: string) {
-    return prisma.team.findMany({
-      where: {
-        members: { some: { userId } }
-      },
-      include: {
-        _count: { select: { members: true } },
-        members: {
-          where: { userId },
-          select: { role: true }
-        }
-      }
-    });
+    // Fetch team memberships for this user
+    const memberships = await db.select()
+      .from(teamMembers)
+      .where(eq(teamMembers.userId, userId));
+
+    if (memberships.length === 0) {
+      return [];
+    }
+
+    // Fetch teams for these memberships
+    const teamIds = memberships.map(m => m.teamId);
+    const teamsData = await db.select()
+      .from(teams)
+      .where(eq(teams.id, teamIds[0]!)); // Safe because length check above
+
+    // For each team, count members
+    const result = [];
+    for (const membership of memberships) {
+      const team = teamsData.find(t => t.id === membership.teamId);
+      if (!team) continue;
+
+      const memberCount = await db.select({ count: db.$count(teamMembers, eq(teamMembers.teamId, team.id)) })
+        .from(teamMembers)
+        .where(eq(teamMembers.teamId, team.id));
+
+      result.push({
+        ...team,
+        memberCount: memberCount[0]?.count || 1,
+        myRole: membership.role || 'STAFF',
+      });
+    }
+
+    return result;
   },
 
   // Create a new team
@@ -25,31 +49,26 @@ export const TeamService = {
     const { name, slug, ownerId } = data;
     const teamSlug = slug || name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now();
 
-    return prisma.$transaction(async (tx) => {
-      const team = await tx.team.create({
-        data: {
-          name,
-          slug: teamSlug,
-          tier: 'FREE',
-          aiTokenLimit: PLAN_LIMITS.FREE.aiTokenLimit,
-        }
+    return db.transaction(async (tx) => {
+      const [team] = await tx.insert(teams).values({
+        name,
+        slug: teamSlug,
+        tier: 'FREE',
+        aiTokenLimit: PLAN_LIMITS.FREE.aiTokenLimit,
+      }).returning();
+
+      await tx.insert(teamMembers).values({
+        userId: ownerId,
+        teamId: team.id,
+        role: 'ADMIN'
       });
 
-      await tx.teamMember.create({
-        data: {
-          userId: ownerId,
-          teamId: team.id,
-          role: 'OWNER'
-        }
-      });
-
-      await tx.auditLog.create({
-        data: {
-          teamId: team.id,
-          userId: ownerId,
-          action: 'TEAM_CREATED',
-          details: `Team "${name}" created`
-        }
+      await tx.insert(auditLogs).values({
+        teamId: team.id,
+        userId: ownerId,
+        action: 'TEAM_CREATED',
+        entity: 'team',
+        details: `Team "${name}" created`
       });
 
       return team;
@@ -57,19 +76,19 @@ export const TeamService = {
   },
 
   // Invite a member
-  async inviteMember(data: { 
-    teamId: string; 
-    email: string; 
-    role?: Role; 
-    inviterId: string 
+  async inviteMember(data: {
+    teamId: string;
+    email: string;
+    role?: Role;
+    inviterId: string
   }) {
-    const { teamId, email, role = 'MEMBER', inviterId } = data;
+    const { teamId, email, role = 'STAFF', inviterId } = data;
 
     // Get team with members
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      include: { 
-        members: true,
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+      with: {
+        teamMembers: true,
         invitations: true
       }
     });
@@ -78,25 +97,47 @@ export const TeamService = {
 
     // Check plan limits
     const limit = PLAN_LIMITS[team.tier as keyof typeof PLAN_LIMITS]?.maxMembers || 2;
-    const currentCount = team.members.length + team.invitations.length;
+    const currentCount = team.teamMembers.length + team.invitations.length;
 
     if (currentCount >= limit) {
       throw new Error(`Plan limit reached. ${team.tier} plan allows max ${limit} members.`);
     }
 
     // Check if already a member
-    const existingMember = await prisma.user.findFirst({
-      where: { 
-        email,
-        teamMembers: { some: { teamId } }
-      }
-    });
+    // Drizzle doesn't have "some" in findFirst root for relations easily in standard SQL.
+    // Better to query user first or check memebership.
 
-    if (existingMember) throw new Error('User is already a team member');
+    // Check if user exists with email AND is in team
+    // Check if user exists with email AND is in team
+
+    // Let's check teamMembers directly joined with users
+    // But simplest is check if user exists, then check teamMember
+
+    const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (user) {
+      // Check if already a member of THIS team
+      const member = await db.query.teamMembers.findFirst({
+        where: and(eq(teamMembers.userId, user.id), eq(teamMembers.teamId, teamId))
+      });
+      if (member) throw new Error('User is already a team member');
+
+      // 🔒 SECURITY: Check if user is already a member of ANY OTHER team
+      const membershipInOtherTeam = await db.query.teamMembers.findFirst({
+        where: eq(teamMembers.userId, user.id),
+        with: { team: true }
+      });
+
+      if (membershipInOtherTeam) {
+        throw new Error(
+          `This user is already affiliated with "${membershipInOtherTeam.team?.name || 'another company'}". ` +
+          `Users can only belong to one organization at a time for security and data isolation.`
+        );
+      }
+    }
 
     // Check existing invitation
-    const existingInvite = await prisma.invitation.findFirst({
-      where: { teamId, email }
+    const existingInvite = await db.query.invitations.findFirst({
+      where: and(eq(invitations.teamId, teamId), eq(invitations.email, email))
     });
 
     if (existingInvite) throw new Error('Invitation already sent to this email');
@@ -105,28 +146,25 @@ export const TeamService = {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    const invitation = await prisma.invitation.create({
-      data: {
-        email,
-        token,
-        role,
-        teamId,
-        expires
-      }
+    await db.insert(invitations).values({
+      email,
+      token,
+      role,
+      teamId,
+      expires
     });
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        teamId,
-        userId: inviterId,
-        action: 'MEMBER_INVITED',
-        details: `Invited ${email} as ${role}`
-      }
+    await db.insert(auditLogs).values({
+      teamId,
+      userId: inviterId,
+      action: 'MEMBER_INVITED',
+      entity: 'team',
+      details: `Invited ${email} as ${role}`
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       token,
       inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/join-team/${token}`
     };
@@ -134,40 +172,37 @@ export const TeamService = {
 
   // Join a team via invitation token
   async joinTeam(token: string, userId: string) {
-    const invitation = await prisma.invitation.findUnique({
-      where: { token },
-      include: { team: true }
+    const invitation = await db.query.invitations.findFirst({
+      where: eq(invitations.token, token),
+      with: { team: true }
     });
 
     if (!invitation) throw new Error('Invalid invitation link');
-    if (invitation.expires < new Date()) throw new Error('Invitation has expired');
+    if (new Date(invitation.expires) < new Date()) throw new Error('Invitation has expired');
 
     // Check if already a member
-    const existingMember = await prisma.teamMember.findFirst({
-      where: { teamId: invitation.teamId, userId }
+    const existingMember = await db.query.teamMembers.findFirst({
+      where: and(eq(teamMembers.teamId, invitation.teamId), eq(teamMembers.userId, userId))
     });
 
     if (existingMember) throw new Error('You are already a member of this team');
 
     // Add member and delete invitation
-    const result = await prisma.$transaction(async (tx) => {
-      const member = await tx.teamMember.create({
-        data: {
-          userId,
-          teamId: invitation.teamId,
-          role: invitation.role
-        }
-      });
+    const result = await db.transaction(async (tx) => {
+      const [member] = await tx.insert(teamMembers).values({
+        userId,
+        teamId: invitation.teamId,
+        role: invitation.role as Role
+      }).returning();
 
-      await tx.invitation.delete({ where: { id: invitation.id } });
+      await tx.delete(invitations).where(eq(invitations.id, invitation.id));
 
-      await tx.auditLog.create({
-        data: {
-          teamId: invitation.teamId,
-          userId,
-          action: 'MEMBER_JOINED',
-          details: `Joined team via invitation`
-        }
+      await tx.insert(auditLogs).values({
+        teamId: invitation.teamId,
+        userId,
+        action: 'MEMBER_JOINED',
+        entity: 'team',
+        details: `Joined team via invitation`
       });
 
       return member;
@@ -182,18 +217,36 @@ export const TeamService = {
 
   // Get team details
   async getTeamDetails(teamId: string) {
-    return prisma.team.findUnique({
-      where: { id: teamId },
-      include: {
-        members: {
-          include: {
+    return db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+      with: {
+        teamMembers: {
+          with: {
             user: {
-              select: { id: true, name: true, email: true, image: true }
+              columns: { id: true, name: true, email: true, image: true }
             }
           }
         },
-        _count: { select: { members: true, documents: true } }
+        // Drizzle doesn't support _count in "with" directly without setup or extras.
+        // We'll stick to members array availability.
       }
+
     });
+  },
+
+  async updateTeam(teamId: string, data: {
+    name?: string;
+    slug?: string;
+    branding?: BrandingSettings;
+    smtpSettings?: SmtpSettings;
+  }) {
+    const [updatedTeam] = await db
+      .update(teams)
+      .set(data)
+      .where(eq(teams.id, teamId))
+      .returning();
+
+    return updatedTeam;
   }
 };
+

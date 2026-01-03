@@ -1,7 +1,10 @@
+
 // src/app/api/api-keys/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized, forbidden } from '@/lib/middleware/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { teamMembers, apiKeys, auditLogs } from '@/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 
 // GET /api/api-keys - List API keys
@@ -12,29 +15,33 @@ export async function GET(req: NextRequest) {
 
     const payload = verifyToken(token);
     if (!payload) return unauthorized('Invalid token');
+    if (!payload.teamId) return unauthorized('Team context required');
 
     // Check role
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId: payload.userId, teamId: payload.teamId } }
+    const member = await db.query.teamMembers.findFirst({
+        where: and(
+            eq(teamMembers.userId, payload.userId),
+            eq(teamMembers.teamId, payload.teamId)
+        )
     });
 
-    if (!member || !['OWNER', 'ADMIN'].includes(member.role)) {
+    if (!member || !member.role || !['ADMIN', 'MANAGER'].includes(member.role)) {
       return forbidden('Only owners and admins can view API keys');
     }
 
-    const apiKeys = await prisma.apiKey.findMany({
-      where: { teamId: payload.teamId },
-      select: {
+    const keys = await db.query.apiKeys.findMany({
+      where: eq(apiKeys.teamId, payload.teamId),
+      orderBy: [desc(apiKeys.createdAt)],
+      columns: {
         id: true,
         name: true,
         prefix: true,
         lastUsedAt: true,
         createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
+      }
     });
 
-    return NextResponse.json({ success: true, apiKeys });
+    return NextResponse.json({ success: true, apiKeys: keys });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -48,13 +55,17 @@ export async function POST(req: NextRequest) {
 
     const payload = verifyToken(token);
     if (!payload) return unauthorized('Invalid token');
+    if (!payload.teamId) return unauthorized('Team context required');
 
     // Check role
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId: payload.userId, teamId: payload.teamId } }
+    const member = await db.query.teamMembers.findFirst({
+        where: and(
+            eq(teamMembers.userId, payload.userId),
+            eq(teamMembers.teamId, payload.teamId)
+        )
     });
 
-    if (!member || !['OWNER', 'ADMIN'].includes(member.role)) {
+    if (!member || !member.role || !['ADMIN', 'MANAGER'].includes(member.role)) {
       return forbidden('Only owners and admins can create API keys');
     }
 
@@ -68,23 +79,20 @@ export async function POST(req: NextRequest) {
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
     const prefix = rawKey.substring(0, 12);
 
-    const apiKey = await prisma.apiKey.create({
-      data: {
+    const [apiKey] = await db.insert(apiKeys).values({
         name,
         prefix,
-        keyHash,
+        keyHash, // Map hash to 'keyHash' column
         teamId: payload.teamId
-      }
-    });
+    }).returning();
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        teamId: payload.teamId,
+    await db.insert(auditLogs).values({
+        teamId: payload.teamId!,
         userId: payload.userId,
         action: 'API_KEY_CREATED',
+        entity: 'API_KEY',
         details: `Created API key: ${name}`
-      }
     });
 
     return NextResponse.json({
@@ -100,4 +108,62 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// DELETE /api/api-keys - Revoke/Delete API key
+export async function DELETE(req: NextRequest) {
+    try {
+      const token = extractToken(req);
+      if (!token) return unauthorized();
+  
+      const payload = verifyToken(token);
+      if (!payload) return unauthorized('Invalid token');
+      if (!payload.teamId) return unauthorized('Team context required');
+  
+      // Check role
+      const member = await db.query.teamMembers.findFirst({
+          where: and(
+              eq(teamMembers.userId, payload.userId),
+              eq(teamMembers.teamId, payload.teamId)
+          )
+      });
+  
+      if (!member || !member.role || !['ADMIN', 'MANAGER'].includes(member.role)) {
+        return forbidden('Only owners and admins can revoke API keys');
+      }
+  
+      const { searchParams } = new URL(req.url);
+      const id = searchParams.get('id');
+  
+      if (!id) {
+        return NextResponse.json({ error: 'API Key ID is required' }, { status: 400 });
+      }
+  
+      // Ensure key belongs to team
+      const existingKey = await db.query.apiKeys.findFirst({
+          where: and(
+              eq(apiKeys.id, id),
+              eq(apiKeys.teamId, payload.teamId) // Security check
+          )
+      });
+  
+      if (!existingKey) {
+          return NextResponse.json({ error: 'API key not found' }, { status: 404 });
+      }
+  
+      await db.delete(apiKeys).where(eq(apiKeys.id, id));
+  
+      // Audit log
+      await db.insert(auditLogs).values({
+          teamId: payload.teamId!,
+          userId: payload.userId,
+          action: 'API_KEY_REVOKED',
+          entity: 'API_KEY',
+          details: `Revoked API key: ${existingKey.name} (${existingKey.prefix})`
+      });
+  
+      return NextResponse.json({ success: true });
+    } catch (error: any) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }

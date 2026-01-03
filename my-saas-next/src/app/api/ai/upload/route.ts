@@ -1,7 +1,11 @@
+
 // src/app/api/ai/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { documents, auditLogs, teamMembers } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { AiService } from '@/services/aiService';
 
 // POST /api/ai/upload - Upload document for RAG
 export async function POST(req: NextRequest) {
@@ -11,6 +15,15 @@ export async function POST(req: NextRequest) {
 
     const payload = verifyToken(token);
     if (!payload) return unauthorized('Invalid token');
+
+    // Check role from DB to be safe
+    const member = await db.query.teamMembers.findFirst({
+        where: and(eq(teamMembers.userId, payload.userId), eq(teamMembers.teamId, payload.teamId!))
+    });
+
+    if (!member || !['ADMIN', 'MANAGER'].includes(member.role!)) {
+        return NextResponse.json({ error: 'Only Admins and Managers can upload documents' }, { status: 403 });
+    }
 
     // Parse form data
     const formData = await req.formData();
@@ -32,27 +45,20 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // TODO: Generate embedding using AI service
-    // const embedding = await AiService.generateEmbedding(content);
-
     // Save document
-    const document = await prisma.document.create({
-      data: {
-        teamId: payload.teamId,
+    const [document] = await db.insert(documents).values({
+        teamId: payload.teamId!,
         title,
-        content,
-        // embedding: will be added when embedding service is integrated
-      }
-    });
+        content
+    }).returning();
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        teamId: payload.teamId,
+    await db.insert(auditLogs).values({
+        teamId: payload.teamId!,
         userId: payload.userId,
         action: 'DOCUMENT_UPLOADED',
-        details: `Uploaded document: ${title} (${file.name})`
-      }
+        entity: 'Document',
+        details: `Uploaded ${title}`
     });
 
     return NextResponse.json({

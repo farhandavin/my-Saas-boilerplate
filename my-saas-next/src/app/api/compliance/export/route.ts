@@ -1,7 +1,10 @@
+
 // src/app/api/compliance/export/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { users, auditLogs, notifications } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 // GET /api/compliance/export - Export user data (GDPR compliant)
 export async function GET(req: NextRequest) {
@@ -12,60 +15,54 @@ export async function GET(req: NextRequest) {
     const payload = verifyToken(token);
     if (!payload) return unauthorized('Invalid token');
 
-    // Collect all user data
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        provider: true,
-        createdAt: true,
-        updatedAt: true,
-        teamMembers: {
-          include: {
-            team: {
-              select: { id: true, name: true, slug: true }
-            }
-          }
-        },
-        auditLogs: {
-          select: {
-            action: true,
-            details: true,
-            createdAt: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 100
-        },
-        notifications: {
-          select: {
-            title: true,
-            message: true,
-            type: true,
-            createdAt: true
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 50
+    // Collect all user data using Drizzle
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, payload.userId),
+        with: {
+            teamMembers: {
+                with: {
+                    team: {
+                         columns: { id: true, name: true, slug: true }
+                    }
+                }
+            },
+            // Note: relations to logs/notifications must be defined in schema relations
+            // Assuming they are defined. If not, separate queries needed.
+            // Let's assume standard One-to-Many relations exist.
         }
-      }
     });
 
     if (!user) return unauthorized('User not found');
+
+    // Separate queries for large lists if not joined
+    const userAuditLogs = await db.query.auditLogs.findMany({
+        where: eq(auditLogs.userId, payload.userId),
+        orderBy: [desc(auditLogs.createdAt)],
+        limit: 100,
+        columns: { action: true, details: true, createdAt: true }
+    });
+
+    const userNotifications = await db.query.notifications.findMany({
+        where: eq(notifications.userId, payload.userId),
+        orderBy: [desc(notifications.createdAt)],
+        limit: 50,
+        columns: { title: true, message: true, type: true, createdAt: true }
+    });
 
     const exportData = {
       exportDate: new Date().toISOString(),
       user: {
         ...user,
+        // Drizzle User result
         teams: user.teamMembers.map(tm => ({
           ...tm.team,
           role: tm.role
-        }))
+        })),
+        auditLogs: userAuditLogs,
+        notifications: userNotifications
       }
     };
 
-    // Return as JSON (or could be formatted as PDF/ZIP)
     return NextResponse.json({
       success: true,
       message: 'Your data export is ready',

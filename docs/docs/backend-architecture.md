@@ -1,7 +1,6 @@
-
-```markdown
 ---
-sidebar_position: 2
+sidebar_label: Backend Architecture
+title: Backend Architecture
 ---
 
 # Backend Architecture
@@ -15,26 +14,23 @@ Data flows through the application in this specific order:
 ```mermaid
 graph LR
     A[Request] --> B[Router]
-    B --> C[Controller]
+    B --> C[Controller/Route Handler]
     C --> D[Service]
-    D --> E[Repository]
+    D --> E[Repository/ORM]
     E --> F[Database]
-
 ```
 
-### 1. Controller Layer (`/src/controllers`)
+### 1. Route Handler Layer (`src/app/api/...`)
 
 **Responsibility:** HTTP Adapter.
 
 * Receives the Request (`req`).
-* Validates input (using `express-validator`).
+* Validates input (using `zod` or manual validation).
 * Delegates business logic to the **Service**.
 * Sends the Response (`res`).
 * > **Note:** Never write database queries here.
 
-
-
-### 2. Service Layer (`/src/services`)
+### 2. Service Layer (`src/services`)
 
 **Responsibility:** Business Logic.
 
@@ -43,12 +39,9 @@ graph LR
 * Throws errors if rules are violated.
 * > **Note:** Framework agnostic. It doesn't know what `req` or `res` is.
 
-
-
-### 3. Repository Layer (`/src/repositories`)
+### 3. Repository/Data Layer (`src/db`)
 
 **Responsibility:** Data Access.
 
-* Direct communication with **Prisma ORM**.
+* Direct communication with **Drizzle ORM** (or Prisma).
 * Handles CRUD operations (Create, Read, Update, Delete).
-

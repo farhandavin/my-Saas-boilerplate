@@ -1,7 +1,10 @@
+
 // src/app/api/api-keys/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized, forbidden } from '@/lib/middleware/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { teamMembers, apiKeys, auditLogs } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 // DELETE /api/api-keys/[id] - Revoke API key
 export async function DELETE(
@@ -16,35 +19,40 @@ export async function DELETE(
     if (!payload) return unauthorized('Invalid token');
 
     // Check role
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId: payload.userId, teamId: payload.teamId } }
+    const member = await db.query.teamMembers.findFirst({
+        where: and(
+            eq(teamMembers.userId, payload.userId),
+            eq(teamMembers.teamId, payload.teamId)
+        )
     });
 
-    if (!member || !['OWNER', 'ADMIN'].includes(member.role)) {
+    if (!member || !member.role || !['ADMIN', 'MANAGER'].includes(member.role)) {
       return forbidden('Only owners and admins can revoke API keys');
     }
 
     const { id } = await params;
 
     // Verify key belongs to team
-    const apiKey = await prisma.apiKey.findFirst({
-      where: { id, teamId: payload.teamId }
+    const apiKey = await db.query.apiKeys.findFirst({
+        where: and(
+            eq(apiKeys.id, id),
+            eq(apiKeys.teamId, payload.teamId)
+        )
     });
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 });
     }
 
-    await prisma.apiKey.delete({ where: { id } });
+    await db.delete(apiKeys).where(eq(apiKeys.id, id));
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        teamId: payload.teamId,
+    await db.insert(auditLogs).values({
+        teamId: payload.teamId!,
         userId: payload.userId,
         action: 'API_KEY_REVOKED',
+        entity: 'API_KEY',
         details: `Revoked API key: ${apiKey.name}`
-      }
     });
 
     return NextResponse.json({ success: true, message: 'API key revoked' });

@@ -1,7 +1,10 @@
+
 // src/app/api/ai/docs/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { documents, auditLogs } from '@/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 
 // GET /api/ai/docs - List knowledge base documents
 export async function GET(req: NextRequest) {
@@ -12,19 +15,19 @@ export async function GET(req: NextRequest) {
     const payload = verifyToken(token);
     if (!payload) return unauthorized('Invalid token');
 
-    const documents = await prisma.document.findMany({
-      where: { teamId: payload.teamId },
-      select: {
+    const docs = await db.query.documents.findMany({
+      where: eq(documents.teamId, payload.teamId),
+      orderBy: [desc(documents.createdAt)],
+      columns: {
         id: true,
         title: true,
         createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
+      }
     });
 
     return NextResponse.json({
       success: true,
-      documents
+      documents: docs
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,23 +50,25 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
     }
 
-    const doc = await prisma.document.findFirst({
-      where: { id: docId, teamId: payload.teamId }
+    const doc = await db.query.documents.findFirst({
+        where: and(
+            eq(documents.id, docId),
+            eq(documents.teamId, payload.teamId)
+        )
     });
 
     if (!doc) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    await prisma.document.delete({ where: { id: docId } });
+    await db.delete(documents).where(eq(documents.id, docId));
 
-    await prisma.auditLog.create({
-      data: {
-        teamId: payload.teamId,
+    await db.insert(auditLogs).values({
+        teamId: payload.teamId!,
         userId: payload.userId,
         action: 'DOCUMENT_DELETED',
-        details: `Deleted document: ${doc.title}`
-      }
+        entity: 'Document',
+        details: `Deleted document ID: ${docId}`
     });
 
     return NextResponse.json({ success: true, message: 'Document deleted' });

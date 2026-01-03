@@ -1,17 +1,24 @@
+
 // src/lib/middleware/billing.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { teams } from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 // Check if team has enough AI quota
 export const checkAiQuota = async (teamId: string, requiredTokens: number = 10) => {
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    select: { aiUsageCount: true, aiTokenLimit: true }
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+    columns: { aiUsageCount: true, aiTokenLimit: true }
   });
 
   if (!team) return { allowed: false, reason: 'Team not found' };
 
-  const remaining = team.aiTokenLimit - team.aiUsageCount;
+  // Handle nulls if necessary
+  const limit = team.aiTokenLimit || 0;
+  const usage = team.aiUsageCount || 0;
+
+  const remaining = limit - usage;
   if (remaining < requiredTokens) {
     return { 
       allowed: false, 
@@ -26,27 +33,29 @@ export const checkAiQuota = async (teamId: string, requiredTokens: number = 10) 
 
 // Deduct tokens after successful AI operation
 export const deductTokens = async (teamId: string, tokens: number) => {
-  await prisma.team.update({
-    where: { id: teamId },
-    data: { aiUsageCount: { increment: tokens } }
-  });
+  await db.update(teams)
+    .set({ aiUsageCount: sql`${teams.aiUsageCount} + ${tokens}` })
+    .where(eq(teams.id, teamId));
 };
 
 // Get quota status
 export const getQuotaStatus = async (teamId: string) => {
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    select: { aiUsageCount: true, aiTokenLimit: true, tier: true }
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+    columns: { aiUsageCount: true, aiTokenLimit: true, tier: true }
   });
 
   if (!team) return null;
 
+  const limit = team.aiTokenLimit || 0;
+  const usage = team.aiUsageCount || 0;
+
   return {
-    used: team.aiUsageCount,
-    limit: team.aiTokenLimit,
-    remaining: team.aiTokenLimit - team.aiUsageCount,
+    used: usage,
+    limit: limit,
+    remaining: limit - usage,
     tier: team.tier,
-    percentUsed: Math.round((team.aiUsageCount / team.aiTokenLimit) * 100)
+    percentUsed: limit > 0 ? Math.round((usage / limit) * 100) : 0
   };
 };
 

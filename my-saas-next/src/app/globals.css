@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* Google Fonts - Material Symbols need to be imported in layout.tsx or via CDN */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Business OS Color Palette - Light Mode */
+  --primary: #135bec;
+  --primary-dark: #0b4eba;
+  --background-light: #f6f6f8;
+  --background-dark: #101622;
+  --surface-light: #ffffff;
+  --surface-dark: #192233;
+  --text-main-light: #0d141b;
+  --text-main-dark: #ffffff;
+  --text-sub-light: #64748b;
+  --text-sub-dark: #92a4c9;
+  --border-light: #e2e8f0;
+  --border-dark: #232f48;
+  --input-border: #324467;
+  
+  /* Default to light mode */
+  --background: var(--background-light);
+  --foreground: var(--text-main-light);
+  --surface: var(--surface-light);
+  --text-sub: var(--text-sub-light);
+  --border: var(--border-light);
+}
+
+.dark {
+  --background: var(--background-dark);
+  --foreground: var(--text-main-dark);
+  --surface: var(--surface-dark);
+  --text-sub: var(--text-sub-dark);
+  --border: var(--border-dark);
 }
 
 @theme inline {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-surface: var(--surface);
+  --color-text-sub: var(--text-sub);
+  --color-border: var(--border);
+  --color-input-border: var(--input-border);
+  --color-background-light: var(--background-light);
+  --color-background-dark: var(--background-dark);
+  --color-card-dark: var(--surface-dark);
+  --font-display: var(--font-inter), "Inter", sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Manrope", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Material Symbols styling */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

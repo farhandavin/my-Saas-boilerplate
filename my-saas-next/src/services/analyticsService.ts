@@ -1,11 +1,31 @@
-// backend/src/services/analyticsService.js
+// src/services/analyticsService.ts
 
-class AnalyticsService {
+interface DailyStats {
+  date: string;
+  financial: {
+    totalRevenue: string;
+    expense: string;
+    profitMargin: string;
+  };
+  userGrowth: {
+    newSignups: number;
+    activeUsers: number;
+    churnedUsers: number;
+  };
+  operational: {
+    serverUptime: string;
+    errorLogs: number;
+    pendingSupportTickets: number;
+  };
+  topSellingProduct: string;
+}
+
+export const AnalyticsService = {
   /**
    * Mengambil data operasional harian (Simulasi)
    * Dalam production, ini akan query ke DB: Transaction, User, Log, dll.
    */
-  async getDailyStats(teamId) {
+  async getDailyStats(teamId: string): Promise<DailyStats> {
     // Simulasi data yang dinamis agar hasil AI tidak monoton
     const randomRevenue = Math.floor(Math.random() * 5000000) + 1000000;
     const randomUsers = Math.floor(Math.random() * 50) + 5;
@@ -16,21 +36,19 @@ class AnalyticsService {
       financial: {
         totalRevenue: `IDR ${randomRevenue.toLocaleString('id-ID')}`,
         expense: "IDR 1.500.000",
-        profitMargin: "Variable", // Biar AI yang hitung
+        profitMargin: "Variable",
       },
       userGrowth: {
         newSignups: randomUsers,
         activeUsers: 1240,
-        churnedUsers: randomChurn, // User yang berhenti
+        churnedUsers: randomChurn,
       },
       operational: {
         serverUptime: "99.98%",
-        errorLogs: 23, // Ada sedikit error
+        errorLogs: 23,
         pendingSupportTickets: 5
       },
       topSellingProduct: "Enterprise AI Plan"
     };
   }
-}
-
-module.exports = new AnalyticsService();
+};

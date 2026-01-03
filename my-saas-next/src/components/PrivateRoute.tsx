@@ -1,18 +1,42 @@
-// src/components/PrivateRoute.jsx
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+'use client';
 
-const PrivateRoute = ({ children }) => {
-  // Cek apakah ada token di localStorage (tanda user sudah login)
-  const token = localStorage.getItem('token');
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-  // Jika tidak ada token, arahkan kembali ke halaman Auth/Login
-  if (!token) {
-    return <Navigate to="/auth" replace />;
+interface PrivateRouteProps {
+  children: React.ReactNode;
+}
+
+const PrivateRoute = ({ children }: PrivateRouteProps) => {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          router.push('/auth');
+        }
+      } catch (error) {
+        router.push('/auth');
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // Wait for auth check
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
 
-  // Jika ada token, izinkan akses ke halaman Dashboard (children)
-  return children;
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

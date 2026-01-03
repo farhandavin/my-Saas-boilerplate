@@ -1,8 +1,10 @@
-// src/app/api/team/invite/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized, forbidden } from '@/lib/middleware/auth';
 import { TeamService } from '@/services/teamService';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { teamMembers } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 
 // POST /api/team/invite - Send team invitation
 export async function POST(req: NextRequest) {
@@ -21,19 +23,22 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if user has permission to invite (OWNER or ADMIN)
-    const member = await prisma.teamMember.findUnique({
-      where: { userId_teamId: { userId: payload.userId, teamId } }
+    // Check if user has permission to invite (ADMIN or MANAGER)
+    const member = await db.query.teamMembers.findFirst({
+        where: and(
+            eq(teamMembers.userId, payload.userId),
+            eq(teamMembers.teamId, teamId)
+        )
     });
 
-    if (!member || !['OWNER', 'ADMIN'].includes(member.role)) {
-      return forbidden('Only owners and admins can invite members');
+    if (!member || !member.role || !['ADMIN', 'MANAGER'].includes(member.role)) {
+      return forbidden('Only admins and managers can invite members');
     }
 
     const result = await TeamService.inviteMember({
       teamId,
       email,
-      role: role || 'MEMBER',
+      role: role || 'STAFF',
       inviterId: payload.userId
     });
 

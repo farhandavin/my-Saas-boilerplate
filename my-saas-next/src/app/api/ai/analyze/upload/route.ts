@@ -1,23 +1,24 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
-import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
-import { AiService } from '@/services/aiService'; // Pastikan service ini ada
-import { UserJwtPayload } from '@/types';
 
-// Helper: Extract Text from File (Sederhana untuk txt/md, perlu pdf-parse untuk PDF)
+import { NextRequest, NextResponse } from 'next/server';
+import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
+import { db } from '@/db';
+import { documents } from '@/db/schema';
+import { AiService } from '@/services/aiService';
+
+// Helper: Extract Text from File
 async function extractText(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
-  return buffer.toString('utf-8'); // Untuk PDF butuh library 'pdf-parse'
+  return buffer.toString('utf-8'); // For PDF we need 'pdf-parse', for now assume text-based
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // 1. Auth Check
-    const token = (await headers()).get('authorization')?.split(' ')[1];
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const token = extractToken(req);
+    if (!token) return unauthorized();
     
-    const user = jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
+    const payload = verifyToken(token);
+    if (!payload) return unauthorized('Invalid token');
 
     // 2. Parse FormData
     const formData = await req.formData();
@@ -28,17 +29,16 @@ export async function POST(req: Request) {
 
     // 3. Process Text & Embedding
     const content = await extractText(file);
-    // Asumsi: AiService punya method generateEmbedding. 
-    // Jika belum, tambahkan method ini di services/aiService.ts menggunakan model 'text-embedding-004'
-    const embedding = await AiService.generateEmbedding(content); 
+    
+    // Using AiService.embed (was generateEmbedding)
+    const embedding = await AiService.generateEmbedding(content);
 
-    // 4. Save to DB (Raw SQL for Vector)
-    // Prisma belum support vector native create, pakai executeRaw
-    const docId = `doc_${Date.now()}`;
-    await prisma.$executeRaw`
-      INSERT INTO "Document" ("id", "teamId", "title", "content", "embedding", "createdAt")
-      VALUES (${docId}, ${user.teamId}, ${title}, ${content}, ${embedding}::vector, NOW())
-    `;
+    // 4. Save to DB using Drizzle
+    await db.insert(documents).values({
+        teamId: payload.teamId!, // Ensure teamId exists in payload
+        title,
+        content
+    });
 
     return NextResponse.json({ success: true, message: "Document embedded successfully" });
 

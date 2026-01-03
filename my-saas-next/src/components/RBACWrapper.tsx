@@ -1,15 +1,30 @@
-// components/RBACWrapper.jsx (Frontend)
 'use client';
-import React from 'react';
-import { useAuth } from '../hooks/useAuth'; // Asumsi context provider
 
-const RBACWrapper = ({ allowedRoles, children, fallback = null }) => {
-  const { user } = useAuth(); // Data user dari login (isinya: id, role, tier)
+import React, { useState, useEffect } from 'react';
+import { Role } from '@/types';
 
-  console.log(`[DEBUG UI] Checking access for Role: ${user?.role}`);
+interface RBACWrapperProps {
+  allowedRoles: Role[];
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
 
-  if (!user || !allowedRoles.includes(user.role)) {
-    return fallback;
+const RBACWrapper = ({ allowedRoles, children, fallback = null }: RBACWrapperProps) => {
+  const [userRole, setUserRole] = useState<Role | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get role from localStorage (set during login)
+    const role = localStorage.getItem('role') as Role;
+    setUserRole(role);
+    setLoading(false);
+  }, []);
+
+  // Show nothing while loading to prevent flash
+  if (loading) return null;
+
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return <>{fallback}</>;
   }
 
   return <>{children}</>;
@@ -17,7 +32,7 @@ const RBACWrapper = ({ allowedRoles, children, fallback = null }) => {
 
 export default RBACWrapper;
 
-// Contoh penggunaan di Dashboard
-// <RBACWrapper allowedRoles={['OWNER', 'ADMIN']}>
-//    <button className="bg-blue-500">Tombol Upgrade Tier (Hanya Owner/Admin)</button>
+// Usage:
+// <RBACWrapper allowedRoles={['ADMIN', 'MANAGER']}>
+//    <button>Owner/Admin only button</button>
 // </RBACWrapper>

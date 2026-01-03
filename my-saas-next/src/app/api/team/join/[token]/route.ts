@@ -1,12 +1,16 @@
+
 // src/app/api/team/join/[token]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { TeamService } from '@/services/teamService';
+import { db } from '@/db';
+import { invitations } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // POST /api/team/join/[token] - Accept invitation and join team
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: Promise<{ token: string }> } // Updated for Next.js 15: params is simpler but in 15 it might be async in layout/page, safe to treat as Promise or object depending on next config. Boilerplate is Next 14/15 likely. Kept type safety.
 ) {
   try {
     const authToken = extractToken(req);
@@ -38,14 +42,12 @@ export async function GET(
   try {
     const { token: inviteToken } = await params;
 
-    const { prisma } = await import('@/lib/prisma');
-    
-    const invitation = await prisma.invitation.findUnique({
-      where: { token: inviteToken },
-      include: { 
-        team: { 
-          select: { name: true, slug: true } 
-        } 
+    const invitation = await db.query.invitations.findFirst({
+      where: eq(invitations.token, inviteToken),
+      with: {
+        team: {
+            columns: { name: true, slug: true }
+        }
       }
     });
 

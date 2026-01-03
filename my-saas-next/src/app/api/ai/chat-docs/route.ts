@@ -1,9 +1,12 @@
+
 // src/app/api/ai/chat-docs/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { checkAiQuota, deductTokens } from '@/lib/middleware/billing';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/db';
+import { auditLogs } from '@/db/schema';
 import { AiService } from '@/services/aiService';
+import { RAGService } from '@/services/ragService';
 
 // POST /api/ai/chat-docs - Chat with documents (RAG)
 export async function POST(req: NextRequest) {
@@ -30,41 +33,31 @@ export async function POST(req: NextRequest) {
       }, { status: 402 });
     }
 
-    // Get team documents for context
-    const documents = await prisma.document.findMany({
-      where: { teamId: payload.teamId },
-      select: { title: true, content: true },
-      take: 5
-    });
+    // Get context from Internal Knowledge Base (Vector Search)
+    const context = await RAGService.getContext(payload.teamId, question);
 
-    if (documents.length === 0) {
-      return NextResponse.json({ 
-        error: 'No documents in knowledge base. Please upload documents first.' 
-      }, { status: 400 });
+    if (!context || context.includes('No relevant internal documents')) {
+       // Optional: Fallback or inform user
+       // We can still proceed if the LLM has general knowledge, but for RAG specific, maybe warn
     }
-
-    // Build context from documents
-    const context = documents
-      .map(d => `[${d.title}]\n${d.content}`)
-      .join('\n\n---\n\n');
 
     // Mask PII and generate response
     const safeQuestion = AiService.maskPII(question);
     const prompt = `Based on the following company documents:\n\n${context}\n\nAnswer this question: ${safeQuestion}`;
     
+    // Use generateText
     const response = await AiService.generateText(prompt);
 
     // Deduct tokens
     await deductTokens(payload.teamId, estimatedCost);
 
     // Audit log
-    await prisma.auditLog.create({
-      data: {
-        teamId: payload.teamId,
+    await db.insert(auditLogs).values({
+        teamId: payload.teamId!,
         userId: payload.userId,
         action: 'AI_CHAT_DOCS',
+        entity: 'Document',
         details: `Asked: ${question.substring(0, 100)}...`
-      }
     });
 
     return NextResponse.json({

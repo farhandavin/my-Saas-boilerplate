@@ -5,7 +5,7 @@ import { AiService } from '@/services/aiService';
 import { BillingService } from '@/services/billingService';
 import { UserJwtPayload } from '@/types';
 
-// Helper verifikasi token manual (karena middleware Next.js berjalan di Edge)
+// Manual token verification helper (since Next.js middleware runs on Edge)
 const verifyToken = (token: string) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
@@ -18,16 +18,16 @@ export async function POST(req: Request) {
   // 1. Auth Check
   const token = (await headers()).get('authorization')?.split(' ')[1];
   const user = token ? verifyToken(token) : null;
-  
+
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { prompt } = await req.json();
 
     // 2. Billing Check (Gatekeeper)
-    const cost = 50; // Estimasi biaya
+    const cost = 50; // Estimated cost
     const hasQuota = await BillingService.checkQuota(user.teamId, cost);
-    if (!hasQuota) return NextResponse.json({ error: "Quota habis" }, { status: 402 });
+    if (!hasQuota) return NextResponse.json({ error: "Quota exceeded" }, { status: 402 });
 
     // 3. AI Process (Masking -> Generate)
     const safePrompt = AiService.maskPII(prompt);

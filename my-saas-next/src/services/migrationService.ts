@@ -1,96 +1,78 @@
-const { PrismaClient } = require('@prisma/client');
-const sharedPrisma = require('../config/prismaClient'); // Menggunakan client utama
 
-// Fungsi ini mensimulasikan provisioning DB baru
-// Di production, ini akan memanggil API provider DB (misal AWS RDS / Neon API)
-const provisionNewDatabase = async (teamId) => {
-  // CONTOH: Kita generate URL dummy atau ambil dari env pool
-  // Real implementation: Call API -> Wait -> Get Connection String
-  console.log(`🏗️ Provisioning database baru untuk Team ${teamId}...`);
-  return process.env.DEDICATED_DB_POOL_URL || process.env.DATABASE_URL; // Fallback ke DB sama untuk tes
-};
+// src/services/migrationService.ts
+import { db } from '@/db'; // Global Drizzle (Pooled)
+import { migrationJobs, teams } from '@/db/schema';
+import { MigrationEngine } from '@/lib/migration-engine';
+import { eq } from 'drizzle-orm';
+import { inngest } from '@/lib/inngest-client';
 
-exports.startMigrationJob = async (teamId) => {
-  console.log(`🚀 [JOB] Memulai migrasi background untuk Team: ${teamId}`);
+/**
+ * Enterprise Migration Service
+ * Handles zero-downtime migration from Shared DB -> Isolated DB
+ */
+export const MigrationService = {
+  /**
+   * Start the migration job
+   * Now triggers an Inngest event for background processing
+   */
+  async startMigrationJob(teamId: string, targetDbUrl: string) {
+    console.log(`🚀 [MIGRATION] Requesting job for Team: ${teamId}`);
 
-  try {
-    // 1. Set Status: IN_PROGRESS
-    await sharedPrisma.team.update({
-      where: { id: teamId },
-      data: { migrationStatus: 'IN_PROGRESS' }
+    // Verify team exists and is on shared DB
+    const team = await db.query.teams.findFirst({
+        where: eq(teams.id, teamId)
     });
 
-    // 2. Provisioning Database (Simulasi)
-    const targetDbUrl = await provisionNewDatabase(teamId);
+    if (!team) throw new Error("Team not found");
+    // Ensure we don't migrate if already migrated? (Optional check from old service logic)
+    
+    // 1. Create Job Record
+    const [job] = await db.insert(migrationJobs).values({
+        teamId,
+        targetUrl: targetDbUrl,
+        status: 'PENDING',
+        logs: [{ timestamp: new Date().toISOString(), level: 'INFO', message: 'Job requested' }],
+        startedAt: new Date()
+    }).returning();
 
-    // 3. Setup Koneksi Target
-    const targetPrisma = new PrismaClient({
-      datasources: { db: { url: targetDbUrl } },
-    });
-
-    // 4. Extract Data (Dari Shared DB)
-    const teamData = await sharedPrisma.team.findUnique({
-      where: { id: teamId },
-      include: {
-        members: true,
-        auditLogs: true,
-        // documents: true, // Uncomment jika model Document sudah ada
-      }
-    });
-
-    // 5. Load Data (Ke Dedicated DB)
-    await targetPrisma.$transaction(async (tx) => {
-      // Bersihkan data lama di target (Idempotency) agar tidak duplikat
-      // Create Team Header
-      const { members, auditLogs, ...teamFields } = teamData;
-      
-      // Upsert Team di DB Target
-      await tx.team.upsert({
-        where: { id: teamId },
-        update: {},
-        create: {
-          ...teamFields,
-          tier: 'ENTERPRISE',
-          databaseUrl: targetDbUrl,
-          migrationStatus: 'COMPLETED'
+    try {
+      // 2. Dispatch Inngest Event
+      await inngest.send({
+        name: "tenant/migrate",
+        data: {
+            teamId,
+            targetDbUrl,
+            jobId: job.id
         }
       });
 
-      // Pindahkan Member
-      if (members.length > 0) {
-        // Hapus dulu untuk menghindari error unique constraint jika retry
-        await tx.teamMember.deleteMany({ where: { teamId } }); 
-        await tx.teamMember.createMany({ data: members });
-      }
+      console.log(`✅ [MIGRATION] Event dispatched for ${teamId} (Job: ${job.id})`);
 
-      // Pindahkan Logs
-      if (auditLogs.length > 0) {
-        await tx.auditLog.deleteMany({ where: { teamId } });
-        await tx.auditLog.createMany({ data: auditLogs });
-      }
-    });
+    } catch (error) {
+      console.error(`❌ [MIGRATION] Dispatch Failed:`, error);
 
-    // 6. Update Pointer di Shared DB (Router)
-    await sharedPrisma.team.update({
-      where: { id: teamId },
-      data: {
-        tier: 'ENTERPRISE',
-        databaseUrl: targetDbUrl, // Router akan melihat ini
-        migrationStatus: 'COMPLETED'
-      }
-    });
+      // Fail status
+      await db.update(migrationJobs)
+        .set({ 
+            status: 'FAILED',
 
-    console.log(`✅ [JOB] Migrasi Selesai untuk Team ${teamId}`);
+        })
+        .where(eq(migrationJobs.id, job.id));
+        
+      throw error;
+    }
     
-    // Cleanup connection
-    await targetPrisma.$disconnect();
+    return job;
+  },
 
-  } catch (error) {
-    console.error(`❌ [JOB] Migrasi Gagal:`, error);
-    // Revert status agar admin tahu
-    await sharedPrisma.team.update({
-      where: { id: teamId },
-      data: { migrationStatus: 'FAILED' }
-    });
+  /**
+   * Legacy copyData wrapper if needed directly (e.g. for testing without Inngest)
+   * Delegates to MigrationEngine
+   */
+  async copyData(teamId: string, jobId: string) {
+     // This logic is now inside MigrationEngine.copyData (simulated)
+     // or inside the Inngest function.
+     // Kept for backward compat signature if any API calls it directly.
+     console.warn("Call to deprecated direct copyData in MigrationService. Use Inngest event.");
   }
 };
