@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 export default function DemoPage() {
-  const [chatInput, setChat Input] = useState('');
+  const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [invoiceForm, setInvoiceForm] = useState({ amount: 50000, discount: 15, dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd') });
   const [validationResult, setValidationResult] = useState<{ valid: boolean; reason?: string } | null>(null);
@@ -47,7 +47,7 @@ export default function DemoPage() {
 
     const userMessage = chatInput;
     setChatMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
-    setChat Input('');
+    setChatInput('');
 
     // Simulate AI response delay
     setTimeout(() => {

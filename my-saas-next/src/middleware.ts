@@ -33,8 +33,15 @@ export async function middleware(req: NextRequest) {
         return new NextResponse('Too Many Requests', { status: 429 });
       }
     } catch (error) {
-      // Fail open: if Redis is down, allow request but log error
-      console.error("Rate Limit Error:", error);
+      // Fail open: if Redis is down or config is invalid, allow request
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      if (errorMessage.includes("WRONGPASS") || errorMessage.includes("unauthorized")) {
+        // Suppress noisy auth errors in dev/build
+        console.warn("⚠️ Rate Limiting skipped: Invalid Upstash credentials. Check UPSTASH_REDIS_REST_TOKEN.");
+      } else {
+        console.error("Rate Limit Error:", error);
+      }
     }
   }
 

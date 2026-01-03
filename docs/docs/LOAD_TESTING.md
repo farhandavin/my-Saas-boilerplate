@@ -133,11 +133,11 @@ export default function (data) {
 
 | Endpoint | p50 | p95 | p99 | Target RPS |
 |----------|-----|-----|-----|------------|
-| Landing Page | <100ms | <300ms | <500ms | 100 |
-| API Health | <50ms | <100ms | <200ms | 500 |
-| Dashboard Stats | <200ms | <500ms | <1000ms | 50 |
-| Project List | <150ms | <400ms | <800ms | 100 |
-| AI Chat (streaming) | <2000ms | <5000ms | <10000ms | 10 |
+| Landing Page | \<100ms | \<300ms | \<500ms | 100 |
+| API Health | \<50ms | \<100ms | \<200ms | 500 |
+| Dashboard Stats | \<200ms | \<500ms | \<1000ms | 50 |
+| Project List | \<150ms | \<400ms | \<800ms | 100 |
+| AI Chat (streaming) | \<2000ms | \<5000ms | \<10000ms | 10 |
 
 ## Database Performance
 

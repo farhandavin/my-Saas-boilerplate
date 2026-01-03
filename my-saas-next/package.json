@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:all": "concurrently \"npm run dev\" \"npm run stripe:listen\" \"npm run inngest:dev\" --names \"NEXT,STRIPE,INNGEST\" --prefix-colors \"blue,magenta,green\" --kill-others",
+    "dev:all": "concurrently \"npm run dev\" \"npm run stripe:listen\" \"npm run inngest:dev\" \"cd ../docs && npm run start\" --names \"NEXT,STRIPE,INNGEST,DOCS\" --prefix-colors \"blue,magenta,green,yellow\" --kill-others",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/webhooks/stripe",
     "inngest:dev": "npx inngest-cli@latest dev",
     "build": "next build",
