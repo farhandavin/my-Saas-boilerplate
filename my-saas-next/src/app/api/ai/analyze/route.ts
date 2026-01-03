@@ -30,8 +30,8 @@ export async function POST(req: Request) {
     if (!hasQuota) return NextResponse.json({ error: "Quota exceeded" }, { status: 402 });
 
     // 3. AI Process (Masking -> Generate)
-    const safePrompt = AiService.maskPII(prompt);
-    const aiResponse = await AiService.generateText(safePrompt);
+    const safePrompt = await AiService.maskPII(prompt);
+    const aiResponse = await AiService.generateText(safePrompt.maskedText); // Access maskedText property from object result
 
     // 4. Deduct Token
     await BillingService.deductToken(user.teamId, cost);

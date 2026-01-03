@@ -1,8 +1,15 @@
+'use client';
+
 import { CampaignForm } from '@/components/campaigns/CampaignForm';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewCampaignPage() {
+  const handleCreate = (data: any) => {
+    console.log('Creating campaign:', data);
+    // TODO: Connect to server action or API
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-8">
       <Link 
@@ -19,7 +26,7 @@ export default function NewCampaignPage() {
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <CampaignForm />
+        <CampaignForm onSubmit={handleCreate} />
       </div>
     </div>
   );

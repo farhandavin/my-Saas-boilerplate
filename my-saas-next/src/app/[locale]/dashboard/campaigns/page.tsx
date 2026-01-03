@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { campaignService } from '@/services/campaignService';
-import { getUserSession } from '@/lib/auth'; // Hypothetical auth helper
+// import { getUserSession } from '@/lib/auth'; // Auth helper not available
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button'; // Assuming shadcn/ui or similar
 import { Plus, Folder } from 'lucide-react';

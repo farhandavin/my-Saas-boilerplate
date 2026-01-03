@@ -1,12 +1,12 @@
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createCampaignsSchema, CreateCampaignsInput } from './campaigns.schema.ts';
+import { createCampaignsSchema, CreateCampaignsInput } from './campaigns.schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export function CampaignForm({ onSubmit }: { onSubmit: (data: CreateCampaignsInput) => void }) {
-    const { register, handleSubmit, formState: { errors } } = useForm<CreateCampaignsInput>({
+    const { register, handleSubmit, formState: { errors } } = useForm({
         resolver: zodResolver(createCampaignsSchema)
     });
 

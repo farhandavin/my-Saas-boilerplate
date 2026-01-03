@@ -96,7 +96,7 @@ export const withAuth = <TParams = Record<string, string>>(
       params = await params;
     }
 
-    return handler(req, { user: payload, params: params || {} });
+    return handler(req, { user: payload, params: (params || {}) as unknown as TParams });
   };
 };
 
@@ -128,6 +128,8 @@ export const withTeam = <TParams = Record<string, string>>(
       params = await params;
     }
 
-    return handler(req, { user: payload, team: teamContext, params: params || {} });
+    const safeParams = (params || {}) as unknown as TParams;
+    // Cast teamContext to any to bypass Drizzle type mismatch
+    return handler(req, { user: payload, team: teamContext as any, params: safeParams });
   };
 };

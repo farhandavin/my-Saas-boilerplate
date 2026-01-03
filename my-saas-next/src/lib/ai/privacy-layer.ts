@@ -2,7 +2,17 @@ import { redis } from '@/lib/redis';
 import { CompactEncrypt, compactDecrypt } from 'jose';
 import { z } from 'zod';
 
-// SECURITY: PII_ENCRYPTION_KEY must be exactly 32 characters for AES-256-GCM\nconst secret = process.env.PII_ENCRYPTION_KEY;\nif (!secret || secret.length < 32) {\n  console.warn('[PrivacyLayer] PII_ENCRYPTION_KEY not set or too short (< 32 chars). PII masking will be disabled.');\n}\n// AES-256-GCM requires 32 bytes. We slice or pad to ensure exactly 32 bytes.\nconst keyBytes = new TextEncoder().encode(secret || 'disabled-pii-masking-key-32char!');\n// Ensure 32 bytes\nconst ENCRYPTION_KEY = keyBytes.length >= 32\n    ? keyBytes.slice(0, 32)\n    : new Uint8Array(32).map((_, i) => keyBytes[i] || 0); // Pad with zeros if short
+// SECURITY: PII_ENCRYPTION_KEY must be exactly 32 characters for AES-256-GCM
+const secret = process.env.PII_ENCRYPTION_KEY;
+if (!secret || secret.length < 32) {
+    console.warn('[PrivacyLayer] PII_ENCRYPTION_KEY not set or too short (< 32 chars). PII masking will be disabled.');
+}
+// AES-256-GCM requires 32 bytes. We slice or pad to ensure exactly 32 bytes.
+const keyBytes = new TextEncoder().encode(secret || 'disabled-pii-masking-key-32char!');
+// Ensure 32 bytes
+const ENCRYPTION_KEY = keyBytes.length >= 32
+    ? keyBytes.slice(0, 32)
+    : new Uint8Array(32).map((_, i) => keyBytes[i] || 0); // Pad with zeros if short
 
 const ALG = 'dir';
 const ENC = 'A256GCM';

@@ -20,7 +20,7 @@ export async function verifyAuth(token: string): Promise<UserJwtPayload | null> 
             return null;
         }
 
-        return payload as UserJwtPayload;
+        return payload as unknown as UserJwtPayload;
     } catch (err) {
         return null;
     }

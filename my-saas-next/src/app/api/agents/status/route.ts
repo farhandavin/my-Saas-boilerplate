@@ -10,11 +10,11 @@ export async function GET(req: NextRequest) {
     }
 
     const user = await verifyAuth(token);
-    if (!user || !user.teamMembers || user.teamMembers.length === 0) {
+    if (!user || !user.teamId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const teamId = user.teamMembers[0].teamId;
+    const teamId = user.teamId;
 
     if (!redis) {
         return NextResponse.json({
