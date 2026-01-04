@@ -155,7 +155,7 @@ export default function AuditLogsPage() {
             className="flex h-10 px-4 items-center justify-center rounded-lg bg-[#135bec] text-white text-sm font-bold shadow-lg shadow-[#135bec]/20 hover:bg-[#135bec]/90 transition-all gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">download</span>
-            <span>Export CSV</span>
+            <span>Export</span>
           </button>
         </div>
       </div>

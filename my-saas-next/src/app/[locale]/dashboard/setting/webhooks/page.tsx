@@ -153,14 +153,15 @@ export default function WebhooksPage() {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#135bec] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0b46b9] transition-colors shadow-lg shadow-blue-500/30"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
-          Add Webhook
+          Create Webhook
         </button>
       </div>
 
       {/* Webhook List */}
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid="webhooks-list">
         {webhooks.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 dark:bg-[#1a2332]/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+            <p>No webhooks configured</p>
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
               <span className="material-symbols-outlined text-3xl">webhook</span>
             </div>
@@ -264,8 +265,9 @@ export default function WebhooksPage() {
               <button 
                 onClick={handleCreate}
                 className="px-4 py-2 bg-[#135bec] text-white rounded-lg font-medium hover:bg-[#0b46b9] transition-colors"
+                type="submit"
               >
-                Create Webhook
+                Create
               </button>
             </div>
           </div>

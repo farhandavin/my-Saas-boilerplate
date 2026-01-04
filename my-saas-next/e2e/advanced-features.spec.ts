@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Helper to login
 async function login(page: any, email: string, password: string) {
-    await page.goto('/en/auth/login');
+    await page.goto('/en/auth');
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
@@ -11,11 +11,11 @@ async function login(page: any, email: string, password: string) {
 
 test.describe('API Keys Management', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should navigate to API keys page', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
         // Should show API keys interface
@@ -23,7 +23,7 @@ test.describe('API Keys Management', () => {
     });
 
     test('should display list of API keys', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
         const keysList = page.locator('table, [data-testid="api-keys-list"], .api-key-item');
@@ -36,35 +36,38 @@ test.describe('API Keys Management', () => {
     });
 
     test('should create new API key', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
-        const createBtn = page.locator('button:has-text("Create API Key"), button:has-text("New Key")').first();
+        // Check for Create button
+        const createBtn = page.locator('button:has-text("+ Create Secret Key")');
+        await expect(createBtn).toBeVisible();
+        await createBtn.click();
 
-        if (await createBtn.isVisible()) {
-            await createBtn.click();
-            await page.waitForTimeout(500);
+        // Modal should appear
+        const modalHeader = page.locator('h2:has-text("Create New API Key")');
+        await expect(modalHeader).toBeVisible();
 
-            // Fill key name
-            const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').last();
-            await nameInput.fill(`E2E Test Key ${Date.now()}`);
+        // Fill key name
+        const nameInput = page.locator('input[name="name"]');
+        await nameInput.fill(`E2E Test Key ${Date.now()}`);
 
-            // Submit
-            const submitBtn = page.locator('button[type="submit"], button:has-text("Create")').last();
-            await submitBtn.click();
+        // Submit form
+        const submitBtn = page.getByTestId('create-key-submit');
+        await submitBtn.click();
 
-            // Should show success and display the new key
-            await page.waitForTimeout(2000);
+        // Should show success and display the new key
+        await expect(page.getByTestId('api-key-value')).toBeVisible();
 
-            const newKey = page.locator('[data-testid="api-key-value"], code, .key-value');
-            if (await newKey.isVisible()) {
-                await expect(newKey).toBeVisible();
-            }
+        // Close modal or verify list update
+        const closeBtn = page.locator('button:has-text("Close")');
+        if (await closeBtn.isVisible()) {
+            await closeBtn.click();
         }
     });
 
     test('should copy API key to clipboard', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
         const copyBtn = page.locator('button:has-text("Copy"), [data-testid="copy-key"]').first();
@@ -80,7 +83,7 @@ test.describe('API Keys Management', () => {
     });
 
     test('should revoke API key', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
         const revokeBtn = page.locator('button:has-text("Revoke"), button:has-text("Delete")').first();
@@ -99,7 +102,7 @@ test.describe('API Keys Management', () => {
     });
 
     test('should display API key permissions/scopes', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/api-keys');
+        await page.goto('/en/dashboard/setting/api-keys');
         await page.waitForLoadState('networkidle');
 
         const permissions = page.locator('text=/read|write|full access|scope/i');
@@ -113,18 +116,18 @@ test.describe('API Keys Management', () => {
 
 test.describe('Webhooks Configuration', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should navigate to webhooks page', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('h1, h2').first()).toBeVisible();
     });
 
     test('should display webhooks list', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         const webhooksList = page.locator('table, [data-testid="webhooks-list"]');
@@ -137,35 +140,34 @@ test.describe('Webhooks Configuration', () => {
     });
 
     test('should create new webhook', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
-        const createBtn = page.locator('button:has-text("Create Webhook"), button:has-text("New Webhook")').first();
+        // Click create button
+        await page.getByRole('button', { name: /create webhook|add webhook/i }).first().click();
 
-        if (await createBtn.isVisible()) {
-            await createBtn.click();
-            await page.waitForTimeout(500);
+        // Wait for modal
+        const modalHeading = page.getByRole('heading', { name: /create webhook/i });
+        await expect(modalHeading).toBeVisible();
 
-            // Fill webhook URL
-            const urlInput = page.locator('input[name="url"], input[placeholder*="url" i]').last();
-            await urlInput.fill('https://example.com/webhook');
+        // Fill URL
+        await page.fill('input[type="url"]', 'https://example.com/webhook');
 
-            // Select events
-            const eventCheckbox = page.locator('input[type="checkbox"]').first();
-            if (await eventCheckbox.isVisible()) {
-                await eventCheckbox.click();
-            }
-
-            // Submit
-            const submitBtn = page.locator('button[type="submit"], button:has-text("Create")').last();
-            await submitBtn.click();
-
-            await page.waitForTimeout(2000);
+        // Select first event
+        const eventBtn = page.locator('button.border').first();
+        if (await eventBtn.isVisible()) {
+            await eventBtn.click();
         }
+
+        // Submit
+        await page.getByRole('button', { name: /create/i }).last().click();
+
+        // Wait for list to update or modal to close
+        await expect(page.locator('text=https://example.com/webhook')).toBeVisible();
     });
 
     test('should test webhook endpoint', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         const testBtn = page.locator('button:has-text("Test"), [data-testid="test-webhook"]').first();
@@ -182,7 +184,7 @@ test.describe('Webhooks Configuration', () => {
     });
 
     test('should show webhook event history', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         // Click on a webhook
@@ -201,7 +203,7 @@ test.describe('Webhooks Configuration', () => {
     });
 
     test('should disable/enable webhook', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         const toggleBtn = page.locator('button:has-text("Disable"), button:has-text("Enable"), input[type="checkbox"]').first();
@@ -215,7 +217,7 @@ test.describe('Webhooks Configuration', () => {
     });
 
     test('should delete webhook', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/webhooks');
+        await page.goto('/en/dashboard/setting/webhooks');
         await page.waitForLoadState('networkidle');
 
         const deleteBtn = page.locator('button:has-text("Delete"), [data-testid="delete-webhook"]').first();
@@ -236,7 +238,7 @@ test.describe('Webhooks Configuration', () => {
 
 test.describe('Audit Logs Viewing', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should navigate to audit logs page', async ({ page }) => {
@@ -293,7 +295,7 @@ test.describe('Audit Logs Viewing', () => {
         const searchInput = page.locator('input[type="search"], input[placeholder*="search" i]').first();
 
         if (await searchInput.isVisible()) {
-            await searchInput.fill('demo@example.com');
+            await searchInput.fill('testsprite@test.com');
             await page.waitForTimeout(1000);
 
             // Should filter to matching logs

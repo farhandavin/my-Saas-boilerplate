@@ -35,6 +35,37 @@ export const EmailService = {
   },
 
   /**
+   * Send verification email
+   */
+  async sendVerificationEmail(to: string, name: string, token: string) {
+    const verifyUrl = `${appUrl}/auth/verify-email?token=${token}`;
+
+    try {
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: [to],
+        subject: '🔒 Verifikasi Email - Business Operating System',
+        html: `
+          <h1>Verifikasi Email Anda</h1>
+          <p>Halo ${name},</p>
+          <p>Silakan klik link berikut untuk memverifikasi email Anda:</p>
+          <a href="${verifyUrl}">Verifikasi Email</a>
+        `,
+        text: `Halo ${name},\n\nSilakan verifikasi email Anda: ${verifyUrl}`
+      });
+
+      if (error) {
+        console.error('[EmailService] Verification email error:', error);
+        return { success: false, error };
+      }
+      return { success: true, messageId: data?.id };
+    } catch (error) {
+      console.error('[EmailService] Verification email exception:', error);
+      return { success: false, error };
+    }
+  },
+
+  /**
    * Send password reset email
    */
   async sendPasswordResetEmail(to: string, name: string, resetToken: string) {
@@ -223,7 +254,7 @@ export const EmailService = {
 
   getInvitationTemplate(inviterName: string, teamName: string, role: string, inviteUrl: string): string {
     const roleEmoji = role === 'ADMIN' ? '👑' : role === 'MANAGER' ? '🔧' : '👤';
-    
+
     return `
 <!DOCTYPE html>
 <html>

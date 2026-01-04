@@ -139,7 +139,7 @@ export default function KnowledgeBasePage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Knowledge Base</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="kb-title">Knowledge Base</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Manage internal documents for your AI context.</p>
         </div>
         
@@ -163,7 +163,7 @@ export default function KnowledgeBasePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content: Data Table */}
-        <div className={['ADMIN', 'MANAGER'].includes(currentRole) ? "lg:col-span-2" : "lg:col-span-3"}>
+        <div className={['ADMIN', 'MANAGER'].includes(currentRole) ? "lg:col-span-2" : "lg:col-span-3"} data-testid="documents-list">
            <DataTable 
              columns={columns} 
              data={data} 
@@ -213,6 +213,7 @@ export default function KnowledgeBasePage() {
               </div>
 
               <button 
+                data-testid="add-document-btn"
                 type="submit"
                 disabled={uploading}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"

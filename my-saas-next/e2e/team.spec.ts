@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Helper to login
 async function login(page: any, email: string, password: string) {
-    await page.goto('/en/auth/login');
+    await page.goto('/en/auth');
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
@@ -11,11 +11,11 @@ async function login(page: any, email: string, password: string) {
 
 test.describe('Team Management', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should display team settings page', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         // Should show team name
@@ -23,7 +23,7 @@ test.describe('Team Management', () => {
     });
 
     test('should show team members list', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         // Should show at least the current user as a member
@@ -32,7 +32,7 @@ test.describe('Team Management', () => {
     });
 
     test('should open invite member modal', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         const inviteBtn = page.locator('button:has-text("Invite"), button:has-text("Add Member")').first();
@@ -50,7 +50,7 @@ test.describe('Team Management', () => {
     });
 
     test('should invite team member with email', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         const inviteBtn = page.locator('button:has-text("Invite"), button:has-text("Add Member")').first();
@@ -80,7 +80,7 @@ test.describe('Team Management', () => {
     });
 
     test('should change member role', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         // Find a member row (not the owner)
@@ -104,7 +104,7 @@ test.describe('Team Management', () => {
     });
 
     test('should remove team member', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         // Find a member row (not the owner)
@@ -129,7 +129,7 @@ test.describe('Team Management', () => {
 
 test.describe('Team Switching', () => {
     test('should switch between teams if user has multiple', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Look for team switcher
         const teamSwitcher = page.locator('[data-testid="team-switcher"], button:has-text("Switch Team")').first();
@@ -155,7 +155,7 @@ test.describe('Team Switching', () => {
 
 test.describe('Team Creation', () => {
     test('should create a new team', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Navigate to team creation
         const createTeamBtn = page.locator('button:has-text("Create Team"), a[href*="create-team"]').first();
@@ -181,11 +181,11 @@ test.describe('Team Creation', () => {
 
 test.describe('Team Settings', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should update team name', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         const nameInput = page.locator('input[name="name"], input[name="teamName"]').first();
@@ -205,7 +205,7 @@ test.describe('Team Settings', () => {
     });
 
     test('should update team slug', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/team');
+        await page.goto('/en/dashboard/setting/team');
         await page.waitForLoadState('networkidle');
 
         const slugInput = page.locator('input[name="slug"]').first();
@@ -223,7 +223,7 @@ test.describe('Team Settings', () => {
     });
 
     test('should display plan limits', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/billing');
+        await page.goto('/en/dashboard/setting/billing');
         await page.waitForLoadState('networkidle');
 
         // Should show current plan

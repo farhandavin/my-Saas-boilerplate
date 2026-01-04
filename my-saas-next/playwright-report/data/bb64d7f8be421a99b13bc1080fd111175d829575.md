@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+        - heading "Enterprise OS" [level=2] [ref=e9]
+      - link "Need help?" [ref=e11] [cursor=pointer]:
+        - /url: "#"
+    - main [ref=e12]:
+      - generic [ref=e14]:
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e19]: lock_reset
+            - heading "Reset your password" [level=1] [ref=e20]
+            - paragraph [ref=e21]: Enter the email address associated with your account and we'll send you a link to reset your password.
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - generic [ref=e24]: Email Address
+              - generic [ref=e25]:
+                - generic:
+                  - generic: mail
+                - textbox "Email Address" [ref=e26]:
+                  - /placeholder: name@company.com
+                  - text: testsprite@test.com
+            - button "Sending..." [disabled] [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: Sending...
+          - link "arrow_back Return to Sign In" [ref=e30] [cursor=pointer]:
+            - /url: /auth
+            - generic [ref=e31]: arrow_back
+            - text: Return to Sign In
+        - generic [ref=e32]:
+          - generic [ref=e33]: verified_user
+          - generic [ref=e34]: Secure Enterprise Encryption
+    - contentinfo [ref=e35]:
+      - paragraph [ref=e36]: © 2024 Enterprise Business OS. All rights reserved.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e42] [cursor=pointer]:
+    - img [ref=e43]
+  - alert [ref=e46]
+```

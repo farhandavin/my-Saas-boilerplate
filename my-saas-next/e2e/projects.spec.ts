@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Helper to login
 async function login(page: any, email: string, password: string) {
-    await page.goto('/en/auth/login');
+    await page.goto('/en/auth');
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
@@ -11,7 +11,7 @@ async function login(page: any, email: string, password: string) {
 
 test.describe('Project Visibility - RBAC', () => {
     test('OWNER should see all projects', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         await page.goto('/en/dashboard/projects');
         await page.waitForLoadState('networkidle');
@@ -31,7 +31,7 @@ test.describe('Project Visibility - RBAC', () => {
         // This test assumes staff@demo.com exists
         // If not, it will be skipped
         try {
-            await login(page, 'staff@demo. com', 'demo123456');
+            await login(page, 'staff@demo. com', 'TestSprite123!');
 
             await page.goto('/en/dashboard/projects');
             await page.waitForLoadState('networkidle');
@@ -49,7 +49,7 @@ test.describe('Project Visibility - RBAC', () => {
 
 test.describe('Project CRUD Operations', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should create a new project', async ({ page }) => {
@@ -166,7 +166,7 @@ test.describe('Project CRUD Operations', () => {
 
 test.describe('Project Member Management', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should add member to project', async ({ page }) => {
@@ -196,7 +196,7 @@ test.describe('Project Member Management', () => {
 
 test.describe('Project Filtering and Search', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should filter projects by status', async ({ page }) => {

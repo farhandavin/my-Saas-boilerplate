@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Helper to login
 async function login(page: any, email: string, password: string) {
-    await page.goto('/en/auth/login');
+    await page.goto('/en/auth');
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
@@ -11,144 +11,104 @@ async function login(page: any, email: string, password: string) {
 
 test.describe('AI Features - RAG (Knowledge Base)', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should navigate to knowledge base page', async ({ page }) => {
         // Look for AI/Knowledge Base menu item
         const knowledgeBaseLink = page.locator(
-            'a[href*="/knowledge"], a[href*="/rag"], text=/knowledge base/i'
+            'a[href*="/knowledge-base"], text=/Documents/i, text=/Knowledge Base/i'
         ).first();
 
         if (await knowledgeBaseLink.isVisible()) {
             await knowledgeBaseLink.click();
             await page.waitForLoadState('networkidle');
-
-            // Should be on knowledge base page
-            await expect(page).toHaveURL(/knowledge|rag/);
+            await expect(page).toHaveURL(/knowledge-base/);
         } else {
-            console.log('Knowledge Base feature not found - may not be implemented');
+            // Direct navigation fallback
+            console.log('Sidebar link not found, attempting direct navigation');
+            await page.goto('/en/dashboard/knowledge-base');
+            await expect(page).toHaveURL(/knowledge-base/);
         }
     });
 
     test('should display upload document interface', async ({ page }) => {
-        await page.goto('/en/dashboard/knowledge');
+        await page.goto('/en/dashboard/knowledge-base');
 
         const uploadBtn = page.locator(
-            'button:has-text("Upload"), input[type="file"], [data-testid="upload-document"]'
+            'button[type="submit"], [data-testid="add-document-btn"]'
         ).first();
 
-        if (await uploadBtn.isVisible()) {
-            await expect(uploadBtn).toBeVisible();
-        } else {
-            console.log('Upload interface not found');
-        }
+        await expect(uploadBtn).toBeVisible();
     });
 
     test('should show list of uploaded documents', async ({ page }) => {
-        await page.goto('/en/dashboard/knowledge');
+        await page.goto('/en/dashboard/knowledge-base');
         await page.waitForLoadState('networkidle');
 
         // Should show documents list or empty state
-        const documentsList = page.locator('[data-testid="documents-list"], table, .document-item');
-        const emptyState = page.locator('text=/no documents|empty/i');
-
-        const hasDocs = await documentsList.first().isVisible().catch(() => false);
-        const isEmpty = await emptyState.isVisible().catch(() => false);
-
-        expect(hasDocs || isEmpty).toBeTruthy();
+        const documentsList = page.locator('[data-testid="documents-list"]');
+        await expect(documentsList).toBeVisible();
     });
 
     test('should open AI chat interface', async ({ page }) => {
-        await page.goto('/en/dashboard/ai-chat');
+        await page.goto('/en/dashboard/ai-hub');
 
-        const chatInput = page.locator(
-            'textarea[placeholder*="Ask" i], textarea[placeholder*="Question" i], [data-testid="chat-input"]'
-        ).first();
+        // Click Chat Tab
+        const chatTab = page.locator('button:has-text("Chat Assistant")');
+        await chatTab.click();
 
-        if (await chatInput.isVisible()) {
-            await expect(chatInput).toBeVisible();
-        } else {
-            console.log('AI Chat interface not found');
-        }
+        const chatInput = page.locator('textarea, input[placeholder*="Ask"]').last();
+        await expect(chatInput).toBeVisible();
     });
 
     test('should send message to AI chat', async ({ page }) => {
-        await page.goto('/en/dashboard/ai-chat');
+        await page.goto('/en/dashboard/ai-hub');
 
-        const chatInput = page.locator('textarea, input[type="text"]').last();
+        // Click Chat Tab
+        const chatTab = page.locator('button:has-text("Chat Assistant")');
+        await chatTab.click();
+
+        const chatInput = page.locator('textarea, input[placeholder*="Ask"]').last();
 
         if (await chatInput.isVisible()) {
-            await chatInput.fill('What is the company policy on remote work?');
+            await chatInput.fill('What can you do?');
+            await chatInput.press('Enter'); // The UI might not have a button, or uses Enter
 
-            const sendBtn = page.locator('button:has-text("Send"), button[type="submit"]').last();
-            await sendBtn.click();
-
-            // Should show loading or response
-            await page.waitForTimeout(2000);
-
-            const response = page.locator('.message, [data-testid="ai-response"]').last();
-            // Response may appear async
-        } else {
-            console.log('Chat input not available');
+            // Check for response bubble
+            // Note: Use a generous timeout for AI response
+            const messages = page.locator('.whitespace-pre-wrap');
+            await expect(messages.count()).resolves.toBeGreaterThan(0);
         }
     });
 });
 
 test.describe('CEO Digest - AI Summary', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
-    test('should display CEO Digest widget on dashboard', async ({ page }) => {
-        await page.goto('/en/dashboard');
-        await page.waitForLoadState('networkidle');
+    // CEO Digest is now a tab in AI Hub
+    test('should navigate to CEO Digest tab', async ({ page }) => {
+        await page.goto('/en/dashboard/ai-hub');
 
-        const digestWidget = page.locator(
-            'text=/CEO Digest/i, [data-testid="ceo-digest"], .digest-widget'
-        ).first();
-
-        if (await digestWidget.isVisible()) {
-            await expect(digestWidget).toBeVisible();
+        const digestTab = page.locator('button:has-text("CEO Digest")');
+        if (await digestTab.isVisible()) {
+            await digestTab.click();
+            await expect(page.locator('h2:has-text("CEO Digest")')).toBeVisible();
         } else {
-            console.log('CEO Digest widget not found - may be OWNER-only feature');
-        }
-    });
-
-    test('should show summary statistics', async ({ page }) => {
-        await page.goto('/en/dashboard');
-        await page.waitForLoadState('networkidle');
-
-        // Look for key metrics
-        const metrics = page.locator('text=/revenue|tasks|projects/i');
-
-        if (await metrics.first().isVisible()) {
-            const count = await metrics.count();
-            expect(count).toBeGreaterThan(0);
-        }
-    });
-
-    test('should navigate to full CEO Digest page', async ({ page }) => {
-        await page.goto('/en/dashboard');
-
-        const viewFullBtn = page.locator('a:has-text("View Full"), a[href*="/digest"]').first();
-
-        if (await viewFullBtn.isVisible()) {
-            await viewFullBtn.click();
-            await expect(page).toHaveURL(/digest/);
-        } else {
-            console.log('Full digest page link not found');
+            console.log("CEO Digest tab not visible (likely requires ADMIN role)");
         }
     });
 });
 
 test.describe('AI Token Usage Tracking', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should display token usage in settings', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/billing');
+        await page.goto('/en/dashboard/setting/billing');
         await page.waitForLoadState('networkidle');
 
         const tokenUsage = page.locator('text=/token|usage|AI usage/i').first();
@@ -161,7 +121,7 @@ test.describe('AI Token Usage Tracking', () => {
     });
 
     test('should show usage limit and current usage', async ({ page }) => {
-        await page.goto('/en/dashboard/settings/billing');
+        await page.goto('/en/dashboard/setting/billing');
         await page.waitForLoadState('networkidle');
 
         // Look for numbers indicating limits
@@ -177,7 +137,7 @@ test.describe('AI Token Usage Tracking', () => {
 
 test.describe('AI Pre-Check Feature', () => {
     test.beforeEach(async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
     });
 
     test('should have AI validation on invoice form', async ({ page }) => {

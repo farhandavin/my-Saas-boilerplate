@@ -1,0 +1,667 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Registration with Email and Password",
+    "description": "Verify that a new user can successfully register using a valid email and password, including validation of required fields and password strength.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the registration page"
+      },
+      {
+        "type": "action",
+        "description": "Input a valid email address"
+      },
+      {
+        "type": "action",
+        "description": "Input a strong password meeting all complexity requirements"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that registration is successful and user is redirected to onboarding flow"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Registration Fails With Invalid Email",
+    "description": "Verify that registration fails when the email format is invalid and displays an appropriate error message.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the registration page"
+      },
+      {
+        "type": "action",
+        "description": "Input an invalid email format (e.g., 'useratexample')"
+      },
+      {
+        "type": "action",
+        "description": "Input a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an error message indicating invalid email format is shown and registration is prevented"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "User Login Success with Email/Password",
+    "description": "Verify that a registered user can log in successfully using valid email and password credentials.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter registered email and correct password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is logged in and redirected to the dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "User Login Failure with Incorrect Password",
+    "description": "Verify that login fails if the user enters a valid email but incorrect password, with appropriate error feedback.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter registered email and incorrect password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login is rejected and an error message about invalid credentials is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Social OAuth Login with Google",
+    "description": "Verify user registration and login flow using Google OAuth provider, including first-time registration and returning users.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'Sign in with Google' button"
+      },
+      {
+        "type": "action",
+        "description": "Complete Google OAuth consent flow"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is logged in and directed to onboarding if new user"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Multi-step Onboarding Flow Progress Tracking",
+    "description": "Validate that onboarding progress is tracked accurately and users are redirected to incomplete steps after login if onboarding is not completed.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Register a new user and start onboarding"
+      },
+      {
+        "type": "action",
+        "description": "Complete only some steps of the onboarding flow"
+      },
+      {
+        "type": "action",
+        "description": "Logout and login again"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is redirected to the remaining onboarding step(s)"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Create New Team and Add Members with Role Assignment",
+    "description": "Verify users can create a team, invite members via email, assign roles with RBAC permissions, and members can accept invitations successfully.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as user with permission to create teams"
+      },
+      {
+        "type": "action",
+        "description": "Create a new team with a unique name"
+      },
+      {
+        "type": "action",
+        "description": "Invite a new member by email"
+      },
+      {
+        "type": "action",
+        "description": "Assign a role with specific permissions to the invited member"
+      },
+      {
+        "type": "action",
+        "description": "Have invited user accept the invitation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify member is added to the team with assigned role and permissions enforced"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Role-Based Access Control Enforcement on Team Actions",
+    "description": "Verify that users cannot perform team management actions (e.g., adding members, deleting documents) if their RBAC role lacks the required permissions.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as a team member with limited role permissions"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to perform an action restricted by role, such as removing another member"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the action is blocked and an 'access denied' message is shown"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Upload Document and Vector Index for RAG Chatbot",
+    "description": "Test uploading a supported document type, verify document chunking and vector embeddings generation, and confirm documents can be retrieved via RAG chatbot queries.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to document upload interface"
+      },
+      {
+        "type": "action",
+        "description": "Upload a supported document (e.g., PDF or DOCX)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify document is chunked and vector embeddings are created and persisted"
+      },
+      {
+        "type": "action",
+        "description": "Use the RAG chatbot to query the uploaded document content"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the chatbot provides accurate and contextually relevant responses derived from the uploaded document"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "AI Pre-Check Document Validation",
+    "description": "Validate that the AI pre-check system correctly validates documents against predefined business rules and returns clear feedback for user corrections.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a document that violates business rules (e.g., missing required fields)"
+      },
+      {
+        "type": "action",
+        "description": "Trigger AI Pre-Check validation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system returns detailed validation errors and suggestions for fixing issues"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "AI Pre-Check Validation Success Path",
+    "description": "Verify that documents conforming to business rules pass AI pre-check validation with confirmation messages.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a document that fully complies with business rules"
+      },
+      {
+        "type": "action",
+        "description": "Initiate AI Pre-Check validation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation passes with success confirmation and no errors"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Receive AI-Powered CEO Digest Daily Report",
+    "description": "Validate that subscribed business users receive accurate daily CEO digest summary reports via email and dashboard notification on schedule.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Configure user subscription to CEO digest"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify daily email with executive summary is sent at scheduled time"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify CEO digest notification is visible in the user dashboard notification area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify digest content reflects accurate aggregated business data"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Role-Based Data Isolation in Multi-Tenancy",
+    "description": "Verify that users from one tenant cannot access data from other tenants and that row-level security policies and schema separation are enforced.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as user belonging to Tenant A"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access data owned by Tenant B via API or UI"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied and no unauthorized data is exposed"
+      },
+      {
+        "type": "assertion",
+        "description": "Validate database schema and row-level policies prevent cross-tenant data leakage"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Subscription Management and Billing via Stripe Integration",
+    "description": "Test subscribing to different tiers, upgrading/downgrading plans, viewing invoices, and handling payments through the Stripe customer portal.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as a paying user"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to billing settings and initiate subscription to a plan"
+      },
+      {
+        "type": "action",
+        "description": "Complete checkout using Stripe hosted checkout"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify subscription is active and invoice is generated"
+      },
+      {
+        "type": "action",
+        "description": "Upgrade or downgrade subscription plan"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify subscription changes are applied correctly with proration if applicable"
+      },
+      {
+        "type": "action",
+        "description": "Access Stripe customer portal and verify payment methods and invoices listed"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Automated Dunning Management on Payment Failures",
+    "description": "Verify that the system automatically detects payment failures, sends dunning emails in correct sequence, and softens user access after repeated unsuccessful payment attempts.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate payment failure for a subscribed user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dunning email #1 is sent after initial failure"
+      },
+      {
+        "type": "action",
+        "description": "Simulate continued payment failures"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify subsequent dunning emails are sent as per configured schedule"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user access is restricted or softened after multiple failed payment attempts"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Audit Logs Capture All Critical Database Changes",
+    "description": "Verify that all create, update, delete operations on critical data entities are logged with correct metadata including user, timestamp, and operation details.",
+    "category": "compliance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform create, update, and delete operations on documents and team settings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify audit logs contain accurate entries for each operation with correct user and timestamp"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Privacy Layer PII Masking and GDPR Compliance",
+    "description": "Verify that all personal identifiable information in documents and user data is masked according to privacy rules and that data export and deletion workflows comply with GDPR regulations.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload document containing PII data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that PII data is masked in UI and in API responses"
+      },
+      {
+        "type": "action",
+        "description": "Request data export for user account"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify exported data includes all relevant user information as per GDPR"
+      },
+      {
+        "type": "action",
+        "description": "Initiate account deletion"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all user data is deleted or anonymized as per compliance rules"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Real-Time In-App Notification Delivery and Display",
+    "description": "Verify that relevant platform events trigger timely notifications that are displayed in-app without email fatigue, including team updates and billing alerts.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger platform event such as new team member added or billing alert"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify real-time notification is pushed and displayed correctly in the user's notification center"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify notification content is accurate, actionable, and does not generate redundant emails"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "White-label Branding Updates Reflect in UI and Emails",
+    "description": "Verify tenant-specific branding customizations including UI themes, logos, and email templates are correctly applied and visible to users.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "As tenant admin, update branding settings with custom colors, logos, and email template"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that UI reflects updated branding immediately"
+      },
+      {
+        "type": "action",
+        "description": "Trigger a transactional email (e.g., invitation or digest)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify email uses the tenant's custom branding and SMTP settings"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "System Handles AI Service Downtime Gracefully",
+    "description": "Confirm that when the integrated AI services (like Google Gemini AI) are unavailable, the system continues to serve core CRUD functionality without degradation or crashes.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate downtime of AI service endpoints"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to use AI-powered features such as CEO digest generation or AI pre-check"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify informative error messages are shown"
+      },
+      {
+        "type": "action",
+        "description": "Perform regular document CRUD operations during AI downtime"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify core features operate normally without impact"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Dashboard Real-Time Metrics and Activity Logs Display",
+    "description": "Verify the dashboard loads and displays real-time metrics, charts, CEO digest, and activity logs accurately and responsively.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login to dashboard as user with access"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify real-time metrics and charts load without errors"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify activity logs show recent relevant events"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify CEO digest summary is accessible via dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Webhook Delivery with Signature Verification and Retry Logic",
+    "description": "Verify the webhook system sends outgoing event notifications with correct signature headers, logs delivery attempts, and retries failed deliveries according to policy.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Configure webhook endpoint URL and secret in tenant settings"
+      },
+      {
+        "type": "action",
+        "description": "Trigger events that generate webhook notifications"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify webhook requests contain valid signature headers for verification"
+      },
+      {
+        "type": "action",
+        "description": "Simulate webhook endpoint failures (e.g., 500 HTTP response)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify retries are attempted as per configured retry logic"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify delivery logs correctly capture success and failure attempts"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Data Migration Engine for User Tier Upgrades",
+    "description": "Validate that moving a user or tenant from a lower tier to a higher tier (shared to schema-based or isolated DB) via data migration engine completes without interruption of service or data loss.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Select a user/tenant for tier upgrade"
+      },
+      {
+        "type": "action",
+        "description": "Initiate data migration to the target tier"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify migration completes successfully without data inconsistency"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user services remain available during migration with no data loss"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Admin Configure API Keys and Webhooks",
+    "description": "Verify administrators can create, update, revoke API keys and configure webhook endpoints with correct permission enforcement and validation.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin user"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to API keys management"
+      },
+      {
+        "type": "action",
+        "description": "Create new API key and verify it is listed"
+      },
+      {
+        "type": "action",
+        "description": "Revoke an existing API key"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to webhook settings and add a new webhook endpoint"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify webhook configuration is saved and validated"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Demo Mode Provides Functional Product Tour Without Persistence",
+    "description": "Verify that activating the demo mode offers a fully functional product tour with realistic sample data, but no changes are persisted to the backend database.",
+    "category": "functional",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Activate demo mode from landing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product tour is available and operational"
+      },
+      {
+        "type": "action",
+        "description": "Perform actions like document upload and AI chat in demo mode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all actions behave as normal but no data is stored persistently"
+      }
+    ]
+  }
+]

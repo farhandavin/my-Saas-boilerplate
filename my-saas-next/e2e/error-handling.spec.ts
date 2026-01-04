@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Helper to login
 async function login(page: any, email: string, password: string) {
-    await page.goto('/en/auth/login');
+    await page.goto('/en/auth');
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
@@ -11,7 +11,7 @@ async function login(page: any, email: string, password: string) {
 
 test.describe('Network Error Handling', () => {
     test('should handle offline mode gracefully', async ({ page, context }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Simulate offline
         await context.setOffline(true);
@@ -31,7 +31,7 @@ test.describe('Network Error Handling', () => {
     });
 
     test('should retry failed API requests', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Intercept API calls and simulate failure
         await page.route('**/api/**', async (route, request) => {
@@ -50,7 +50,7 @@ test.describe('Network Error Handling', () => {
     });
 
     test('should show error message on API failure', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Intercept and fail all API requests
         await page.route('**/api/projects', route => route.abort('failed'));
@@ -67,7 +67,7 @@ test.describe('Network Error Handling', () => {
     });
 
     test('should handle slow network conditions', async ({ page, context }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Simulate slow network
         await context.route('**/*', async (route) => {
@@ -83,7 +83,7 @@ test.describe('Network Error Handling', () => {
     });
 
     test('should timeout gracefully on hung requests', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Intercept and never respond
         await page.route('**/api/projects', route => {
@@ -109,22 +109,22 @@ test.describe('Unauthorized Access Prevention', () => {
         await page.goto('/en/dashboard');
 
         // Should redirect to login
-        await page.waitForURL('**/auth/login', { timeout: 5000 });
+        await page.waitForURL('**/auth', { timeout: 5000 });
         await expect(page).toHaveURL(/login/);
     });
 
     test('should prevent STAFF from accessing admin pages', async ({ page }) => {
         // Login as staff (if exists)
-        await page.goto('/en/auth/login');
+        await page.goto('/en/auth');
         await page.fill('input[type="email"]', 'staff@demo.com');
-        await page.fill('input[type="password"]', 'demo123456');
+        await page.fill('input[type="password"]', 'TestSprite123!');
         await page.click('button[type="submit"]').catch(() => { });
 
         await page.waitForTimeout(2000);
 
         if (page.url().includes('dashboard')) {
             // Try to access billing (admin-only)
-            await page.goto('/en/dashboard/settings/billing');
+            await page.goto('/en/dashboard/setting/billing');
             await page.waitForTimeout(1000);
 
             // Should either redirect or show 403
@@ -139,7 +139,7 @@ test.describe('Unauthorized Access Prevention', () => {
     });
 
     test('should block access to other team data', async ({ page, context }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Try to access project with invalid team ID
         await page.goto('/en/dashboard/projects/invalid-team-project-id');
@@ -154,7 +154,7 @@ test.describe('Unauthorized Access Prevention', () => {
     });
 
     test('should invalidate session on token expiry', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Manually expire token in localStorage
         await page.evaluate(() => {
@@ -171,7 +171,7 @@ test.describe('Unauthorized Access Prevention', () => {
     });
 
     test('should prevent CSRF attacks', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Try to make request without proper headers
         const response = await page.evaluate(async () => {
@@ -202,8 +202,8 @@ test.describe('Concurrent User Actions', () => {
         const page2 = await context2.newPage();
 
         // Both users login
-        await login(page1, 'demo@example.com', 'demo123456');
-        await login(page2, 'demo@example.com', 'demo123456');
+        await login(page1, 'testsprite@test.com', 'TestSprite123!');
+        await login(page2, 'testsprite@test.com', 'TestSprite123!');
 
         // Both navigate to same project
         await page1.goto('/en/dashboard/projects');
@@ -231,7 +231,7 @@ test.describe('Concurrent User Actions', () => {
     });
 
     test('should handle race conditions on resource creation', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         // Rapidly click create button multiple times
@@ -253,7 +253,7 @@ test.describe('Concurrent User Actions', () => {
 
 test.describe('Session Management', () => {
     test('should maintain session across page refreshes', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         // Refresh page
@@ -264,7 +264,7 @@ test.describe('Session Management', () => {
     });
 
     test('should logout on session expiry', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Clear token to simulate expiry
         await page.evaluate(() => {
@@ -280,7 +280,7 @@ test.describe('Session Management', () => {
     });
 
     test('should prevent session hijacking', async ({ page, context }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
 
         // Get token
         const token = await page.evaluate(() => localStorage.getItem('token'));
@@ -290,7 +290,7 @@ test.describe('Session Management', () => {
         const newPage = await newContext.newPage();
 
         // Try to use stolen token
-        await newPage.goto('/en/auth/login');
+        await newPage.goto('/en/auth');
         await newPage.evaluate((stolenToken) => {
             localStorage.setItem('token', stolenToken || '');
         }, token);
@@ -307,7 +307,7 @@ test.describe('Session Management', () => {
 
 test.describe('Invalid Input Handling', () => {
     test('should validate email format', async ({ page }) => {
-        await page.goto('/en/auth/login');
+        await page.goto('/en/auth');
 
         await page.fill('input[type="email"]', 'invalid-email');
         await page.fill('input[type="password"]', 'password123');
@@ -319,7 +319,7 @@ test.describe('Invalid Input Handling', () => {
     });
 
     test('should prevent XSS in project names', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         const createBtn = page.locator('text=/new project/i').first();
@@ -343,7 +343,7 @@ test.describe('Invalid Input Handling', () => {
     });
 
     test('should validate required fields', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         const createBtn = page.locator('text=/new project/i').first();
@@ -363,7 +363,7 @@ test.describe('Invalid Input Handling', () => {
     });
 
     test('should handle special characters in input', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         const createBtn = page.locator('text=/new project/i').first();
@@ -383,7 +383,7 @@ test.describe('Invalid Input Handling', () => {
     });
 
     test('should enforce input length limits', async ({ page }) => {
-        await login(page, 'demo@example.com', 'demo123456');
+        await login(page, 'testsprite@test.com', 'TestSprite123!');
         await page.goto('/en/dashboard/projects');
 
         const createBtn = page.locator('text=/new project/i').first();

@@ -1,5 +1,5 @@
 
-import { pgTable, text, timestamp, boolean, uuid, integer, jsonb, json, pgEnum, customType, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, uuid, integer, jsonb, json, pgEnum, customType, index, unique, primaryKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Enums
@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name'),
   email: text('email').notNull().unique(),
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
   password: text('password'),
   provider: text('provider'), // google, credentials
   image: text('image'),
@@ -18,10 +19,20 @@ export const users = pgTable('users', {
   language: text('language').default('en'),
   timezone: text('timezone').default('UTC'),
   twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  twoFactorSecret: text('two_factor_secret'), // Encrypted Text
   isSuperAdmin: boolean('is_super_admin').default(false), // Global SaaS Owner
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+// Verification Tokens (for Email & Password Reset)
+export const verificationTokens = pgTable('verification_tokens', {
+  identifier: text('identifier').notNull(),
+  token: text('token').notNull(),
+  expires: timestamp('expires', { mode: 'date' }).notNull(),
+}, (vt) => ({
+  compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+}));
 
 // Teams Table
 export const teams = pgTable('teams', {
