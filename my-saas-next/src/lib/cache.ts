@@ -89,7 +89,7 @@ export async function invalidateTeamCache(teamId: string): Promise<void> {
     ];
 
     try {
-        await Promise.all(keys.map(key => redis.del(key)));
+        await Promise.all(keys.map(key => redis!.del(key)));
     } catch (error) {
         console.error('[Cache] Team cache invalidation error:', error);
     }
