@@ -52,11 +52,7 @@ export default function ProjectDetailPage() {
   const fetchProjectDetails = async () => {
     try {
       // Note: We need to implement GET /api/projects/[id]
-      // const token = localStorage.getItem('token');
-      // For now, let's assume the endpoint returns the data structure we defined in ProjectService
-      const res = await fetch(`/api/projects/${params.id}`, {
-        // headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/projects/${params.id}`);
       
       if (res.ok) {
         const data = await res.json();
@@ -76,12 +72,10 @@ export default function ProjectDetailPage() {
     if (!newTaskTitle.trim()) return;
 
     try {
-       // const token = localStorage.getItem('token');
        const res = await fetch(`/api/projects/${params.id}/tasks`, {
            method: 'POST',
            headers: {
                'Content-Type': 'application/json',
-               // 'Authorization': `Bearer ${token}`
            },
            body: JSON.stringify({ title: newTaskTitle, status: newTaskStatus })
        });
@@ -107,10 +101,9 @@ export default function ProjectDetailPage() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        // const token = localStorage.getItem('token');
         const res = await fetch(`/api/projects/${params.id}/members`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }, //, 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: inviteEmail, role: inviteRole })
         });
         const data = await res.json();
@@ -132,12 +125,10 @@ export default function ProjectDetailPage() {
     }
 
     try {
-      // const token = localStorage.getItem('token');
       const res = await fetch(`/api/projects/${params.id}/members`, {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json', 
-          // 'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({ userId })
       });
@@ -424,12 +415,10 @@ export default function ProjectDetailPage() {
                                 status: formData.get('status') as string
                             };
                             
-                            // const token = localStorage.getItem('token');
                             const res = await fetch(`/api/projects/${params.id}`, {
                                 method: 'PATCH',
                                 headers: { 
                                     'Content-Type': 'application/json',
-                                    // 'Authorization': `Bearer ${token}`
                                 },
                                 body: JSON.stringify(updates)
                             });
@@ -493,10 +482,8 @@ export default function ProjectDetailPage() {
                         onClick={async () => {
                             if (!confirm('Are you sure you want to delete this project?')) return;
                             try {
-                                // const token = localStorage.getItem('token');
                                 const res = await fetch(`/api/projects/${params.id}`, {
                                     method: 'DELETE',
-                                    // headers: { 'Authorization': `Bearer ${token}` }
                                 });
                                 if (res.ok) {
                                     window.location.href = '/dashboard/projects';

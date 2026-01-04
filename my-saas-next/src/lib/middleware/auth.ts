@@ -12,7 +12,8 @@ import { UserJwtPayload, Role, RouteContext, AuthContext, TeamContext, TeamMembe
 export const verifyToken = (token: string): UserJwtPayload | null => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
-  } catch {
+  } catch (error) {
+    console.error('Verify Token Error:', error);
     return null;
   }
 };

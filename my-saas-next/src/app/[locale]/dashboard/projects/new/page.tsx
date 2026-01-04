@@ -19,12 +19,10 @@ export default function CreateProjectPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });

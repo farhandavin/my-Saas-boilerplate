@@ -138,8 +138,17 @@ export function BrandingSettings({ teamId, initialData }: BrandingSettingsProps)
                         placeholder="https://example.com/logo.png"
                     />
                     {branding.logoUrl && (
-                        <div className="w-12 h-10 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                            <img src={branding.logoUrl} alt="Preview" className="max-w-full max-h-full object-contain" />
+                        <div className="w-12 h-10 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden relative">
+                            <img 
+                                src={branding.logoUrl} 
+                                alt="Preview" 
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.parentElement?.classList.add('bg-red-50', 'dark:bg-red-900/20');
+                                }} 
+                            />
+                            {/* Fallback for error state handled by onError hiding the img */}
                         </div>
                     )}
                 </div>

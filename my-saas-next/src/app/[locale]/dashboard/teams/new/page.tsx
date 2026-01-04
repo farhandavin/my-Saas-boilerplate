@@ -20,12 +20,10 @@ export default function CreateTeamPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });

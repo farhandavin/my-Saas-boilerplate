@@ -36,12 +36,10 @@ export function SmtpSettings({ teamId, initialData }: SmtpSettingsProps) {
     const handleSave = async () => {
         setLoading(true);
         try {
-            // const token = localStorage.getItem('token');
             const res = await fetch(`/api/team/${teamId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ smtpSettings: config })
             });

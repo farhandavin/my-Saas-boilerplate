@@ -31,16 +31,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     const fetchTeam = async () => {
         try {
-            // const token = localStorage.getItem('token');
-            // if (!token) {
-            //     setIsLoading(false);
-            //     return;
-            // }
-
             // 1. Get List of Teams
-            const res = await fetch('/api/team', { 
-                // headers: { 'Authorization': `Bearer ${token}` } 
-            });
+            const res = await fetch('/api/team');
             
             if (res.ok) {
                 const data = await res.json();
@@ -57,9 +49,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
                     localStorage.setItem('currentTeamId', teamIdToLoad);
 
                     // 3. Fetch Full Team Details (including Branding)
-                    const detailRes = await fetch(`/api/team/${teamIdToLoad}`, {
-                         // headers: { 'Authorization': `Bearer ${token}` } 
-                    });
+                    const detailRes = await fetch(`/api/team/${teamIdToLoad}`);
                     
                     if (detailRes.ok) {
                         const detailData = await detailRes.json();

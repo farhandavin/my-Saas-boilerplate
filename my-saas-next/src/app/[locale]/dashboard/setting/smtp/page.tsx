@@ -12,18 +12,15 @@ export default function SmtpPage() {
     useEffect(() => {
         const fetchTeam = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const res = await fetch('/api/team', { 
-                    headers: { 'Authorization': `Bearer ${token}` } 
-                });
+        const fetchTeam = async () => {
+            try {
+                const res = await fetch('/api/team');
                 
                 if (res.ok) {
                     const data = await res.json();
                     if (data.teams && data.teams.length > 0) {
                         const teamId = data.teams[0].id; // Default to first
-                        const detailRes = await fetch(`/api/team/${teamId}`, {
-                             headers: { 'Authorization': `Bearer ${token}` } 
-                        });
+                        const detailRes = await fetch(`/api/team/${teamId}`);
                         if (detailRes.ok) {
                             const detailData = await detailRes.json();
                             setTeam(detailData.team);

@@ -46,7 +46,6 @@ export default function AuditLogsPage() {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
@@ -56,11 +55,7 @@ export default function AuditLogsPage() {
         params.append('search', search);
       }
 
-      const response = await fetch(`/api/audit-logs?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(`/api/audit-logs?${params.toString()}`);
 
       const data = await response.json();
       

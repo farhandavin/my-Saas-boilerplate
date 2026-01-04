@@ -22,16 +22,8 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchUserData = async () => {
-    // const token = localStorage.getItem('token');
-    // if (!token) {
-    //   router.push('/auth');
-    //   return;
-    // }
-
     try {
-      const res = await fetch('/api/auth/me', {
-        // headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch('/api/auth/me');
       const data = await res.json();
 
       if (!res.ok) {

@@ -20,14 +20,11 @@ export default function RAGChatPage() {
   const [docCount, setDocCount] = useState(0);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch document count
-  useEffect(() => {
+    // Fetch document count
+    useEffect(() => {
     const fetchDocs = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('/api/documents', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/api/documents');
         if (res.ok) {
           const data = await res.json();
           setDocCount(data.metadata?.totalItems || data.data?.length || 0);
@@ -62,11 +59,9 @@ export default function RAGChatPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/ai/rag/query', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ query: userMessage.content })
