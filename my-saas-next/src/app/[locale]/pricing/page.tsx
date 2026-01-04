@@ -82,12 +82,19 @@ export default function PricingPage() {
 
     try {
       setLoading(plan.id);
-      const token = localStorage.getItem('token');
       
-      // Get team ID from user's team
+      // Get team ID from user's team (using cookie-based auth)
       const teamRes = await fetch('/api/team', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
+      
+      if (!teamRes.ok) {
+        showError('Please login first to upgrade your plan.');
+        setLoading(null);
+        router.push('/auth');
+        return;
+      }
+      
       const teamData = await teamRes.json();
       const teamId = teamData.teams?.[0]?.id;
 
@@ -100,8 +107,8 @@ export default function PricingPage() {
       // Create checkout session
       const res = await fetch('/api/payment/create-checkout', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

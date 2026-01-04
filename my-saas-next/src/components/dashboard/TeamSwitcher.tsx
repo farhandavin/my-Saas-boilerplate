@@ -14,7 +14,7 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
     useEffect(() => {
         const fetchTeams = async () => {
             try {
-                const res = await fetch('/api/team');
+                const res = await fetch('/api/team', { credentials: 'include' });
                 if (res.ok) {
                     const data = await res.json();
                     setTeams(data.teams);

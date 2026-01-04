@@ -215,9 +215,8 @@ function CEODigestTab() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/ai/ceo-digest', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       const data = await res.json();
       
@@ -408,12 +407,11 @@ function PreCheckTab() {
     if (!content.trim()) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/ai/precheck', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ content, category, documentType })
       });
@@ -612,9 +610,8 @@ function PrivacyTab() {
 
   const fetchSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/privacy', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       const data = await res.json();
       if (data.success) {
@@ -636,11 +633,10 @@ function PrivacyTab() {
       setSettings(prev => ({ ...prev, globalEnabled: newState }));
       
       try {
-        const token = localStorage.getItem('token');
         await fetch('/api/privacy', {
             method: 'PUT',
+            credentials: 'include',
             headers: { 
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ globalEnabled: newState })

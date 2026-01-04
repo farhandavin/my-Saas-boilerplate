@@ -40,7 +40,7 @@ export function Sidebar({ user }: { user: any }) {
   useEffect(() => {
     async function fetchTeamAndRole() {
       try {
-        const res = await fetch('/api/team');
+        const res = await fetch('/api/team', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           if (data.teams && data.teams.length > 0) {

@@ -32,7 +32,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     const fetchTeam = async () => {
         try {
             // 1. Get List of Teams
-            const res = await fetch('/api/team');
+            const res = await fetch('/api/team', { credentials: 'include' });
             
             if (res.ok) {
                 const data = await res.json();
@@ -49,7 +49,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
                     localStorage.setItem('currentTeamId', teamIdToLoad);
 
                     // 3. Fetch Full Team Details (including Branding)
-                    const detailRes = await fetch(`/api/team/${teamIdToLoad}`);
+                    const detailRes = await fetch(`/api/team/${teamIdToLoad}`, { credentials: 'include' });
                     
                     if (detailRes.ok) {
                         const detailData = await detailRes.json();

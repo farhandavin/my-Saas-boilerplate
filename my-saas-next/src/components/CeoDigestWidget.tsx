@@ -10,7 +10,6 @@ export default function CeoDigestWidget() {
   const handleAnalyze = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const res = await axios.post('/api/ai/analyze', 
         { 
           prompt: `You are a Chief of Staff. Analyze this daily snapshot and give a 3-bullet executive summary (Growth, Critical, Highlight).
@@ -23,7 +22,7 @@ export default function CeoDigestWidget() {
           
           Tone: Professional, Concise, Insightful.` 
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { withCredentials: true }
       );
       setResult(res.data.data);
     } catch (error) {
