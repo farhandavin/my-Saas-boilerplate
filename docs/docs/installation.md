@@ -16,14 +16,14 @@ Welcome to the **Enterprise OS**. This guide is designed to help you set up the 
 
 ---
 
-## 🛠️ Step 1: Clone & Install
-
 ```bash
-# 1. Clone the repository
-git clone <your-repo-url>
+# 1. Unzip the downloaded file
+# Extract "Enterprise-OS-v3.0.zip" to your preferred folder.
+
+# 2. Navigate to the project folder
 cd my-saas-next
 
-# 2. Install dependencies
+# 3. Install dependencies
 npm install
 ```
 

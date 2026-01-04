@@ -6,14 +6,14 @@ This guide will get you from **clone to running dashboard** in under 5 minutes. 
 
 ---
 
-## ⚡ Minute 1: Clone & Install
-
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/my-saas-boilerplate.git
-cd my-saas-boilerplate/my-saas-next
+# 1. Unzip the file
+# Extract the downloaded zip file.
 
-# Install dependencies
+# 2. Navigate to folder
+cd my-saas-next
+
+# 3. Install dependencies
 npm install
 ```
 

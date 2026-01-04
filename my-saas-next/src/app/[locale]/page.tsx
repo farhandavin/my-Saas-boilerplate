@@ -61,7 +61,7 @@ export default function Home() {
                     Start Free Trial
                     </button>
                 </Link>
-                <Link href={process.env.NEXT_PUBLIC_DOCS_URL || '#'} target="_blank">
+                <Link href="https://my-saas-boilerplate-6pgd.vercel.app/" target="_blank">
                   <button className="flex h-12 cursor-pointer items-center justify-center rounded-lg px-6 bg-[#192233] border border-[#232f48] hover:border-gray-500 text-white text-base font-bold transition-all">
                     View Documentation
                   </button>

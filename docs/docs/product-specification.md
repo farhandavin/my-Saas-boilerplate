@@ -390,7 +390,7 @@ Before going to production, ensure:
 ## 📞 Support & Resources
 
 - **Documentation**: Full docs at `/docs` (Docusaurus site)
-- **Demo**: [Try interactive demo](https://my-saas-boilerplate.vercel.app/id/demo)
+
 - **Email Support**: farhandavin14@gmail.com
 - **GitHub Issues**: Bug reports and feature requests
 - **Response Time**: 48 hours for general support, 24h for critical bugs
