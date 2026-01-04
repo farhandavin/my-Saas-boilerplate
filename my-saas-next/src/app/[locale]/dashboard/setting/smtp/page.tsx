@@ -12,8 +12,6 @@ export default function SmtpPage() {
     useEffect(() => {
         const fetchTeam = async () => {
             try {
-        const fetchTeam = async () => {
-            try {
                 const res = await fetch('/api/team');
                 
                 if (res.ok) {
