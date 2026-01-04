@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useRef } from 'react';
 
+import { TeamSwitcher } from './TeamSwitcher';
+
 export function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
   const t = useTranslations('Dashboard');
@@ -38,10 +40,7 @@ export function Sidebar({ user }: { user: any }) {
   useEffect(() => {
     async function fetchTeamAndRole() {
       try {
-        // const token = localStorage.getItem('token');
-        const res = await fetch('/api/team', {
-          // headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/api/team');
         if (res.ok) {
           const data = await res.json();
           if (data.teams && data.teams.length > 0) {
@@ -84,14 +83,9 @@ export function Sidebar({ user }: { user: any }) {
         >
           <span className="material-symbols-outlined text-[16px] text-slate-500">{isCollapsed ? 'chevron_right' : 'chevron_left'}</span>
         </button>
-        {/* Logo / Brand */}
-        <div className="flex gap-3 items-center mb-2">
-          <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shadow-md ring-2 ring-primary/20 bg-[url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJeRIwTBSw1R6kQFp4DQX6B3tRcmwvT-I1gBErT6dX3ulCwiIF7OiNJ0KdKDFTklmMLHeO9sjVtGV3eCmHGH7dZUD9aeAXJbKgBEoV20KEKtq0sdxe0nPObAKEwU29MR_1d8989jdOQJr4Asge0rxRURibU-Ad72WcBnf61FS74VOhmAcmb22oB7J_b8vlXWptEIfCKeoG7688B6kLxsiNc5Gf49CI9T31lozIb_gibUFoQ6T3dOa6OxRDgLOKE34CUTRsg-16hKU')]"></div>
-          <div className="flex flex-col overflow-hidden transition-all duration-300" style={{ opacity: isCollapsed ? 0 : 1, width: isCollapsed ? 0 : 'auto' }}>
-            <h1 className="text-slate-900 dark:text-white text-base font-bold leading-normal whitespace-nowrap">Enterprise OS</h1>
-            <p className="text-slate-500 dark:text-[#92a4c9] text-xs font-normal leading-normal whitespace-nowrap">CEO Workspace</p>
-          </div>
-        </div>
+        
+        {/* Team Switcher */}
+        <TeamSwitcher isCollapsed={isCollapsed} />
 
         {/* Plan Status Badge - Owners & Admins Only */}
         {(role === 'OWNER' || role === 'ADMIN') && (

@@ -37,7 +37,7 @@ export default function CreateTeamPage() {
         // For smoother UX, let's switch context.
         localStorage.setItem('currentTeamId', data.team.id);
         
-        router.push('/dashboard/setting/team');
+        router.push('/dashboard/projects');
       } else {
         showError(data.error || 'Failed to create team');
       }

@@ -18,16 +18,13 @@ export default function DashboardLayout({
   useEffect(() => {
      // Quick fetch for sidebar user profile
      const fetchUser = async () => {
-        const token = localStorage.getItem('token');
-        if(token) {
            try {
-             const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` }});
+             const res = await fetch('/api/auth/me');
              if(res.ok) {
                 const data = await res.json();
                 setUser(data.user);
              }
            } catch(e) {}
-        }
      };
      fetchUser();
   }, []);
