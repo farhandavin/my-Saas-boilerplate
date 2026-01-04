@@ -250,7 +250,7 @@ export async function POST(req: Request) {
           total_usage: number;
           subscription_item: string;
         }
-        const summary = event.data.object as UsageRecordSummary;
+        const summary = event.data.object as unknown as UsageRecordSummary;
 
         StripeLogger.info('Metered Usage Updated', {
           usageId: summary.id,
