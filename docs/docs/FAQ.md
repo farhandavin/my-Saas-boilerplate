@@ -420,7 +420,7 @@ Docker is provided for developers who prefer full local control.
 **Security patches**: Within 48 hours of disclosure  
 **Bug fixes**: Weekly (bundled)
 
-See [CHANGELOG.md](../../CHANGELOG) for version history.
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 ---
 

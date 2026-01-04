@@ -15,7 +15,7 @@ Released: January 3, 2026
 - ✅ 20+ E2E tests
 - ✅ Comprehensive billing system
 
-[See full changelog →](../CHANGELOG.md)
+[See full changelog →](./CHANGELOG.md)
 
 ---
 
@@ -282,7 +282,7 @@ Beyond 2026, our vision includes:
 
 **Confused about the difference?**
 
-- **[CHANGELOG.md](../CHANGELOG.md)**: What we **already shipped**
+- **[CHANGELOG.md](./CHANGELOG.md)**: What we **already shipped**
 - **[ROADMAP.md](./ROADMAP.md)** (this file): What we're **planning to ship**
 
 ---
