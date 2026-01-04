@@ -3,6 +3,8 @@ import { AiService } from '@/services/aiService';
 import { db } from '@/db';
 import { users, teams } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +32,8 @@ export async function POST(req: NextRequest) {
       content: responseText 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Chat Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

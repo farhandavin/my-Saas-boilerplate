@@ -21,7 +21,7 @@ export const GET = withTeam(
         revenueTrend,
         recentActivity
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Dashboard Stats Error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch dashboard stats' },

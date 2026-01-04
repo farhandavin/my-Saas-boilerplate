@@ -4,6 +4,8 @@ import { extractToken, verifyToken, unauthorized, forbidden } from '@/lib/middle
 import { db } from '@/db';
 import { teamMembers, users, auditLogs } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/team/members - List members of current team
 export async function GET(req: NextRequest) {
@@ -46,8 +48,8 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, members: formattedMembers });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -121,7 +123,7 @@ export async function DELETE(req: NextRequest) {
       });
   
       return NextResponse.json({ success: true });
-    } catch (error: any) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
     }
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { InvoiceList } from '@/components/dashboard/InvoiceList';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 interface Team {
   id: string;
@@ -32,8 +34,8 @@ export const BillingTab = ({ team }: BillingTabProps) => {
       const data = await res.json();
       if (data.url) window.location.href = data.url;
       else throw new Error(data.error);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? getErrorMessage(err) : 'An error occurred');
     } finally {
       setLoading(null);
     }

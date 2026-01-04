@@ -53,12 +53,56 @@ The optional Privacy Layer (`src/lib/ai/privacy-layer.ts`) automatically:
 
 ### Multi-Tenancy Isolation
 
-| Isolation Level | Implementation |
-|-----------------|----------------|
-| **Logical** | `teamId` column on all tenant data |
-| **Query-level** | All queries filter by `teamId` |
-| **API-level** | JWT contains `teamId`, validated on each request |
-| **Dedicated DB** | Enterprise tier supports `dedicatedDatabaseUrl` |
+Enterprise BOS implements **defense-in-depth** multi-tenancy with both application-level and database-level isolation.
+
+#### Isolation Layers
+
+| Layer | Implementation | Protection |
+|-------|----------------|------------|
+| **Database RLS** | PostgreSQL Row Level Security | Prevents data leaks even from application bugs |
+| **Application** | `teamId` column on all tenant data | Standard query-level filtering |
+| **API** | JWT contains `teamId`, validated on each request | Request-level validation |
+| **Dedicated DB** | Enterprise tier supports `dedicatedDatabaseUrl` | Full physical isolation |
+
+#### Row Level Security (RLS) Implementation
+
+RLS is enabled at the database level via `drizzle/0001_enable_rls.sql`. This ensures tenant data isolation is enforced by PostgreSQL itself, not just application code.
+
+**Protected Tables**:
+- `projects`, `project_members`, `tasks`
+- `documents`, `invoices`, `campaigns`
+- `team_members`, `invitations`, `roles`
+- `audit_logs`, `notifications`, `webhooks`, `webhook_deliveries`
+- `api_keys`, `privacy_rules`, `usage_billings`, `migration_jobs`, `ai_feedback`
+
+**How It Works**:
+
+```typescript
+// 1. Set tenant context before queries (src/lib/db-router.ts)
+await setTenantContext(teamId);
+
+// 2. All subsequent queries are automatically filtered by RLS
+const projects = await db.select().from(projects);
+// ↑ Only returns projects where team_id = current context
+
+// 3. Even if a developer forgets the WHERE clause, RLS protects data
+```
+
+**Session Variable**: The `app.current_team_id` PostgreSQL session variable is set automatically when using `getTenantDb()` or `setTenantContext()`.
+
+**Superadmin Access**: When `teamId` is not set (null context), RLS policies allow full access for platform-wide administration.
+
+#### Usage in Services
+
+```typescript
+import { withTenantContext } from '@/lib/db-router';
+
+// Recommended: Use withTenantContext for automatic cleanup
+const projects = await withTenantContext(teamId, async (db) => {
+  return await db.select().from(projects);
+});
+```
+
 
 ## Audit Logging
 

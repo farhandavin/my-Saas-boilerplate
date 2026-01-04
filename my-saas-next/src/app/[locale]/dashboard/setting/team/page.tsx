@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/Toast';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 interface TeamMember {
   id: string;
@@ -44,7 +46,7 @@ export default function TeamSettingsPage() {
          console.error('Failed to fetch members:', data.error);
          // Don't show toast on load failure to avoid spamming if auth issue, mostly console
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching members:', error);
     } finally {
       setLoading(false);
@@ -110,8 +112,8 @@ export default function TeamSettingsPage() {
       } else {
         throw new Error(data.error || 'Failed to send invite');
       }
-    } catch (error: any) {
-      showError(error.message);
+    } catch (error: unknown) {
+      showError(getErrorMessage(error));
     } finally {
       setIsInviting(false);
     }
@@ -139,8 +141,8 @@ export default function TeamSettingsPage() {
       } else {
         throw new Error(data.error || 'Failed to remove member');
       }
-    } catch (error: any) {
-      showError(error.message);
+    } catch (error: unknown) {
+      showError(getErrorMessage(error));
     }
   };
 

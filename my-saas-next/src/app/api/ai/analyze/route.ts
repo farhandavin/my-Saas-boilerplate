@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { AiService } from '@/services/aiService';
 import { BillingService } from '@/services/billingService';
 import { UserJwtPayload } from '@/types';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // Manual token verification helper (since Next.js middleware runs on Edge)
 const verifyToken = (token: string) => {
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ data: aiResponse });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

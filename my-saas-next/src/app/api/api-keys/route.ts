@@ -6,6 +6,8 @@ import { db } from '@/db';
 import { teamMembers, apiKeys, auditLogs } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import crypto from 'crypto';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/api-keys - List API keys
 export async function GET(req: NextRequest) {
@@ -42,8 +44,8 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, apiKeys: keys });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -105,8 +107,8 @@ export async function POST(req: NextRequest) {
       },
       warning: 'Save this key now. You won\'t be able to see it again!'
     }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -163,7 +165,7 @@ export async function DELETE(req: NextRequest) {
       });
   
       return NextResponse.json({ success: true });
-    } catch (error: any) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
     }
 }

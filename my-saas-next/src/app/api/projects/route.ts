@@ -14,7 +14,7 @@ export const GET = withTeam(
         team.role
       );
       return NextResponse.json({ projects });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching projects:', error);
       return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
     }
@@ -34,7 +34,7 @@ export const POST = withTeam(
       });
 
       return NextResponse.json({ project });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating project:', error);
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
     }

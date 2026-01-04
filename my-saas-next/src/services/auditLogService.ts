@@ -1,6 +1,7 @@
 
 import { db } from '@/db';
 import { auditLogs } from '@/db/schema';
+import type { AuditLogMetadata } from '@/types/log-types';
 
 interface AuditLogParams {
   teamId: string;
@@ -9,14 +10,14 @@ interface AuditLogParams {
   resource?: string;
   details?: string;
   ip?: string;
-  metadata?: Record<string, any>;
+  metadata?: AuditLogMetadata;
 }
 
 export const AuditLogService = {
   /**
    * Mencatat aktivitas user ke database AuditLog
    */
-  async log({ teamId, userId, action, resource, details, ip, metadata }: AuditLogParams) {
+  async log({ teamId, userId, action, resource, details, ip }: AuditLogParams) {
     try {
       await db.insert(auditLogs).values({
         teamId,
@@ -24,9 +25,6 @@ export const AuditLogService = {
         action,
         entity: resource || 'Unknown', // Map resource -> entity
         details,
-        //Metadata removed from schema? No, verified in step 2237 metadata was removed. 
-        //Wait, Step 2237 said "metadata references to align with the database schema... removed metadata references".
-        //Let me re-read step 2237 carefully.
         ipAddress: ip || "0.0.0.0",
       });
       console.log(`[AUDIT] ${action} by ${userId} in team ${teamId}`);
@@ -42,7 +40,7 @@ export const AuditLogService = {
   async getRecentLogs(teamId: string, limit: number = 5) {
     // Import 'desc' and 'eq' locally if needed or rely on top level imports
     const { desc, eq } = await import('drizzle-orm');
-    
+
     return db.query.auditLogs.findMany({
       where: eq(auditLogs.teamId, teamId),
       orderBy: [desc(auditLogs.createdAt)],

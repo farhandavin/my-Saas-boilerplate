@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Role, ROLE_INFO } from '@/types';
 import { CEODigest, PreCheckResult, DocumentCategory, DOCUMENT_TYPES } from '@/types/ceoDigest';
 import { AiFeedback } from '@/components/ai/AiFeedback';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 
 type TabType = 'dashboard' | 'ceo-digest' | 'pre-check' | 'privacy' | 'chat';
@@ -221,8 +223,8 @@ function CEODigestTab() {
       
       if (!res.ok) throw new Error(data.error);
       setDigest(data.data);
-    } catch (err: any) {
-      setError(err.message || 'Gagal generate digest');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Gagal generate digest');
     } finally {
       setLoading(false);
     }
@@ -418,8 +420,8 @@ function PreCheckTab() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setResult(data.data);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -25,8 +27,8 @@ export default function ForgotPasswordPage() {
       if (!res.ok) throw new Error(data.error);
 
       setSent(true);
-    } catch (err: any) {
-      showError(err.message || 'An error occurred. Please try again.');
+    } catch (err: unknown) {
+      showError(getErrorMessage(err) || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

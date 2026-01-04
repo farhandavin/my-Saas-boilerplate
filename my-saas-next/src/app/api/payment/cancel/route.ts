@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { PaymentService } from '@/services/paymentService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +22,8 @@ export async function POST(req: NextRequest) {
     const result = await PaymentService.cancelSubscription(payload.userId, teamId);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cancel subscription error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

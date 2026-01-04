@@ -6,6 +6,8 @@ import { db } from '@/db';
 import { teamMembers } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { TeamService } from '@/services/teamService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 async function getUserFromToken(req: NextRequest) {
   const token = req.headers.get('authorization')?.split(' ')[1];
@@ -58,10 +60,10 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json({ success: true, data: result });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Onboarding complete error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: getErrorMessage(error) || 'Internal server error' },
       { status: 500 }
     );
   }

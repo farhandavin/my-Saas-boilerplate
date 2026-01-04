@@ -4,6 +4,7 @@ import { documents } from '@/db/schema';
 import { AiService } from '@/services/aiService';
 import { AuditLogService } from '@/services/auditLogService';
 import { eq, desc, ilike, and, sql } from 'drizzle-orm';
+import type { DocumentUpdateData } from '@/types/log-types';
 
 export const DocumentService = {
   /**
@@ -31,7 +32,7 @@ export const DocumentService = {
       .select({ count: sql<number>`count(*)` })
       .from(documents)
       .where(whereCondition);
-    
+
     const totalItems = Number(countResult.count);
     const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -74,9 +75,9 @@ export const DocumentService = {
    * Create a new document with embedding and audit log
    */
   async createDocument(
-    teamId: string, 
+    teamId: string,
     userId: string, // Required for audit log
-    title: string, 
+    title: string,
     content: string
   ) {
     const embedding = await AiService.generateEmbedding(content);
@@ -108,33 +109,42 @@ export const DocumentService = {
     id: string,
     teamId: string,
     userId: string,
-    data: { title?: string; content?: string }
+    data: DocumentUpdateData
   ) {
     // 1. Fetch existing for Diff
     const oldDoc = await this.getDocumentById(id, teamId);
     if (!oldDoc) throw new Error('Document not found');
 
-    const updateData: any = { ...data };
+    // Properly typed update data
+    const updateData: {
+      title?: string;
+      content?: string;
+      embedding?: ReturnType<typeof sql>;
+    } = { ...data };
 
     // 2. Re-embed if content changed
     if (data.content && data.content !== oldDoc.content) {
       const embedding = await AiService.generateEmbedding(data.content);
-      updateData.embedding = embedding;
+      updateData.embedding = sql`${JSON.stringify(embedding)}::vector`;
     }
 
     // 3. Perform Update
     const [updatedDoc] = await db.update(documents)
-      .set({
-        ...updateData,
-        embedding: updateData.embedding ? sql`${JSON.stringify(updateData.embedding)}::vector` : undefined
-      })
+      .set(updateData)
       .where(and(eq(documents.id, id), eq(documents.teamId, teamId)))
       .returning();
 
-    // 4. Calculate Diff for Audit Log
-    const changes: Record<string, any> = {};
-    if (data.title && data.title !== oldDoc.title) changes.title = { from: oldDoc.title, to: data.title };
-    if (data.content && data.content !== oldDoc.content) changes.content = { from: '...', to: '...' }; // Content might be too large to log fully
+    // 4. Calculate Diff for Audit Log - properly typed
+    const changes: {
+      title?: { from: string | null; to: string };
+      content?: { from: string; to: string };
+    } = {};
+    if (data.title && data.title !== oldDoc.title) {
+      changes.title = { from: oldDoc.title, to: data.title };
+    }
+    if (data.content && data.content !== oldDoc.content) {
+      changes.content = { from: '...', to: '...' }; // Content might be too large to log fully
+    }
 
     // 5. Audit Log
     await AuditLogService.log({
@@ -143,7 +153,7 @@ export const DocumentService = {
       action: 'DOCUMENT_UPDATED',
       resource: 'Document',
       details: `Updated document: ${updatedDoc.title}`,
-      metadata: { 
+      metadata: {
         documentId: id,
         changes,
         oldData: { title: oldDoc.title }, // Snapshot important fields
@@ -170,7 +180,7 @@ export const DocumentService = {
       action: 'DOCUMENT_DELETED',
       resource: 'Document',
       details: `Deleted document: ${oldDoc.title}`,
-      metadata: { 
+      metadata: {
         deletedData: { id: oldDoc.id, title: oldDoc.title, createdAt: oldDoc.createdAt }
       }
     });
@@ -190,10 +200,10 @@ export const DocumentService = {
       content: documents.content,
       similarity: sql<number>`1 - (${documents.embedding} <=> ${vectorStr}::vector)`
     })
-    .from(documents)
-    .where(eq(documents.teamId, teamId))
-    .orderBy(desc(sql`1 - (${documents.embedding} <=> ${vectorStr}::vector)`))
-    .limit(3);
+      .from(documents)
+      .where(eq(documents.teamId, teamId))
+      .orderBy(desc(sql`1 - (${documents.embedding} <=> ${vectorStr}::vector)`))
+      .limit(3);
 
     return result.map((d) => `[Source: ${d.title}]\n${d.content}`).join("\n\n");
   }

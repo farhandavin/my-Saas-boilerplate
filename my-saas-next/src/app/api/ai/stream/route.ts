@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BillingService } from '@/services/billingService';
 import { getAuthUser } from '@/lib/middleware/auth';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -73,8 +75,8 @@ Provide a helpful response:`;
           // Send completion signal
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
-        } catch (error: any) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`));
+        } catch (error: unknown) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: getErrorMessage(error) })}\n\n`));
           controller.close();
         }
       }
@@ -87,9 +89,9 @@ Provide a helpful response:`;
         'Connection': 'keep-alive',
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Stream error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { 
+    return new Response(JSON.stringify({ error: getErrorMessage(error) }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

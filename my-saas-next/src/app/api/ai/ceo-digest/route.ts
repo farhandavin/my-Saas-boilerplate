@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { CEODigestService } from '@/services/ceoDigestService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET - Generate CEO Digest (ADMIN only)
 export const GET = withTeam(
@@ -23,14 +25,17 @@ export const GET = withTeam(
         success: true,
         data: digest
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('CEO Digest error:', error);
 
+      const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
+      const errorObj = error as { statusCode?: number; lastError?: { statusCode?: number } };
+
       // Check if it's a quota exceeded error (429)
-      const isQuotaError = error?.statusCode === 429 ||
-        error?.lastError?.statusCode === 429 ||
-        error?.message?.includes('quota') ||
-        error?.message?.includes('RESOURCE_EXHAUSTED');
+      const isQuotaError = errorObj?.statusCode === 429 ||
+        errorObj?.lastError?.statusCode === 429 ||
+        errorMessage?.includes('quota') ||
+        errorMessage?.includes('RESOURCE_EXHAUSTED');
 
       if (isQuotaError) {
         // Return a graceful fallback digest
@@ -43,7 +48,7 @@ export const GET = withTeam(
       }
 
       return NextResponse.json(
-        { error: error.message || 'Gagal generate CEO Digest' },
+        { error: errorMessage || 'Gagal generate CEO Digest' },
         { status: 500 }
       );
     }
@@ -101,10 +106,11 @@ export const POST = withTeam(
         data: digest,
         period: { from: dateFrom, to: dateTo }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('CEO Digest error:', error);
+      const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Gagal generate CEO Digest';
       return NextResponse.json(
-        { error: error.message || 'Gagal generate CEO Digest' },
+        { error: errorMessage },
         { status: 500 }
       );
     }

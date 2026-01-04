@@ -4,6 +4,8 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -51,8 +53,8 @@ function ResetPasswordForm() {
 
       setSuccess(true);
       setTimeout(() => router.push('/auth?reset=true'), 2000);
-    } catch (err: any) {
-      showError(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+    } catch (err: unknown) {
+      showError(getErrorMessage(err) || 'Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }

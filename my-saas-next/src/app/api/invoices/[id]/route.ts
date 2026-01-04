@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     return NextResponse.json({ invoice });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching invoice:', error);
     return NextResponse.json({ error: 'Failed to fetch invoice' }, { status: 500 });
   }
@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json({ invoice });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating invoice:', error);
     return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 });
   }
@@ -75,7 +75,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting invoice:', error);
     return NextResponse.json({ error: 'Failed to delete invoice' }, { status: 500 });
   }

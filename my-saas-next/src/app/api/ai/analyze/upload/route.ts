@@ -4,6 +4,8 @@ import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { documents } from '@/db/schema';
 import { AiService } from '@/services/aiService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // Helper: Extract Text from File
 async function extractText(file: File): Promise<string> {
@@ -42,8 +44,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Document embedded successfully" });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

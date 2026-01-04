@@ -4,6 +4,8 @@ import { TeamService } from '@/services/teamService';
 import { db } from '@/db';
 import { teamMembers } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {
@@ -41,9 +43,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ team
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get team details error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -78,8 +80,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ te
     });
 
     return NextResponse.json({ success: true, team: updatedTeam });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update team error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     const invoices = await InvoiceService.getInvoices(authResult.teamId);
     return NextResponse.json({ invoices });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching invoices:', error);
     return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 });
   }
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     const invoice = await InvoiceService.createInvoice(payload);
 
     return NextResponse.json({ invoice });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating invoice:', error);
     return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
   }

@@ -5,7 +5,6 @@ import Link from '@docusaurus/Link';
 
 export default function Home() {
   const {siteConfig} = useDocusaurusContext();
-  const [aiMenuOpen, setAiMenuOpen] = useState(true); // Default open as in design
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -33,30 +32,8 @@ export default function Home() {
           >
             <span className="material-symbols-outlined">menu</span>
           </button>
-          {/* Search Bar (Desktop) */}
-          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-             {/* ... */}
-            <div className="w-full flex-1 md:w-auto md:flex-none">
-                {/* Search visual only */}
-              <button className="inline-flex items-center rounded-lg border border-border-light bg-background-subtle px-3 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-gray-100 hover:text-text-main dark:border-border-dark dark:bg-slate-800 dark:hover:bg-slate-700 w-full md:w-64 lg:w-80 justify-between">
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">search</span>
-                  <span>Search config...</span>
-                </span>
-                <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-white px-1.5 font-mono text-[10px] font-medium text-text-muted opacity-100 dark:bg-slate-900 sm:flex">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </button>
-            </div>
-            {/* Right Nav Links */}
-            <nav className="flex items-center gap-4 pl-4">
-              <Link className="text-sm font-medium text-text-muted hover:text-primary transition-colors hidden lg:block" to="/docs/backend-architecture">API Reference</Link>
-              {/* ... */}
-             <Link to="http://localhost:3000/login" className="ml-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-hover transition-colors no-underline hover:text-white">
-                  Login
-                </Link>
-
-            </nav>
+          {/* Right side spacer */}
+          <div className="flex flex-1 items-center justify-end">
           </div>
         </div>
       </header>
@@ -65,77 +42,73 @@ export default function Home() {
       <div className="flex-1 w-full max-w-[1600px] mx-auto flex items-start">
         {/* Left Sidebar (Navigation) */}
         <aside className={`fixed top-16 z-30 -ml-2 h-[calc(100vh-4rem)] w-full shrink-0 md:sticky md:block md:w-72 overflow-y-auto border-r border-border-light dark:border-border-dark py-6 pr-4 pl-4 lg:pl-8 bg-background-light dark:bg-background-dark transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-2' : '-translate-x-full md:translate-x-0'}`}>
-          <div className="flex flex-col gap-6">
-            {/* Group 1 */}
-            <div className="flex flex-col gap-2">
-              <h4 className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-text-main dark:text-white">Getting Started</h4>
-              <Link className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:no-underline" to="/docs/buyers-guide">
-                <span>Introduction</span>
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </Link>
-               {/* ... */}
-               <Link className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/installation#quickstart">
-                <span>Quickstart Guide</span>
-              </Link>
-            </div>
-            {/* Group 2 */}
-            <div className="flex flex-col gap-2">
-              <h4 className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-text-main dark:text-white">Core Pillars</h4>
-              <div className="flex flex-col gap-1">
-                <button 
-                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main cursor-pointer border-none bg-transparent"
-                    onClick={() => setAiMenuOpen(!aiMenuOpen)}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">psychology</span>
-                    AI Intelligence
-                  </span>
-                  <span className={`material-symbols-outlined text-[16px] transition-transform ${aiMenuOpen ? 'rotate-180' : ''}`}>expand_more</span>
-                </button>
-                {/* Sub-items */}
-                {aiMenuOpen && (
-                    <div className="ml-4 flex flex-col border-l border-border-light pl-2 dark:border-border-dark">
-                    <Link className="flex items-center rounded-md px-2 py-1.5 text-sm text-text-muted hover:text-text-main hover:no-underline" to="/docs/buyers-guide#2-ai-native-architecture">Generative Insights</Link>
-                    <Link className="flex items-center rounded-md px-2 py-1.5 text-sm text-text-muted hover:text-text-main hover:no-underline" to="/docs/buyers-guide#core-features">Model Training</Link>
-                    </div>
-                )}
-              </div>
-              <Link className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/backend-architecture">
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">domain</span>
-                  B2B Infrastructure
-                </span>
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </Link>
-              <Link className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/billing">
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">payments</span>
-                  Payment & Billing
-                </span>
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </Link>
-              <Link className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/backend-architecture">
-                <span className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">shield</span>
-                  Ops Reliability
-                </span>
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </Link>
-            </div>
-            {/* Group 3 */}
-            <div className="flex flex-col gap-2">
-              <h4 className="px-2 py-1 text-xs font-bold uppercase tracking-wider text-text-main dark:text-white">Resources</h4>
-              <Link className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/backend-architecture">
-                <span>API Reference</span>
-                <span className="material-symbols-outlined text-[16px] opacity-50">open_in_new</span>
-              </Link>
-              <Link className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="#">
-                <span>Changelog</span>
-              </Link>
-              <Link className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/buyers-guide#frequently-asked-questions">
-                <span>FAQs</span>
-              </Link>
-            </div>
+          <div className="flex flex-col gap-1">
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:no-underline" to="/docs/buyers-guide">
+              Buyer's Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/product-specification">
+              Product Specs
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/installation">
+              Installation Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/ARCHITECTURE">
+              Architecture Overview
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/BRANDING">
+              Branding & Theming Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/COMPARISON">
+              Competitive Comparison
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/CRON">
+              Cron Jobs & Background Tasks
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/CUSTOMIZATION">
+              Customization & Whitelabeling
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/DEPLOYMENT">
+              Deployment Guide (Vercel)
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/FAQ">
+              Frequently Asked Questions
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/LOAD_TESTING">
+              Load Testing Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/MIGRATION_GUIDE">
+              Migration Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/QUICK_START">
+              Quick Start Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/ROADMAP">
+              Product Roadmap
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/SECURITY">
+              Security Primer
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/TROUBLESHOOTING">
+              Troubleshooting Guide
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/VISUAL_ASSETS">
+              Visual Marketing Assets
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/ai-services">
+              AI Services Documentation
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/auth">
+              Authentication Service
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/backend-architecture">
+              Backend Architecture
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/billing">
+              Billing & Monetization
+            </Link>
+            <Link className="group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-text-muted hover:bg-background-subtle hover:text-text-main hover:no-underline" to="/docs/frontend-architecture">
+              Frontend Architecture
+            </Link>
           </div>
         </aside>
 
@@ -256,53 +229,9 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Feedback */}
-          <div className="mt-12 flex flex-col items-center justify-center gap-4 rounded-xl bg-background-subtle p-8 text-center dark:bg-slate-900/50">
-            <h3 className="font-medium text-text-main dark:text-white">Was this page helpful?</h3>
-            <div className="flex gap-4">
-              <button className="flex items-center gap-2 rounded-md border border-border-light bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-border-dark dark:bg-slate-800 dark:hover:bg-slate-700">
-                <span className="material-symbols-outlined text-lg">thumb_up</span>
-                Yes
-              </button>
-              <button className="flex items-center gap-2 rounded-md border border-border-light bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:border-border-dark dark:bg-slate-800 dark:hover:bg-slate-700">
-                <span className="material-symbols-outlined text-lg">thumb_down</span>
-                No
-              </button>
-            </div>
-          </div>
+
         </main>
 
-        {/* Right Sidebar (Table of Contents) */}
-        <aside className="hidden xl:sticky xl:top-16 xl:block xl:h-[calc(100vh-4rem)] xl:w-72 xl:flex-none xl:overflow-y-auto xl:py-8 xl:pr-8">
-          <div className="flex flex-col gap-3">
-            <h5 className="text-xs font-bold uppercase tracking-wider text-text-main dark:text-white">On this page</h5>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li>
-                <Link className="text-primary font-medium hover:underline block py-1 border-l-2 border-primary pl-3 -ml-[14px]" to="#">Introduction</Link>
-              </li>
-              <li>
-                <Link className="text-text-muted hover:text-text-main block py-1 pl-3 hover:border-l-2 hover:border-border-light -ml-[14px] transition-all" to="#">Core Modules</Link>
-              </li>
-              <li>
-                <Link className="text-text-muted hover:text-text-main block py-1 pl-3 hover:border-l-2 hover:border-border-light -ml-[14px] transition-all" to="#">System Architecture</Link>
-              </li>
-              <li>
-                <Link className="text-text-muted hover:text-text-main block py-1 pl-3 hover:border-l-2 hover:border-border-light -ml-[14px] transition-all" to="#">Integration Example</Link>
-              </li>
-            </ul>
-             <div className="mt-8 border-t border-border-light pt-6 dark:border-border-dark">
-                <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-text-main dark:text-white">Community</h5>
-                <Link className="flex items-center gap-2 text-sm text-text-muted hover:text-primary mb-3" to="#">
-                    <span className="material-symbols-outlined text-lg">forum</span>
-                    Join Discord
-                </Link>
-                <Link className="flex items-center gap-2 text-sm text-text-muted hover:text-primary" to="#">
-                    <span className="material-symbols-outlined text-lg">school</span>
-                    Video Tutorials
-                </Link>
-            </div>
-          </div>
-        </aside>
       </div>
       </div>
     </>

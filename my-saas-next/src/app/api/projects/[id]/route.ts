@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     return NextResponse.json({ success: true, project });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get Project Details Error:', error);
     return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 });
   }
@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updated = await ProjectService.updateProject(id, authResult.teamId, body);
 
     return NextResponse.json({ success: true, project: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update Project Error:', error);
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
@@ -66,7 +66,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await ProjectService.deleteProject(id, authResult.teamId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete Project Error:', error);
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }

@@ -50,7 +50,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
                     let teamIdToLoad = localStorage.getItem('currentTeamId') || data.teams[0].id;
                     
                     // Verify the locally stored ID is actually in the list (permission check)
-                    if (!data.teams.find((t: any) => t.id === teamIdToLoad)) {
+                    if (!data.teams.find((t: { id: string }) => t.id === teamIdToLoad)) {
                         teamIdToLoad = data.teams[0].id;
                     }
                     

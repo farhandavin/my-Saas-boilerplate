@@ -2,6 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -42,10 +44,11 @@ function OAuthCallbackContent() {
           router.push('/dashboard');
         }, 1500);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('OAuth callback error:', error);
         setStatus('error');
-        setMessage(error.message || 'Authentication failed');
+        const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Authentication failed';
+        setMessage(errorMessage);
         
         // Redirect back to auth page after delay
         setTimeout(() => {

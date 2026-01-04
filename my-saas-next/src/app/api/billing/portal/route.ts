@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { PaymentService } from '@/services/paymentService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/billing/portal - Redirect to Stripe Customer Portal
 export const POST = withTeam(async (req, context: any) => {
@@ -12,7 +14,7 @@ export const POST = withTeam(async (req, context: any) => {
   try {
     const result = await PaymentService.createPortalSession(user.userId, team.teamId);
     return NextResponse.json({ success: true, url: result.url });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 400 });
   }
 }, { roles: ['ADMIN'] });

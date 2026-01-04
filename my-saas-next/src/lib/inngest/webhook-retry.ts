@@ -9,6 +9,8 @@ import { db } from "@/db";
 import { webhooks, webhookDeliveries } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // Type for the webhook event payload
 interface WebhookRetryEvent {
@@ -85,7 +87,7 @@ export const webhookRetry = inngest.createFunction(
                     duration,
                 };
             } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : "Unknown error";
+                const errorMessage = error instanceof Error ? getErrorMessage(error) : "Unknown error";
                 const duration = Date.now() - startTime;
 
                 // Log failed delivery

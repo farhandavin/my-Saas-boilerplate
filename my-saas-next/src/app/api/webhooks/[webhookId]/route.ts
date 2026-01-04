@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { WebhookService } from '@/services/webhookService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export const DELETE = withTeam(async (req, { team }) => {
   if (!team || !team.teamId) return NextResponse.json({ error: 'Team context required' }, { status: 403 });
@@ -16,8 +18,8 @@ export const DELETE = withTeam(async (req, { team }) => {
 
     await WebhookService.delete(team.teamId, webhookId);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }, { roles: ['ADMIN', 'MANAGER'] });
 
@@ -32,7 +34,7 @@ export const PATCH = withTeam(async (req, { team }) => {
 
     const updated = await WebhookService.update(team.teamId, webhookId, body);
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }, { roles: ['ADMIN', 'MANAGER'] });

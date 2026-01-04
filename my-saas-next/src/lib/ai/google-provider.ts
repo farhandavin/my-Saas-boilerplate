@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText as aiGenerateText, embed as aiEmbed } from 'ai';
-import { AIProvider, AIOptions } from './types';
+import type { AIProvider, AIOptions, AIMessage, AITextResult } from './types';
 import { safeEnv } from '@/lib/env'; // Use our safe env accessor
 
 export class GoogleAIProvider implements AIProvider {
@@ -21,18 +21,25 @@ export class GoogleAIProvider implements AIProvider {
         });
     }
 
-    async generateText(messages: any[], options?: AIOptions) {
+    async generateText(messages: AIMessage[], options?: AIOptions): Promise<AITextResult> {
         // Default model
         const model = this.client('gemini-2.0-flash-exp');
 
-        // @ts-ignore
-        return await aiGenerateText({
+        const result = await aiGenerateText({
             model,
-            messages,
-            // temperature: options?.temperature,
-            // maxTokens: options?.maxTokens,
+            messages: messages.map(m => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
             tools: options?.tools,
         });
+
+        return {
+            text: result.text,
+            usage: result.usage ? {
+                promptTokens: (result.usage as { promptTokens?: number }).promptTokens ?? 0,
+                completionTokens: (result.usage as { completionTokens?: number }).completionTokens ?? 0,
+                totalTokens: result.usage.totalTokens ?? 0,
+            } : undefined,
+            finishReason: result.finishReason as AITextResult['finishReason'],
+        };
     }
 
     async embed(text: string): Promise<number[]> {

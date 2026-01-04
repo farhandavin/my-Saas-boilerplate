@@ -6,6 +6,8 @@
  */
 import { inngest } from "./client";
 import { Resend } from "resend";
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -99,7 +101,7 @@ export const sendBatchEmail = inngest.createFunction(
                         });
                         return { to: email.to, success: true, id: response.data?.id };
                     } catch (error: unknown) {
-                        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+                        const errorMessage = error instanceof Error ? getErrorMessage(error) : "Unknown error";
                         return { to: email.to, success: false, error: errorMessage };
                     }
                 });

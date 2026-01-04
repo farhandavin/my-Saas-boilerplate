@@ -2,6 +2,7 @@ import { inngest } from "./client";
 import { webhookRetry } from "./webhook-retry";
 import { auditLogCleanup } from "./audit-cleanup";
 import { sendEmail, sendBatchEmail } from "./email-queue";
+import { webhookDeliveryCleanup } from "./webhook-cleanup";
 
 // Keep helloWorld for testing connectivity
 export const helloWorld = inngest.createFunction(
@@ -14,7 +15,7 @@ export const helloWorld = inngest.createFunction(
 );
 
 // Export all functions
-export { webhookRetry, auditLogCleanup, sendEmail, sendBatchEmail };
+export { webhookRetry, auditLogCleanup, sendEmail, sendBatchEmail, webhookDeliveryCleanup };
 
 // All functions array for route registration
 export const allFunctions = [
@@ -23,4 +24,5 @@ export const allFunctions = [
   auditLogCleanup,
   sendEmail,
   sendBatchEmail,
+  webhookDeliveryCleanup,
 ];

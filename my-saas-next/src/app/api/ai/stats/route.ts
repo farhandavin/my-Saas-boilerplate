@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAiStats } from '@/actions/get-ai-stats';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
             success: true,
             data
         });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
     }
 }

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/Toast';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 interface ApiKey {
   id: string;
@@ -34,9 +36,9 @@ export default function ApiKeysPage() {
       } else {
         throw new Error(data.error || 'Failed to fetch API keys');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching API keys:', error);
-      showError(error.message);
+      showError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -75,9 +77,9 @@ export default function ApiKeysPage() {
       } else {
         throw new Error(data.error || 'Failed to create API key');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating API key:', error);
-      showError(error.message);
+      showError(getErrorMessage(error));
     } finally {
       setIsCreating(false);
     }
@@ -110,7 +112,7 @@ export default function ApiKeysPage() {
          if (data.error) throw new Error(data.error);
          // If DELETE is missing, this will fail.
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // For now, since DELETE endpoint might be missing, we just show error
       console.error('Error revoking API key:', error);
       showError('Revoke functionality requires backend implementation');

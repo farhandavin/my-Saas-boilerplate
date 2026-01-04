@@ -5,6 +5,8 @@ import { ProjectService } from '@/services/projectService';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/projects/[id]/members - Add Member
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -54,9 +56,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ success: true, member });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Add member error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -81,8 +83,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Remove member error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

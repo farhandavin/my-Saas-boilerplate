@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { PreCheckService } from '@/services/preCheckService';
 import { DocumentCategory, DOCUMENT_TYPES } from '@/types/ceoDigest';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST - Validate a document
 export const POST = withTeam(
@@ -40,10 +42,10 @@ export const POST = withTeam(
         success: true,
         data: result
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Pre-check error:', error);
       return NextResponse.json(
-        { error: error.message || 'Gagal validasi dokumen' },
+        { error: getErrorMessage(error) || 'Gagal validasi dokumen' },
         { status: 500 }
       );
     }

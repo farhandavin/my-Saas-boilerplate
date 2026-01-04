@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/middleware/auth';
 import { maskPII, getMaskingSummary } from '@/lib/pii-masking';
 import { PrivacyService } from '@/services/privacyService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET - Get privacy rules and test masking
 export async function GET(req: NextRequest) {
@@ -32,10 +34,10 @@ export async function GET(req: NextRequest) {
         totalRules: rules.length,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Privacy rules fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch privacy rules', details: error.message },
+      { error: 'Failed to fetch privacy rules', details: getErrorMessage(error) },
       { status: 500 }
     );
   }
@@ -81,10 +83,10 @@ export async function POST(req: NextRequest) {
       processingTimeMs: result.processingTimeMs,
       summary,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PII masking error:', error);
     return NextResponse.json(
-      { error: 'Failed to process text', details: error.message },
+      { error: 'Failed to process text', details: getErrorMessage(error) },
       { status: 500 }
     );
   }
@@ -116,10 +118,10 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Privacy rules update error:', error);
     return NextResponse.json(
-      { error: 'Failed to update privacy rules', details: error.message },
+      { error: 'Failed to update privacy rules', details: getErrorMessage(error) },
       { status: 500 }
     );
   }

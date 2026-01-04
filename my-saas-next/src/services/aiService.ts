@@ -1,9 +1,7 @@
 // src/services/aiService.ts
-import { tool } from "ai";
-import { z } from "zod";
-import { DocumentService } from "./documentService";
 import { AIModelFactory } from "@/lib/ai/factory";
 import { PrivacyLayer } from "@/lib/ai/privacy-layer";
+import type { AIMessage } from "@/types/log-types";
 
 export const AiService = {
   // 1. CEO Digest & Pre-Check logic moved to Domain Services (ceoDigestService.ts, preCheckService.ts)
@@ -28,22 +26,18 @@ export const AiService = {
   },
 
   // Legacy wrapper if needed, now using Factory
-  async generateText(prompt: string, teamId: string = 'global', userId?: string) {
+  async generateText(prompt: string, teamId: string = 'global', _userId?: string) {
     // 1. Masking (Pre-processing)
     // We pass teamId to create isolated redis keys if needed
     const { maskedText, mapId } = await PrivacyLayer.mask(prompt, teamId);
 
-    // Tools definition
-    const tools: any = {};
-
     const provider = AIModelFactory.getProvider();
 
     // Convert prompt to message format expected by provider
-    const messages = [{ role: 'user', content: maskedText }] as any;
+    const messages: AIMessage[] = [{ role: 'user', content: maskedText }];
 
     try {
       const result = await provider.generateText(messages, {
-        tools,
         temperature: 0.7
       });
 

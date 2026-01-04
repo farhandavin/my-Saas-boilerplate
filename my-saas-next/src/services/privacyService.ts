@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { privacyRules } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { DEFAULT_PII_RULES } from '@/lib/pii-masking';
+import type { PIIEntity, MaskingMethod, PIIRule } from '@/types/log-types';
 
 export const PrivacyService = {
   /**
@@ -38,14 +39,14 @@ export const PrivacyService = {
   /**
    * Update a specific rule.
    */
-  async updateRule(teamId: string, name: string, updates: { isEnabled?: boolean; maskingMethod?: string }) {
+  async updateRule(teamId: string, name: string, updates: { isEnabled?: boolean; maskingMethod?: MaskingMethod }) {
     await db.update(privacyRules)
       .set(updates)
       .where(and(
         eq(privacyRules.teamId, teamId),
         eq(privacyRules.name, name)
       ));
-    
+
     return this.getRules(teamId);
   },
 
@@ -60,30 +61,31 @@ export const PrivacyService = {
   /**
    * Mask content based on team's enabled rules.
    */
-  async maskContent(teamId: string, content: string): Promise<{ maskedContent: string, entitiesFound: any[] }> {
+  async maskContent(teamId: string, content: string): Promise<{ maskedContent: string; entitiesFound: PIIEntity[] }> {
     // 1. Get enabled rules from DB
     let rules = await this.getRules(teamId);
-    
+
     // If no rules found, initialize defaults
     if (rules.length === 0) {
       rules = await this.initDefaultRules(teamId);
     }
 
     // 2. Filter only enabled rules and map to PII library format
+    // Cast to the expected type from pii-masking
     const activeRules = rules
       .filter(r => r.isEnabled)
       .map(r => ({
         entityType: r.name,
         // Reconstruct regex from source if needed (assuming pattern is stored as source string)
-        pattern: new RegExp(r.pattern, 'g'), 
-        maskingMethod: r.maskingMethod as any,
+        pattern: new RegExp(r.pattern, 'g'),
+        maskingMethod: r.maskingMethod,
         enabled: true
       }));
 
-    // 3. Apply masking
-    // Import maskPII dynamically or assuming it's imported at top
+    // 3. Apply masking - use dynamic import and type assertion
     const { maskPII } = await import('@/lib/pii-masking');
-    const result = maskPII(content, activeRules);
+    // Cast to the expected Partial<PIIRule>[] type
+    const result = maskPII(content, activeRules as Parameters<typeof maskPII>[1]);
 
     return {
       maskedContent: result.maskedText,

@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { PaymentService } from '@/services/paymentService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,17 +24,19 @@ export async function POST(req: NextRequest) {
     const result = await PaymentService.createPortalSession(payload.userId, teamId, origin);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Portal error:', error);
-    
+    const errorMessage = getErrorMessage(error);
+
     // Handle specific business logic errors
-    if (error.message === 'This team has no billing history') {
+    if (errorMessage === 'This team has no billing history') {
       return NextResponse.json(
-        { error: 'No billing history found. Please subscribe to a plan first.' }, 
+        { error: 'No billing history found. Please subscribe to a plan first.' },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+

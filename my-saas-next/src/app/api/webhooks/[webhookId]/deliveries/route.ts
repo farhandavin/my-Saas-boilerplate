@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { WebhookService } from '@/services/webhookService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export const GET = withTeam(async (req, { team }) => {
   try {
@@ -22,7 +24,7 @@ export const GET = withTeam(async (req, { team }) => {
     
     const deliveries = await WebhookService.getDeliveries(webhookId);
     return NextResponse.json({ success: true, data: deliveries });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }, { roles: ['ADMIN', 'MANAGER'] });

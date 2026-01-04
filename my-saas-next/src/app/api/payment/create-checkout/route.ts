@@ -6,6 +6,8 @@ import { PaymentService } from '@/services/paymentService';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,8 +43,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Checkout error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

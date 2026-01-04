@@ -38,7 +38,10 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
           // Hapus editUrl jika Anda tidak ingin user mengedit docs Anda
-          editUrl: undefined, 
+          editUrl: undefined,
+          // Disable community features
+          showLastUpdateAuthor: false,
+          showLastUpdateTime: false,
         },
         blog: false, // Matikan blog karena kita fokus dokumentasi
         theme: {
@@ -65,18 +68,6 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Documentation',
-          },
-          {
-            to: '/docs/backend-architecture',
-            label: 'API Reference',
-            position: 'right',
-            className: 'hidden lg:block', // Visibility control via CSS if needed
-          },
-          {
-            href: 'http://localhost:3000/login',
-            label: 'Login',
-            position: 'right',
-            className: 'button button--primary button--lg text-white font-bold ml-2', // Styling as button
           },
         ],
       },

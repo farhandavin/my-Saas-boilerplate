@@ -5,6 +5,8 @@ import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { documents, auditLogs } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/ai/docs - List knowledge base documents
 export async function GET(req: NextRequest) {
@@ -29,8 +31,8 @@ export async function GET(req: NextRequest) {
       success: true,
       documents: docs
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -72,7 +74,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Document deleted' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

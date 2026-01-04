@@ -6,6 +6,8 @@ import { withTeam } from '@/lib/middleware/auth';
 import { TenantDatabaseService } from '@/services/tenantDatabaseService';
 import { db } from '@/db';
 import { auditLogs } from '@/db/schema';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/settings/tenancy - Get current tenancy configuration
 export const GET = withTeam(async (req, context: any) => {
@@ -92,10 +94,10 @@ export const POST = withTeam(async (req, context: any) => {
       message: 'Dedicated database configured successfully'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Tenancy API] POST error:', error);
     return NextResponse.json({
-      error: error.message || 'Failed to configure dedicated database'
+      error: getErrorMessage(error) || 'Failed to configure dedicated database'
     }, { status: 500 });
   }
 }, { roles: ['ADMIN'] });

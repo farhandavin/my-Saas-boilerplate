@@ -3,6 +3,8 @@ import { getAuthUser } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { auditLogs, users } from '@/db/schema';
 import { eq, desc, and, or, ilike, sql, count } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function GET(req: NextRequest) {
   try {
@@ -110,10 +112,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Audit logs fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch audit logs', details: error.message },
+      { error: 'Failed to fetch audit logs', details: getErrorMessage(error) },
       { status: 500 }
     );
   }
@@ -152,10 +154,10 @@ export async function POST(req: NextRequest) {
       log: newLog,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Audit log creation error:', error);
     return NextResponse.json(
-      { error: 'Failed to create audit log', details: error.message },
+      { error: 'Failed to create audit log', details: getErrorMessage(error) },
       { status: 500 }
     );
   }

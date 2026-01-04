@@ -8,6 +8,8 @@ import { db } from '@/db';
 import { teams, auditLogs, webhookDeliveries, webhooks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { StripeLogger } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // SECURITY: Require Stripe keys - no empty fallbacks
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -36,9 +38,27 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? getErrorMessage(err) : 'Unknown error';
     StripeLogger.error('Signature verification failed', { error: message });
     return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
+  }
+
+  // SECURITY: Replay attack protection - reject webhooks older than 5 minutes
+  const MAX_WEBHOOK_AGE_SECONDS = 300; // 5 minutes
+  const timestampMatch = signature.match(/t=(\d+)/);
+  if (timestampMatch) {
+    const webhookTimestamp = parseInt(timestampMatch[1], 10);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const webhookAge = currentTimestamp - webhookTimestamp;
+
+    if (webhookAge > MAX_WEBHOOK_AGE_SECONDS) {
+      StripeLogger.warn('Webhook timestamp too old - possible replay attack', {
+        age: webhookAge,
+        maxAge: MAX_WEBHOOK_AGE_SECONDS,
+        eventId: event.id
+      });
+      return NextResponse.json({ error: 'Webhook timestamp too old' }, { status: 400 });
+    }
   }
 
   // IDEMPOTENCY: Atomic insert-before-process pattern

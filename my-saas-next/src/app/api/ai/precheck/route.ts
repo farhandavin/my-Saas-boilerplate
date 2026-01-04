@@ -3,6 +3,8 @@ import { getAuthUser } from '@/lib/middleware/auth';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -80,10 +82,10 @@ ${content.slice(0, 10000)} // truncate to avoid token limits
       data: validationResult
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Pre-Check error:', error);
     return NextResponse.json(
-      { error: 'Validation failed', details: error.message },
+      { error: 'Validation failed', details: getErrorMessage(error) },
       { status: 500 }
     );
   }

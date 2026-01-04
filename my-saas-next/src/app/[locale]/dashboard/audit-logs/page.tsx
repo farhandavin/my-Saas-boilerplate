@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AuditStatsCards } from '@/components/audit/AuditStatsCards';
 import { AuditLogTable } from '@/components/audit/AuditLogTable';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 interface AuditLog {
   id: string;
@@ -69,8 +71,8 @@ export default function AuditLogsPage() {
       setLogs(data.logs);
       setStats(data.stats);
       setPagination(data.pagination);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

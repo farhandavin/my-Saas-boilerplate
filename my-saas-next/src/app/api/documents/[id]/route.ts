@@ -5,6 +5,8 @@ import { getAuthUser } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { auditLogs } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // Helper to validate ID param
 // Helper to validate ID param
@@ -13,7 +15,7 @@ const validateId = (id: string) => {
   if (!id) throw new Error('Document ID is required');
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(id)) {
-      throw new Error('Invalid UUID format');
+    throw new Error('Invalid UUID format');
   }
   return id;
 };
@@ -39,12 +41,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // For simplicity, let's include it or make it a separate query param logic.
     // Let's keep it simple and just return the doc first. The frontend might fetch logs separately if we want pagination there.
     // Actually, let's return logs if ?includeLogs=true
-    
+
     const includeLogs = req.nextUrl.searchParams.get('includeLogs') === 'true';
     let logs: any[] = [];
-    
+
     if (includeLogs) {
-        logs = await db.select()
+      logs = await db.select()
         .from(auditLogs)
         .where(
           and(
@@ -59,19 +61,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         )
         .orderBy(desc(auditLogs.createdAt))
         .limit(20); // Last 20 activities
-        
-        // Filter in memory for safety if SQL json operator is tricky with current drizzle setup
-        // logs = logs.filter(l => (l.metadata as any)?.documentId === docId || (l.metadata as any)?.newData?.id === docId);
+
+      // Filter in memory for safety if SQL json operator is tricky with current drizzle setup
+      // logs = logs.filter(l => (l.metadata as any)?.documentId === docId || (l.metadata as any)?.newData?.id === docId);
     }
 
     return NextResponse.json({ ...doc, logs });
 
-  } catch (error: any) {
-    if (error.message === 'Invalid UUID format') {
-        return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
+    if (errorMessage === 'Invalid UUID format') {
+      return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
     }
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -96,12 +99,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     );
 
     return NextResponse.json(updatedDoc);
-  } catch (error: any) {
-    if (error.message === 'Invalid UUID format') {
-        return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
+    if (errorMessage === 'Invalid UUID format') {
+      return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
     }
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -120,11 +124,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await DocumentService.deleteDocument(docId, auth.teamId, auth.userId);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    if (error.message === 'Invalid UUID format') {
-        return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
+    if (errorMessage === 'Invalid UUID format') {
+      return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
     }
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

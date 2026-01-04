@@ -6,6 +6,8 @@ import { db } from '@/db';
 import { documents, auditLogs, teamMembers } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { AiService } from '@/services/aiService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/ai/upload - Upload document for RAG
 export async function POST(req: NextRequest) {
@@ -69,8 +71,8 @@ export async function POST(req: NextRequest) {
         createdAt: document.createdAt
       }
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

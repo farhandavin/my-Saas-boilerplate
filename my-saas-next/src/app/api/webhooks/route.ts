@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { WebhookService } from '@/services/webhookService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/webhooks - List webhooks
 export const GET = withTeam(async (req, { team }) => {
@@ -14,7 +16,7 @@ export const POST = withTeam(async (req, { team }) => {
   if (!team || !team.teamId) return NextResponse.json({ error: 'Team context required' }, { status: 403 });
   try {
     const body = await req.json();
-    
+
     // Simple validation
     if (!body.url || !body.events || !Array.isArray(body.events)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -26,7 +28,8 @@ export const POST = withTeam(async (req, { team }) => {
     });
 
     return NextResponse.json({ success: true, data: webhook });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }, { roles: ['ADMIN', 'MANAGER'] });

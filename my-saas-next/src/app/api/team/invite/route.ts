@@ -5,6 +5,8 @@ import { TeamService } from '@/services/teamService';
 import { db } from '@/db';
 import { teamMembers } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/team/invite - Send team invitation
 export async function POST(req: NextRequest) {
@@ -43,8 +45,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Invite error:', error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 400 });
   }
 }

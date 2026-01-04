@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/middleware/auth';
 import { TaskService } from '@/services/taskService';
 import { ProjectService } from '@/services/projectService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/projects/[id]/tasks - List tasks
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,9 +21,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const tasks = await TaskService.getTasks(id);
     return NextResponse.json({ success: true, tasks });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get tasks error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -53,8 +55,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ success: true, task }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create task error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

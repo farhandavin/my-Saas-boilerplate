@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, User, Bot, Paperclip, FileText, Upload, Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -91,10 +93,10 @@ export function ChatWidget() {
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       setMessages(prev => [...prev, 
-        { role: 'assistant', content: `❌ Gagal mengupload file: ${error.message}` }
+        { role: 'assistant', content: `❌ Gagal mengupload file: ${getErrorMessage(error)}` }
       ]);
     } finally {
       setIsUploading(false);

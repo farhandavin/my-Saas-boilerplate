@@ -26,6 +26,37 @@ interface GoogleUserInfo {
   picture: string;
 }
 
+/**
+ * Typed user info returned from OAuth callback
+ */
+interface OAuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  provider: string | null;
+}
+
+/**
+ * Typed team info returned from OAuth callback
+ */
+interface OAuthTeam {
+  id: string;
+  name: string;
+  tier: string;
+  role: string | null;
+}
+
+/**
+ * Typed result from Google OAuth callback
+ */
+export interface GoogleCallbackResult {
+  token: string;
+  user: OAuthUser;
+  team: OAuthTeam;
+  isNewUser: boolean;
+}
+
 export const OAuthService = {
   /**
    * Generate Google OAuth authorization URL
@@ -95,7 +126,7 @@ export const OAuthService = {
   /**
    * Handle Google OAuth callback - create or login user
    */
-  async handleGoogleCallback(code: string): Promise<{ token: string; user: any; team: any; isNewUser: boolean }> {
+  async handleGoogleCallback(code: string): Promise<GoogleCallbackResult> {
     // 1. Exchange code for tokens
     const tokens = await this.getGoogleTokens(code);
 

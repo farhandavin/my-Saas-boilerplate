@@ -2,12 +2,12 @@
 // src/services/teamService.ts
 import { db } from '@/db';
 import { teams, teamMembers, users, invitations, auditLogs } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { PLAN_LIMITS, Role, BrandingSettings, SmtpSettings } from '@/types';
 import crypto from 'crypto';
 
 export const TeamService = {
-  // Get all teams for a user
+  // Get all teams for a user - OPTIMIZED: Single query instead of N+1
   async getMyTeams(userId: string) {
     // Fetch team memberships for this user
     const memberships = await db.select()
@@ -18,31 +18,47 @@ export const TeamService = {
       return [];
     }
 
-    // Fetch teams for these memberships
-    const teamIds = memberships.map(m => m.teamId);
+    // Get all team IDs user belongs to
+    const teamIds = memberships.map(m => m.teamId).filter((id): id is string => id !== null);
+
+    if (teamIds.length === 0) {
+      return [];
+    }
+
+    // OPTIMIZED: Single query for all teams
     const teamsData = await db.select()
       .from(teams)
-      .where(eq(teams.id, teamIds[0]!)); // Safe because length check above
+      .where(inArray(teams.id, teamIds));
 
-    // For each team, count members
-    const result = [];
-    for (const membership of memberships) {
-      const team = teamsData.find(t => t.id === membership.teamId);
-      if (!team) continue;
+    // OPTIMIZED: Single aggregation query for member counts
+    const memberCounts = await db.select({
+      teamId: teamMembers.teamId,
+      count: sql<number>`COUNT(*)::int`
+    })
+      .from(teamMembers)
+      .where(inArray(teamMembers.teamId, teamIds))
+      .groupBy(teamMembers.teamId);
 
-      const memberCount = await db.select({ count: db.$count(teamMembers, eq(teamMembers.teamId, team.id)) })
-        .from(teamMembers)
-        .where(eq(teamMembers.teamId, team.id));
+    // Build lookup map for O(1) access
+    const countMap = new Map(memberCounts.map(mc => [mc.teamId, mc.count]));
 
-      result.push({
-        ...team,
-        memberCount: memberCount[0]?.count || 1,
-        myRole: membership.role || 'STAFF',
-      });
-    }
+    // Build result efficiently
+    const result = memberships
+      .map(membership => {
+        const team = teamsData.find(t => t.id === membership.teamId);
+        if (!team) return null;
+
+        return {
+          ...team,
+          memberCount: countMap.get(team.id) || 1,
+          myRole: membership.role || 'STAFF',
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     return result;
   },
+
 
   // Create a new team
   async createTeam(data: { name: string; slug?: string; ownerId: string }) {

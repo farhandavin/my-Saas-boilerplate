@@ -17,28 +17,29 @@ const PRICING = {
     overageRate: 0 // No overage for free tier
   },
   PRO: {
-    baseAmount: 299000, 
+    baseAmount: 299000,
     tokenLimit: 50000,
-    overageRate: 10 
+    overageRate: 10
   },
   ENTERPRISE: {
-    baseAmount: 999000, 
+    baseAmount: 999000,
     tokenLimit: 500000,
     overageRate: 10
   }
 };
 
 export const BillingService = {
-  
+
   // ============================================================================
   // 1. ACCESS CONTROL & QUOTA (Logic)
   // ============================================================================
-  
+
+  /**
+   * DEPRECATED: Use checkAndDeductQuota for atomic operations
+   * Kept for backwards compatibility but logs warning
+   */
   async checkQuota(teamId: string, cost: number): Promise<boolean> {
-    // Platform data (teams) is always on shared DB for now, but good practice to use router
-    // In strict isolation, teams table might be replicated or accessed via shared DB explicitly.
-    // For this boilerplate, we assume 'teams' is in shared, but application data is isolated.
-    // So for checking settings on 'teams' table, we use shared db.
+    console.warn('[BillingService] checkQuota is deprecated - use checkAndDeductQuota for atomic operations');
     const team = await db.query.teams.findFirst({
       where: eq(teams.id, teamId),
       columns: { aiUsageCount: true, aiTokenLimit: true, tier: true, subscriptionStatus: true }
@@ -49,7 +50,7 @@ export const BillingService = {
     // Graceful Degradation: Disable AI if billing is past_due
     if (team.subscriptionStatus === 'past_due' || team.subscriptionStatus === 'canceled' || team.subscriptionStatus === 'unpaid') {
       console.warn(`AI Access Blocked for team ${teamId}: Payment ${team.subscriptionStatus}`);
-      return false; 
+      return false;
     }
 
     if (team.tier === 'ENTERPRISE') return true; // Unlimited
@@ -57,6 +58,63 @@ export const BillingService = {
     // Use default limit if null
     const limit = team.aiTokenLimit ?? 1000;
     return ((limit - (team.aiUsageCount || 0)) >= cost);
+  },
+
+  /**
+   * ATOMIC: Check quota AND deduct in a single database operation
+   * Prevents race conditions where multiple concurrent requests bypass quota
+   */
+  async checkAndDeductQuota(teamId: string, cost: number): Promise<{
+    allowed: boolean;
+    remaining: number;
+    reason?: 'insufficient_quota' | 'payment_issue' | 'enterprise_unlimited' | 'team_not_found'
+  }> {
+    // First check subscription status and tier
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+      columns: { aiUsageCount: true, aiTokenLimit: true, tier: true, subscriptionStatus: true }
+    });
+
+    if (!team) {
+      return { allowed: false, remaining: 0, reason: 'team_not_found' };
+    }
+
+    // Block if payment issue
+    if (['past_due', 'canceled', 'unpaid'].includes(team.subscriptionStatus || '')) {
+      console.warn(`AI Access Blocked for team ${teamId}: Payment ${team.subscriptionStatus}`);
+      return { allowed: false, remaining: 0, reason: 'payment_issue' };
+    }
+
+    // Enterprise has unlimited (but still track usage)
+    if (team.tier === 'ENTERPRISE') {
+      await db.update(teams)
+        .set({ aiUsageCount: sql`COALESCE(${teams.aiUsageCount}, 0) + ${cost}` })
+        .where(eq(teams.id, teamId));
+      return { allowed: true, remaining: Infinity, reason: 'enterprise_unlimited' };
+    }
+
+    // ATOMIC: Update only if sufficient quota available
+    // This single statement prevents race conditions
+    const result = await db.update(teams)
+      .set({ aiUsageCount: sql`COALESCE(${teams.aiUsageCount}, 0) + ${cost}` })
+      .where(
+        and(
+          eq(teams.id, teamId),
+          sql`(COALESCE(${teams.aiTokenLimit}, 1000) - COALESCE(${teams.aiUsageCount}, 0)) >= ${cost}`
+        )
+      )
+      .returning({
+        remaining: sql<number>`COALESCE(${teams.aiTokenLimit}, 1000) - COALESCE(${teams.aiUsageCount}, 0)`
+      });
+
+    if (result.length === 0) {
+      // Update failed = insufficient quota
+      const limit = team.aiTokenLimit ?? 1000;
+      const used = team.aiUsageCount ?? 0;
+      return { allowed: false, remaining: limit - used, reason: 'insufficient_quota' };
+    }
+
+    return { allowed: true, remaining: result[0].remaining };
   },
 
   /**
@@ -77,33 +135,33 @@ export const BillingService = {
       const periodEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
 
       const config = PRICING[updatedTeam.tier as keyof typeof PRICING] || PRICING.FREE;
-      
+
       // Check if billing record exists for this period
       const existingBilling = await db.query.usageBillings.findFirst({
         where: and(
-            eq(usageBillings.teamId, teamId),
-            eq(usageBillings.periodStart, periodStart)
+          eq(usageBillings.teamId, teamId),
+          eq(usageBillings.periodStart, periodStart)
         )
       });
 
       if (existingBilling) {
-         await db.update(usageBillings)
-           .set({ 
-               tokensUsed: sql`${usageBillings.tokensUsed} + ${tokensUsed}`,
-               // We don't verify overage calculate here, can be done at billing time or here if we tracked limit.
-               // Since tokenLimit is not in schema, we skip overageTokens column update.
-            })
-           .where(eq(usageBillings.id, existingBilling.id));
+        await db.update(usageBillings)
+          .set({
+            tokensUsed: sql`${usageBillings.tokensUsed} + ${tokensUsed}`,
+            // We don't verify overage calculate here, can be done at billing time or here if we tracked limit.
+            // Since tokenLimit is not in schema, we skip overageTokens column update.
+          })
+          .where(eq(usageBillings.id, existingBilling.id));
       } else {
-         await db.insert(usageBillings).values({
-            teamId,
-            periodStart,
-            periodEnd,
-            tokensUsed: tokensUsed,
-            usageAmount: 0,
-            totalAmount: 0,
-            status: 'open'
-         });
+        await db.insert(usageBillings).values({
+          teamId,
+          periodStart,
+          periodEnd,
+          tokensUsed: tokensUsed,
+          usageAmount: 0,
+          totalAmount: 0,
+          status: 'open'
+        });
       }
 
       // 3. Check for Upsell Opportunities
@@ -123,7 +181,7 @@ export const BillingService = {
   },
 
   async deductToken(teamId: string, tokens: number) {
-      return this.trackUsage(teamId, tokens);
+    return this.trackUsage(teamId, tokens);
   },
 
   // ============================================================================
@@ -138,7 +196,7 @@ export const BillingService = {
 
   async handlePaymentFailed(stripeCustomerId: string) {
     console.log(`⚠️ Payment failed for ${stripeCustomerId}. Downgrading status to past_due...`);
-    
+
     // Automated Dunning Management
     await db.update(teams)
       .set({ subscriptionStatus: 'past_due' })
@@ -166,38 +224,38 @@ export const BillingService = {
       const totalAmount = config.baseAmount + usageAmount;
 
       // Upsert billing record
-       const existingBilling = await db.query.usageBillings.findFirst({
+      const existingBilling = await db.query.usageBillings.findFirst({
         where: and(
-            eq(usageBillings.teamId, teamId),
-            eq(usageBillings.periodStart, periodStart)
+          eq(usageBillings.teamId, teamId),
+          eq(usageBillings.periodStart, periodStart)
         )
       });
 
       if (existingBilling) {
-         await db.update(usageBillings)
-            .set({
-                tokensUsed: tokenUsage,
-                usageAmount,
-                totalAmount,
-                status: 'billed'
-            })
-            .where(eq(usageBillings.id, existingBilling.id));
-         
-         const billing = await db.query.usageBillings.findFirst({ where: eq(usageBillings.id, existingBilling.id)});
-         console.log(`[BillingService] Updated billing for team ${teamId}: ${totalAmount}`);
-         return billing;
-      } else {
-          const [billing] = await db.insert(usageBillings).values({
-            teamId,
-            periodStart,
-            periodEnd,
+        await db.update(usageBillings)
+          .set({
             tokensUsed: tokenUsage,
             usageAmount,
             totalAmount,
             status: 'billed'
-          }).returning();
-          console.log(`[BillingService] Created billing for team ${teamId}: ${totalAmount}`);
-          return billing;
+          })
+          .where(eq(usageBillings.id, existingBilling.id));
+
+        const billing = await db.query.usageBillings.findFirst({ where: eq(usageBillings.id, existingBilling.id) });
+        console.log(`[BillingService] Updated billing for team ${teamId}: ${totalAmount}`);
+        return billing;
+      } else {
+        const [billing] = await db.insert(usageBillings).values({
+          teamId,
+          periodStart,
+          periodEnd,
+          tokensUsed: tokenUsage,
+          usageAmount,
+          totalAmount,
+          status: 'billed'
+        }).returning();
+        console.log(`[BillingService] Created billing for team ${teamId}: ${totalAmount}`);
+        return billing;
       }
 
     } catch (error) {
@@ -301,8 +359,8 @@ export const BillingService = {
         percentageUsed: Math.min(100, Math.floor((currentUsage / config.tokenLimit) * 100))
       };
     } catch (error) {
-       console.error('[BillingService] Get projected bill error:', error);
-       throw error;
+      console.error('[BillingService] Get projected bill error:', error);
+      throw error;
     }
   }
 };

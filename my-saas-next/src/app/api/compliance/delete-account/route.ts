@@ -5,6 +5,8 @@ import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { users, teamMembers, teams } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/compliance/delete-account - Request account deletion
 export async function POST(req: NextRequest) {
@@ -88,8 +90,8 @@ export async function POST(req: NextRequest) {
       success: true, 
       message: 'Your account has been deleted' 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete account error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

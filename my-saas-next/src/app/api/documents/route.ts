@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DocumentService } from '@/services/documentService';
 import { getAuthUser } from '@/lib/middleware/auth';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 /**
  * GET /api/documents
@@ -20,9 +22,9 @@ export async function GET(req: NextRequest) {
     const result = await DocumentService.getDocuments(auth.teamId, page, pageSize, search);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -56,8 +58,8 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json(newDoc, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

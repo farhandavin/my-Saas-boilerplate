@@ -132,7 +132,6 @@
 }
 
 /* --- CONTENT AREA STYLING --- */
-main.docPage_... { /* Target main content if class available, generic fallback */ }
 
 .markdown h1 {
   font-size: 2.5rem;
@@ -186,4 +185,21 @@ main.docPage_... { /* Target main content if class available, generic fallback *
 [data-theme='dark'] .card {
   border-color: #1e293b;
   background-color: #1e293b; /* darker card bg */
+}
+
+/* Hide community features and feedback widget - AGGRESSIVE */
+.theme-doc-footer-edit-meta-row,
+.theme-doc-footer,
+div[class*="docItemFooter"],
+div[class*="lastUpdated"],
+/* Sidebar Community Links */
+a[href*="discord"],
+a[href*="twitter"],
+a[href*="video"],
+/* Navbar specific */
+.navbar__item[href*="login"],
+.navbar__item[href*="api"],
+/* Page Feedback */
+.theme-doc-footer-edit-meta-row {
+  display: none !important;
 }

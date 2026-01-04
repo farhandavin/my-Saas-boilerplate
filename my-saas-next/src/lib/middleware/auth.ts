@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 import { db } from '@/db';
 import { users, teamMembers } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { UserJwtPayload, Role, RouteContext, AuthContext, TeamContext } from '@/types';
+import { UserJwtPayload, Role, RouteContext, AuthContext, TeamContext, TeamMemberWithTeam } from '@/types';
+
 
 // 1. Token Verification Helper
 export const verifyToken = (token: string): UserJwtPayload | null => {
@@ -129,7 +130,8 @@ export const withTeam = <TParams = Record<string, string>>(
     }
 
     const safeParams = (params || {}) as unknown as TParams;
-    // Cast teamContext to any to bypass Drizzle type mismatch
-    return handler(req, { user: payload, team: teamContext as any, params: safeParams });
+    // TeamContext uses the Drizzle relation result
+    return handler(req, { user: payload, team: teamContext as TeamMemberWithTeam, params: safeParams });
   };
 };
+

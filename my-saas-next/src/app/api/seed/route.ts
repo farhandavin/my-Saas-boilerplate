@@ -10,6 +10,8 @@ import {
 } from '@/db/schema';
 import { randomUUID, createHash } from 'crypto';
 import bcrypt from 'bcryptjs';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 const SEED_SECRET = 'demo-seed-secret'; // Change this in production
 
@@ -273,11 +275,11 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Seed error:', error);
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: getErrorMessage(error),
       results
     }, { status: 500 });
   }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { aiFeedback } from '@/db/schema';
 import { ratelimit } from '@/lib/rate-limit';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: NextRequest, context: any) {
   // 1. Rate Check
@@ -29,8 +31,8 @@ export async function POST(req: NextRequest, context: any) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Feedback API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

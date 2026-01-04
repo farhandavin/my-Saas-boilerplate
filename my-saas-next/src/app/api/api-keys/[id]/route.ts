@@ -5,6 +5,8 @@ import { extractToken, verifyToken, unauthorized, forbidden } from '@/lib/middle
 import { db } from '@/db';
 import { teamMembers, apiKeys, auditLogs } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // DELETE /api/api-keys/[id] - Revoke API key
 export async function DELETE(
@@ -56,7 +58,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true, message: 'API key revoked' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

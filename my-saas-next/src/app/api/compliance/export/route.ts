@@ -5,6 +5,8 @@ import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { users, auditLogs, notifications } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // GET /api/compliance/export - Export user data (GDPR compliant)
 export async function GET(req: NextRequest) {
@@ -68,7 +70,7 @@ export async function GET(req: NextRequest) {
       message: 'Your data export is ready',
       data: exportData
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -57,8 +57,10 @@ export default function DocumentDetailPage() {
       showSuccess('Document updated successfully');
       fetchDoc(); // Refresh to get new logs and updated data
       setActiveTab('view');
-    } catch (err: any) {
-      showError(err.response?.data?.error || 'Update failed');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Update failed';
+      showError(errorMessage);
     } finally {
       setSaving(false);
     }

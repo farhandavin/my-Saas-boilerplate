@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { AuthService } from '@/services/authService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function POST(req: Request) {
   try {
@@ -29,9 +31,9 @@ export async function POST(req: Request) {
         role: result.role
       }
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: getErrorMessage(error) },
       { status: 400 }
     );
   }

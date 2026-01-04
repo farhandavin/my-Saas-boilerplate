@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { TrustService } from '@/services/trustService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export const GET = withTeam(async (req, context: any) => {
   const { team } = context;
@@ -9,7 +11,7 @@ export const GET = withTeam(async (req, context: any) => {
   try {
     const trustData = await TrustService.getScore(team.teamId);
     return NextResponse.json({ success: true, data: trustData });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }, { roles: ['ADMIN', 'MANAGER', 'STAFF'] });

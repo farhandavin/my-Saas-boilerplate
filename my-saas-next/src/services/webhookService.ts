@@ -5,6 +5,8 @@ import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import type { WebhookPayload, WebhookRecord } from '@/types';
 import { inngest } from '@/lib/inngest/client';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export const WebhookService = {
   /**
@@ -79,7 +81,7 @@ export const WebhookService = {
       });
 
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Unknown error';
       await db.insert(webhookDeliveries).values({
         webhookId: webhook.id,
         eventId: crypto.randomUUID(),

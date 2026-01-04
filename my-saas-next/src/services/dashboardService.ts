@@ -53,7 +53,11 @@ export const DashboardService = {
       const today = new Date();
       const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
 
-      let rows: any[] = [];
+      interface RevenueRow {
+        month: string;
+        total: string | number;
+      }
+      let rows: RevenueRow[] = [];
       try {
         const result = await db.execute(sql`
           SELECT 
@@ -67,7 +71,12 @@ export const DashboardService = {
           GROUP BY to_char(paid_at, 'Mon'), date_trunc('month', paid_at)
           ORDER BY date_trunc('month', paid_at) ASC
         `);
-        rows = Array.isArray(result) ? result : (result as any).rows || [];
+        // Handle Drizzle execute return - can be array or object with rows property
+        if (Array.isArray(result)) {
+          rows = result as unknown as RevenueRow[];
+        } else if (result && typeof result === 'object' && 'rows' in result) {
+          rows = (result as { rows?: unknown[] }).rows as RevenueRow[] || [];
+        }
       } catch (e) {
         console.error('Revenue trend query failed:', e);
         rows = [];
@@ -80,7 +89,7 @@ export const DashboardService = {
         _d.setMonth(_d.getMonth() + 1);
       }
 
-      const dataMap = new Map(rows.map((row: any) => [row.month, Number(row.total) || 0]));
+      const dataMap = new Map(rows.map((row) => [row.month, Number(row.total) || 0]));
 
       const chartData = months.map(m => ({
         month: m,

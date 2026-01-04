@@ -6,6 +6,8 @@ import { TeamService } from '@/services/teamService';
 import { db } from '@/db';
 import { invitations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/team/join/[token] - Accept invitation and join team
 export async function POST(
@@ -28,9 +30,9 @@ export async function POST(
     const result = await TeamService.joinTeam(inviteToken, payload.userId);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Join team error:', error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 400 });
   }
 }
 
@@ -65,7 +67,7 @@ export async function GET(
       role: invitation.role,
       email: invitation.email
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

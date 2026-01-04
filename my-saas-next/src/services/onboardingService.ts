@@ -2,6 +2,7 @@
 import { db } from '@/db';
 import { onboardingProgress, teams, auditLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import type { OnboardingStepData } from '@/types/log-types';
 
 export class OnboardingService {
   /**
@@ -23,42 +24,45 @@ export class OnboardingService {
   /**
    * Update onboarding step
    */
-  static async updateStep(userId: string, step: number, data?: Record<string, any>) {
+  static async updateStep(userId: string, step: number, _data?: OnboardingStepData) {
     const existing = await db.query.onboardingProgress.findFirst({
       where: eq(onboardingProgress.userId, userId)
     });
 
-    const completedSteps = existing?.completedSteps 
+    const completedSteps = existing?.completedSteps
       ? [...(existing.completedSteps as number[]), step - 1].filter(s => s > 0)
       : [];
-    
-    // Upsert
-    // Drizzle upsert
-    // Cast strict type mismatch if needed, Drizzle JSON vs unknown
-    const values = {
-        userId,
-        currentStep: step,
-        completedSteps: JSON.stringify([...new Set(completedSteps)]) as unknown as any, // casting for json field quirks
-    };
 
-    await db.insert(onboardingProgress).values(values)
-        .onConflictDoUpdate({
-            target: onboardingProgress.userId,
-            set: {
-                currentStep: step,
-                completedSteps: values.completedSteps
-            }
-        });
-        
+    // Prepare values with proper typing for JSONB field
+    const completedStepsArray = [...new Set(completedSteps)];
+
+    await db.insert(onboardingProgress).values({
+      userId,
+      currentStep: step,
+      completedSteps: completedStepsArray,
+    })
+      .onConflictDoUpdate({
+        target: onboardingProgress.userId,
+        set: {
+          currentStep: step,
+          completedSteps: completedStepsArray
+        }
+      });
+
     return this.getProgress(userId);
   }
 
   /**
    * Complete onboarding
    */
-  static async complete(userId: string, teamId: string, data: Record<string, any>) {
-    // Update team with onboarding data
-    const updateData: Record<string, any> = {};
+  static async complete(userId: string, teamId: string, data: OnboardingStepData) {
+    // Build typed update object
+    const updateData: Partial<{
+      name: string;
+      industry: string;
+      dataRegion: string;
+    }> = {};
+
     if (data.orgName) updateData.name = data.orgName;
     if (data.industry) updateData.industry = data.industry;
     if (data.dataRegion) updateData.dataRegion = data.dataRegion;
@@ -69,27 +73,31 @@ export class OnboardingService {
         .where(eq(teams.id, teamId));
     }
 
-    // Mark onboarding as complete
-    const completedValues = {
-        userId,
-        currentStep: 5,
-        completedSteps: JSON.stringify([1, 2, 3, 4, 5]) as unknown as any,
-        completedAt: new Date(),
-    };
+    // Mark onboarding as complete with properly typed values
+    const completedStepsArray = [1, 2, 3, 4, 5];
 
-    await db.insert(onboardingProgress).values(completedValues)
-        .onConflictDoUpdate({
-            target: onboardingProgress.userId,
-            set: completedValues
-        });
+    await db.insert(onboardingProgress).values({
+      userId,
+      currentStep: 5,
+      completedSteps: completedStepsArray,
+      completedAt: new Date(),
+    })
+      .onConflictDoUpdate({
+        target: onboardingProgress.userId,
+        set: {
+          currentStep: 5,
+          completedSteps: completedStepsArray,
+          completedAt: new Date(),
+        }
+      });
 
     // Create audit log
     await db.insert(auditLogs).values({
-        teamId,
-        userId,
-        action: 'ONBOARDING_COMPLETED',
-        entity: 'onboarding',
-        details: JSON.stringify(data),
+      teamId,
+      userId,
+      action: 'ONBOARDING_COMPLETED',
+      entity: 'onboarding',
+      details: JSON.stringify(data),
     });
 
     return { success: true };
@@ -100,12 +108,12 @@ export class OnboardingService {
    */
   static async skip(userId: string) {
     await db.insert(onboardingProgress).values({
-        userId,
-        currentStep: 5,
-        skipped: true
+      userId,
+      currentStep: 5,
+      skipped: true
     }).onConflictDoUpdate({
-        target: onboardingProgress.userId,
-        set: { skipped: true }
+      target: onboardingProgress.userId,
+      set: { skipped: true }
     });
 
     return { success: true };

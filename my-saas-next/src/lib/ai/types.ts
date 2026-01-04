@@ -1,4 +1,32 @@
-import type { GenerateTextResult } from 'ai';
+import type { ToolSet } from 'ai';
+
+/**
+ * Strongly typed AI message format
+ */
+export interface AIMessage {
+    role: 'user' | 'assistant' | 'system' | 'tool';
+    content: string;
+    toolCallId?: string;
+    name?: string;
+}
+
+/**
+ * AI text generation result
+ */
+export interface AITextResult {
+    text: string;
+    usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+    };
+    toolCalls?: Array<{
+        name: string;
+        args: Record<string, unknown>;
+        id: string;
+    }>;
+    finishReason?: 'stop' | 'length' | 'tool-calls' | 'content-filter' | 'error';
+}
 
 export interface AIProvider {
     /**
@@ -6,7 +34,7 @@ export interface AIProvider {
      * @param messages Array of messages (role: user/assistant/system, content: string)
      * @param options Optional parameters like temperature, masking, etc.
      */
-    generateText(messages: any[], options?: AIOptions): Promise<any>;
+    generateText(messages: AIMessage[], options?: AIOptions): Promise<AITextResult>;
 
     /**
      * Generates an embedding for a given text.
@@ -18,10 +46,11 @@ export interface AIProvider {
 export type AIOptions = {
     temperature?: number;
     maxTokens?: number;
-    tools?: any;
+    tools?: ToolSet;
     /**
      * Helper to identify if we should mask PII before sending.
      * Default: true
      */
     maskPII?: boolean;
 };
+

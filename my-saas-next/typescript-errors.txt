@@ -1,0 +1,116 @@
+src/app/[locale]/dashboard/ai-hub/page.tsx(225,16): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/dashboard/ai-hub/page.tsx(422,13): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/dashboard/audit-logs/page.tsx(73,16): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/dashboard/knowledge-base/[id]/page.tsx(61,17): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/dashboard/setting/api-keys/page.tsx(39,17): error TS18046: 'error' is of type 'unknown'.
+src/app/[locale]/dashboard/setting/api-keys/page.tsx(80,17): error TS18046: 'error' is of type 'unknown'.
+src/app/[locale]/dashboard/setting/team/page.tsx(114,17): error TS18046: 'error' is of type 'unknown'.
+src/app/[locale]/dashboard/setting/team/page.tsx(143,17): error TS18046: 'error' is of type 'unknown'.
+src/app/[locale]/forgot-password/page.tsx(29,17): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/join-team/[token]/page.tsx(36,24): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/join-team/[token]/page.tsx(63,17): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/register/page.tsx(69,17): error TS18046: 'err' is of type 'unknown'.
+src/app/[locale]/reset-password/page.tsx(55,17): error TS18046: 'err' is of type 'unknown'.
+src/app/api/ai/analyze/route.ts(42,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/analyze/upload/route.ts(47,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/chat-docs/route.ts(70,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/chat/route.ts(35,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/docs/route.ts(33,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/docs/route.ts(76,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/feedback/route.ts(34,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/pre-check/route.ts(46,18): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/precheck/route.ts(86,46): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/quota/route.ts(65,16): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/stats/route.ts(20,43): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/stream/route.ts(77,78): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/stream/route.ts(92,49): error TS18046: 'error' is of type 'unknown'.
+src/app/api/ai/upload/route.ts(74,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/api-keys/[id]/route.ts(60,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/api-keys/route.ts(46,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/api-keys/route.ts(109,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/api-keys/route.ts(167,41): error TS18046: 'error' is of type 'unknown'.
+src/app/api/audit-logs/recent/route.ts(19,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/audit-logs/route.ts(116,55): error TS18046: 'error' is of type 'unknown'.
+src/app/api/audit-logs/route.ts(158,55): error TS18046: 'error' is of type 'unknown'.
+src/app/api/auth/register-invite/route.ts(34,32): error TS18046: 'error' is of type 'unknown'.
+src/app/api/auth/register/route.ts(16,32): error TS18046: 'error' is of type 'unknown'.
+src/app/api/billing/portal/route.ts(16,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/compliance/delete-account/route.ts(93,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/compliance/export/route.ts(72,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/demo/route.ts(15,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/demo/route.ts(30,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/documents/route.ts(25,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/documents/route.ts(61,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/onboarding/complete/route.ts(57,9): error TS2353: Object literal may only specify known properties, and 'role' does not exist in type 'OnboardingStepData'.
+src/app/api/onboarding/complete/route.ts(64,16): error TS18046: 'error' is of type 'unknown'.
+src/app/api/payment/cancel/route.ts(25,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/payment/create-checkout/route.ts(46,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/payment/create-portal/route.ts(29,9): error TS18046: 'error' is of type 'unknown'.
+src/app/api/payment/create-portal/route.ts(36,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/payment/resume/route.ts(25,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/privacy/route.ts(38,58): error TS18046: 'error' is of type 'unknown'.
+src/app/api/privacy/route.ts(87,51): error TS18046: 'error' is of type 'unknown'.
+src/app/api/privacy/route.ts(122,59): error TS18046: 'error' is of type 'unknown'.
+src/app/api/projects/[id]/members/route.ts(59,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/projects/[id]/members/route.ts(86,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/projects/[id]/tasks/route.ts(24,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/projects/[id]/tasks/route.ts(58,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/seed/route.ts(280,14): error TS18046: 'error' is of type 'unknown'.
+src/app/api/settings/tenancy/route.ts(98,14): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/[teamId]/route.ts(46,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/[teamId]/route.ts(83,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/invite/route.ts(48,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/join/[token]/route.ts(33,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/join/[token]/route.ts(69,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/members/route.ts(50,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/members/route.ts(125,41): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/route.ts(32,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/team/route.ts(60,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/trust-center/route.ts(13,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/webhooks/[webhookId]/deliveries/route.ts(26,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/webhooks/[webhookId]/route.ts(20,39): error TS18046: 'error' is of type 'unknown'.
+src/app/api/webhooks/[webhookId]/route.ts(36,39): error TS18046: 'error' is of type 'unknown'.
+src/components/ai/ChatWidget.tsx(97,67): error TS18046: 'error' is of type 'unknown'.
+src/lib/ai/google-provider.ts(36,13): error TS2322: Type '{ promptTokens: any; completionTokens: any; totalTokens: number | undefined; } | undefined' is not assignable to type '{ promptTokens: number; completionTokens: number; totalTokens: number; } | undefined'.
+  Type '{ promptTokens: any; completionTokens: any; totalTokens: number | undefined; }' is not assignable to type '{ promptTokens: number; completionTokens: number; totalTokens: number; }'.
+    Types of property 'totalTokens' are incompatible.
+      Type 'number | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/lib/ai/google-provider.ts(37,44): error TS2339: Property 'promptTokens' does not exist on type 'LanguageModelUsage'.
+src/lib/ai/google-provider.ts(38,48): error TS2339: Property 'completionTokens' does not exist on type 'LanguageModelUsage'.
+src/lib/db-router.ts(65,21): error TS2345: Argument of type '(PostgresJsDatabase<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")> & { $client: Sql<{}>; }) | (PostgresJsDatabase<Record<string, unknown>> & { ...; })' is not assignable to parameter of type 'PostgresJsDatabase<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")> & { $client: Sql<{}>; }'.
+  Type 'PostgresJsDatabase<Record<string, unknown>> & { $client: Sql<{}>; }' is not assignable to type 'PostgresJsDatabase<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")> & { $client: Sql<{}>; }'.
+    Type 'PostgresJsDatabase<Record<string, unknown>> & { $client: Sql<{}>; }' is not assignable to type 'PostgresJsDatabase<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")>'.
+      The types of '_.schema' are incompatible between these types.
+        Type 'ExtractTablesWithRelations<Record<string, unknown>> | undefined' is not assignable to type 'ExtractTablesWithRelations<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")> | undefined'.
+          Type 'ExtractTablesWithRelations<Record<string, unknown>>' is missing the following properties from type 'ExtractTablesWithRelations<typeof import("D:/project farhan/my-Saas-boilerplate/my-saas-next/src/db/schema")>': users, teams, roles, teamMembers, and 19 more.
+src/lib/db-router.ts(81,22): error TS2339: Property 'rows' does not exist on type 'RowList<Record<string, unknown>[]>'.
+src/lib/facade/chatStream.ts(86,31): error TS18046: 'error' is of type 'unknown'.
+src/lib/inngest/webhook-cleanup.ts(27,43): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.
+src/lib/inngest/webhook-cleanup.ts(35,43): error TS2339: Property 'rowCount' does not exist on type 'RowList<never[]>'.
+src/lib/middleware/auth.ts(133,74): error TS2304: Cannot find name 'TeamMemberWithTeam'.
+src/services/aiService.ts(44,9): error TS2322: Type 'Record<string, AIToolDefinition>' is not assignable to type 'ToolSet'.
+  'string' index signatures are incompatible.
+    Type 'AIToolDefinition' is not assignable to type '(Tool<never, never> | Tool<any, any> | Tool<any, never> | Tool<never, any>) & Pick<Tool<any, any>, "execute" | "onInputAvailable" | "onInputStart" | "onInputDelta" | "needsApproval">'.
+      Type 'AIToolDefinition' is not assignable to type '{ description?: string | undefined; title?: string | undefined; providerOptions?: SharedV3ProviderOptions | undefined; inputSchema: FlexibleSchema<never>; ... 5 more ...; onInputAvailable?: ((options: { ...; } & ToolExecutionOptions) => void | PromiseLike<...>) | undefined; } & Partial<...> & { ...; } & { ...; } & P...'.
+        Property 'inputSchema' is missing in type 'AIToolDefinition' but required in type '{ description?: string | undefined; title?: string | undefined; providerOptions?: SharedV3ProviderOptions | undefined; inputSchema: FlexibleSchema<never>; ... 5 more ...; onInputAvailable?: ((options: { ...; } & ToolExecutionOptions) => void | PromiseLike<...>) | undefined; }'.
+src/services/ceoDigestService.ts(467,11): error TS18047: 'member.user' is possibly 'null'.
+src/services/ceoDigestService.ts(468,11): error TS18047: 'member.user' is possibly 'null'.
+src/services/dashboardService.ts(74,40): error TS2352: Conversion of type 'RowList<Record<string, unknown>[]>' to type 'RevenueRow[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'push' are incompatible.
+    Type '(...items: Record<string, unknown>[]) => number' is not comparable to type '(...items: RevenueRow[]) => number'.
+      Types of parameters 'items' and 'items' are incompatible.
+        Type 'RevenueRow' is not comparable to type 'Record<string, unknown>'.
+          Index signature for type 'string' is missing in type 'RevenueRow'.
+src/services/documentService.ts(99,19): error TS2322: Type '{ id: string; title: string; content: string; }' is not assignable to type 'string'.
+src/services/documentService.ts(158,9): error TS2322: Type '{ title?: { from: string | null; to: string; } | undefined; content?: { from: string; to: string; } | undefined; }' is not assignable to type 'string'.
+src/services/documentService.ts(159,9): error TS2322: Type '{ title: string; }' is not assignable to type 'string'.
+src/services/documentService.ts(160,9): error TS2322: Type '{ title: string; }' is not assignable to type 'string'.
+src/services/documentService.ts(184,9): error TS2322: Type '{ id: string; title: string; createdAt: Date | null; }' is not assignable to type 'string'.
+src/services/privacyService.ts(86,37): error TS2345: Argument of type 'PIIRule[]' is not assignable to parameter of type 'Partial<PIIRule>[]'.
+  Type 'PIIRule' is not assignable to type 'Partial<PIIRule>'.
+    Types of property 'maskingMethod' are incompatible.
+      Type 'MaskingMethod' is not assignable to type 'MaskingMethod | undefined'.
+        Type '"encrypt"' is not assignable to type 'MaskingMethod | undefined'.
+src/services/privacyService.ts(90,22): error TS2352: Conversion of type '{ entityType: string; original: string; masked: string; position: { start: number; end: number; }; }[]' to type 'PIIEntity[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ entityType: string; original: string; masked: string; position: { start: number; end: number; }; }' is missing the following properties from type 'PIIEntity': type, value, maskedValue, startIndex, endIndex

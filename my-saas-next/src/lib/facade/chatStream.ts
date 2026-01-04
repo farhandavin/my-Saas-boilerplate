@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/error-utils';
 export type ChatMessage = {
     role: 'user' | 'assistant';
     content: string;
@@ -82,8 +83,8 @@ export const ChatStreamFacade = {
 
             callbacks.onComplete?.();
 
-        } catch (error: any) {
-            callbacks.onError(error.message || 'Connection Error');
+        } catch (error: unknown) {
+            callbacks.onError(getErrorMessage(error) || 'Connection Error');
         }
     }
 };

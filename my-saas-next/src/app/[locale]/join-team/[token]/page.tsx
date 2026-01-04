@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 function JoinTeamContent() {
   const params = useParams();
@@ -32,8 +34,8 @@ function JoinTeamContent() {
       if (!res.ok) throw new Error(data.error);
 
       setInviteInfo(data);
-    } catch (err: any) {
-      setInvalidInvite(err.message);
+    } catch (err: unknown) {
+      setInvalidInvite(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -59,8 +61,8 @@ function JoinTeamContent() {
       if (!res.ok) throw new Error(data.error);
 
       router.push(`/dashboard?joined=${data.teamName}`);
-    } catch (err: any) {
-      showError(err.message || 'Gagal bergabung ke tim. Silakan coba lagi.');
+    } catch (err: unknown) {
+      showError(getErrorMessage(err) || 'Gagal bergabung ke tim. Silakan coba lagi.');
     } finally {
       setJoining(false);
     }

@@ -7,6 +7,8 @@ import { db } from '@/db';
 import { auditLogs } from '@/db/schema';
 import { AiService } from '@/services/aiService';
 import { RAGService } from '@/services/ragService';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 // POST /api/ai/chat-docs - Chat with documents (RAG)
 export async function POST(req: NextRequest) {
@@ -65,8 +67,8 @@ export async function POST(req: NextRequest) {
       answer: response,
       tokensUsed: estimatedCost
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat docs error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

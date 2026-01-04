@@ -6,6 +6,14 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { Role } from '@/types';
 
+// Type for team from invitation relation
+interface InvitationTeam {
+  id: string;
+  name: string;
+  slug: string;
+  tier: string | null;
+}
+
 export const AuthService = {
   /**
    * Register sebagai ADMIN - membuat user baru dan team baru
@@ -17,7 +25,7 @@ export const AuthService = {
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
-    
+
     if (existingUser) throw new Error("Email sudah terdaftar");
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -26,9 +34,9 @@ export const AuthService = {
     // 2. Transaksi: User + Team + Member (Owner)
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.insert(users).values({
-        name, 
-        email, 
-        password: hashedPassword 
+        name,
+        email,
+        password: hashedPassword
       }).returning();
 
       const [team] = await tx.insert(teams).values({
@@ -83,7 +91,7 @@ export const AuthService = {
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
-    
+
     if (existingUser) throw new Error("Email sudah terdaftar. Silakan login lalu terima undangan.");
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -91,9 +99,9 @@ export const AuthService = {
     // 3. Transaksi: User + TeamMember + delete invitation
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.insert(users).values({
-        name, 
-        email, 
-        password: hashedPassword 
+        name,
+        email,
+        password: hashedPassword
       }).returning();
 
       await tx.insert(teamMembers).values({
@@ -114,9 +122,12 @@ export const AuthService = {
         details: `${name} joined via invitation as ${invitation.role}`,
       });
 
-      return { 
-        user, 
-        team: invitation.team as any,
+      // Properly cast team to expected type
+      const team = invitation.team as InvitationTeam;
+
+      return {
+        user,
+        team,
         role: invitation.role
       };
     });
@@ -131,7 +142,7 @@ export const AuthService = {
       .set(data)
       .where(eq(users.id, userId))
       .returning();
-    
+
     return updatedUser;
   }
 };

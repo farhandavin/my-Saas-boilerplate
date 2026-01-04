@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
 import { Role } from '@/types';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 type RegistrationMode = 'owner' | 'join';
 
@@ -65,8 +67,8 @@ function RegisterPageContent() {
 
       showSuccess('Registration successful!');
       router.push('/auth?registered=true');
-    } catch (err: any) {
-      showError(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      showError(getErrorMessage(err) || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

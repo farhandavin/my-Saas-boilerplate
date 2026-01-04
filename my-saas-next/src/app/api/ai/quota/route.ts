@@ -4,6 +4,8 @@ import { extractToken, verifyToken, unauthorized } from '@/lib/middleware/auth';
 import { db } from '@/db';
 import { teams } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getErrorMessage } from '@/lib/error-utils';
+
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,10 +61,10 @@ export async function GET(req: NextRequest) {
         resetDate: resetDate.toISOString(),
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Quota fetch error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: getErrorMessage(error) || 'Internal server error' },
       { status: 500 }
     );
   }
