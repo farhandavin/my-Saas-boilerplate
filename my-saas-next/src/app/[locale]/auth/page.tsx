@@ -19,14 +19,33 @@ export default function AuthPage() {
     
     try {
       const res = await axios.post('/api/auth/login', form);
+      
       if (res.data.success) {
-        // localStorage.setItem('token', res.data.token); // REMOVED: Using HttpOnly Cookie
         if (res.data.team?.id) {
             localStorage.setItem('currentTeamId', res.data.team.id);
         }
         router.push('/dashboard');
+      } else if (res.data.requireTeamSelection) {
+          // If multiple teams, auto-select the first one for now
+          // (Or render a selection UI, but auto-select fixes the "silent" issue immediately)
+          const firstTeam = res.data.teams[0];
+          
+          // Retry login with specific team
+          const res2 = await axios.post('/api/auth/login', { ...form, teamId: firstTeam.id });
+          if (res2.data.success) {
+             if (res2.data.team?.id) {
+                 localStorage.setItem('currentTeamId', res2.data.team.id);
+             }
+             router.push('/dashboard');
+          } else {
+             showError('Failed to select team automatically.');
+          }
+      } else {
+          // Handle other failures (e.g. success: false with specific error)
+          showError(res.data.error || 'Login failed. Please check your credentials.');
       }
     } catch (err: any) {
+      console.error("Login Error:", err);
       showError(err.response?.data?.error || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
