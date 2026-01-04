@@ -47,7 +47,7 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
         <div className="relative mb-6" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-3 w-full p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+                className={`flex items-center gap-3 w-full p-2 rounded-xl border border-transparent hover:bg-slate-50 hover:border-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-700 transition-all duration-200 group ${isCollapsed ? 'justify-center' : ''}`}
             >
                 {/* Team Logo / Avatar */}
                 <div className="relative flex-none">
@@ -55,23 +55,27 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
                         <img 
                             src={currentTeam.branding.logoUrl} 
                             alt={currentTeam.name} 
-                            className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700"
+                            className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700 block"
                         />
                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#135bec] to-[#4f86f7] flex items-center justify-center text-white font-bold text-lg shadow-sm border border-white/10">
                             {currentTeam.name.substring(0, 1).toUpperCase()}
                         </div>
                      )}
-                     <div className="absolute -bottom-1 -right-1 bg-white dark:bg-[#111722] rounded-full p-0.5">
-                        <span className="material-symbols-outlined text-[12px] text-slate-500">expand_more</span>
+                     <div className="absolute -bottom-1.5 -right-1.5 bg-white dark:bg-[#111722] rounded-full p-0.5 border border-slate-100 dark:border-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="material-symbols-outlined text-[14px] text-slate-500 block">unfold_more</span>
                      </div>
                 </div>
 
                 {!isCollapsed && (
                     <div className="flex-1 text-left overflow-hidden">
-                        <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">{currentTeam.name}</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate capitalize">{currentTeam.myRole} Workspace</p>
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate leading-tight group-hover:text-[#135bec] transition-colors">{currentTeam.name}</h2>
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize mt-0.5">{currentTeam.myRole} Workspace</p>
                     </div>
+                )}
+                
+                {!isCollapsed && (
+                     <span className="material-symbols-outlined text-[18px] text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">arrow_drop_down</span>
                 )}
             </button>
 
