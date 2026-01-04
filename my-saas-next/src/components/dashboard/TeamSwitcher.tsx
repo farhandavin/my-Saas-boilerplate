@@ -8,6 +8,7 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
     const { currentTeam, refreshTeam } = useTeam();
     const [isOpen, setIsOpen] = useState(false);
     const [teams, setTeams] = useState<any[]>([]);
+    const [imageError, setImageError] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -24,6 +25,10 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
         };
         fetchTeams();
     }, []);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [currentTeam]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -51,10 +56,11 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
             >
                 {/* Team Logo / Avatar */}
                 <div className="relative flex-none">
-                     {currentTeam.branding?.logoUrl ? (
+                     {currentTeam.branding?.logoUrl && !imageError ? (
                         <img 
                             src={currentTeam.branding.logoUrl} 
                             alt={currentTeam.name} 
+                            onError={() => setImageError(true)}
                             className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700 block"
                         />
                      ) : (
@@ -62,9 +68,6 @@ export function TeamSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
                             {currentTeam.name.substring(0, 1).toUpperCase()}
                         </div>
                      )}
-                     <div className="absolute -bottom-1.5 -right-1.5 bg-white dark:bg-[#111722] rounded-full p-0.5 border border-slate-100 dark:border-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-[14px] text-slate-500 block">unfold_more</span>
-                     </div>
                 </div>
 
                 {!isCollapsed && (
