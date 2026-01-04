@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
 
     // Find user by email
     const user = await db.query.users.findFirst({
-        where: eq(users.email, email.toLowerCase())
+      where: eq(users.email, email.toLowerCase())
     });
 
     // Always return success to prevent email enumeration attacks
     if (user) {
       // Generate secure random token
       const resetToken = crypto.randomBytes(32).toString('hex');
-      
+
       // Token expires in 1 hour
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1);
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
       await db.update(passwordResetTokens)
         .set({ used: true })
         .where(and(
-            eq(passwordResetTokens.userId, user.id),
-            eq(passwordResetTokens.used, false)
+          eq(passwordResetTokens.userId, user.id),
+          eq(passwordResetTokens.used, false)
         ));
 
       // Create new password reset token
@@ -50,9 +50,7 @@ export async function POST(req: NextRequest) {
         resetToken
       );
 
-      console.log(`[ForgotPassword] Reset email sent to ${user.email}`);
-    } else {
-      console.log(`[ForgotPassword] User not found for email: ${email}`);
+      // Email sent successfully (no logging for GDPR compliance)
     }
 
     // Always return success message (security best practice)

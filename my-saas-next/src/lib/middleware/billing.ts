@@ -20,8 +20,8 @@ export const checkAiQuota = async (teamId: string, requiredTokens: number = 10) 
 
   const remaining = limit - usage;
   if (remaining < requiredTokens) {
-    return { 
-      allowed: false, 
+    return {
+      allowed: false,
       reason: 'Quota exceeded',
       remaining,
       required: requiredTokens
@@ -59,12 +59,14 @@ export const getQuotaStatus = async (teamId: string) => {
   };
 };
 
+import { RouteContext } from '@/types/route-context';
+
 // Middleware wrapper for AI endpoints
 export const withQuotaCheck = (
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>,
+  handler: (req: NextRequest, context: RouteContext) => Promise<NextResponse>,
   estimatedCost: number = 10
 ) => {
-  return async (req: NextRequest, context: any) => {
+  return async (req: NextRequest, context: any) => { // Next.js passes generic context here
     const teamId = context.user?.teamId;
     if (!teamId) {
       return NextResponse.json({ error: 'Team context required' }, { status: 400 });
@@ -72,9 +74,9 @@ export const withQuotaCheck = (
 
     const quotaCheck = await checkAiQuota(teamId, estimatedCost);
     if (!quotaCheck.allowed) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'AI quota exceeded',
-        details: quotaCheck 
+        details: quotaCheck
       }, { status: 402 });
     }
 

@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTeam } from '@/lib/middleware/auth';
 import { ProjectService } from '@/services/projectService';
+import { TeamContext } from '@/types';
 
 export const GET = withTeam(
-  async (req: NextRequest, context: any) => {
+  async (req: NextRequest, context: TeamContext) => {
     const { team, user } = context;
 
     try {
       // Use role-aware project fetching for proper multi-tenancy
+      // team.teamId might be null in TeamContext if not strictly checked, but withTeam guarantees it?
+      // withTeam should guarantee it. The TeamContext interface in index.ts has nullable teamId. 
+      // I should enforce non-null assertion or check because withTeam ensures it.
+      if (!team.teamId) throw new Error("Team ID missing in context");
+
       const projects = await ProjectService.getProjectsForUser(
         team.teamId,
         user.userId,
-        team.role
+        team.role || 'STAFF'
       );
       return NextResponse.json({ projects });
     } catch (error: unknown) {
@@ -23,10 +29,12 @@ export const GET = withTeam(
 );
 
 export const POST = withTeam(
-  async (req: NextRequest, context: any) => {
+  async (req: NextRequest, context: TeamContext) => {
     const { team } = context;
 
     try {
+      if (!team.teamId) throw new Error("Team ID missing in context");
+
       const body = await req.json();
       const project = await ProjectService.createProject({
         ...body,

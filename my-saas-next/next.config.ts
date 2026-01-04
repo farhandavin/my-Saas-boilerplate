@@ -1,4 +1,5 @@
 import createNextIntlPlugin from 'next-intl/plugin';
+import './src/lib/env.ts'; // Validate env on build/startup
 
 const withNextIntl = createNextIntlPlugin();
 

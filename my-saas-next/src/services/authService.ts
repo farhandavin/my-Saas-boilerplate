@@ -85,7 +85,12 @@ export const AuthService = {
 
   async confirmEmail(token: string) {
     // 1. Verify token
-    const result = await TokenService.verifyToken(null as any, token); // We need a method to find by token ONLY? TokenService currently requires email.
+    // 1. Verify token
+    // TODO: Fix logic to lookup email by token first
+    // const result = await TokenService.verifyToken(token); 
+    const valid = await TokenService.validateTokenOnly(token);
+    if (!valid || !valid.identifier) throw new Error("Invalid token");
+    return this.verifyEmailWithToken(token); // Re-use the working function
     // Wait, TokenService.verifyToken requires email AND token.
     // We need logic to find token -> get email -> verify.
     // I added validateTokenOnly(token) which returns identifier.

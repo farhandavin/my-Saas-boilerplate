@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 
 interface ReportStats {
   totalRevenue: number;
@@ -49,8 +50,8 @@ export default function ReportsPage() {
         setStats({
           totalRevenue: billingData.usage?.currentPeriod?.tokensUsed * 10 || 125000000,
           totalInvoices: billingData.invoiceHistory?.length || 12,
-          paidInvoices: billingData.invoiceHistory?.filter((i: any) => i.status === 'paid').length || 10,
-          unpaidInvoices: billingData.invoiceHistory?.filter((i: any) => i.status !== 'paid').length || 2,
+          paidInvoices: billingData.invoiceHistory?.filter((i: { status: string }) => i.status === 'paid').length || 10,
+          unpaidInvoices: billingData.invoiceHistory?.filter((i: { status: string }) => i.status !== 'paid').length || 2,
           aiTokensUsed: billingData.usage?.currentPeriod?.tokensUsed || 45000,
           teamMembers: 8,
           auditEvents: 234
@@ -82,12 +83,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-8 space-y-6">
-        <div className="h-12 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
-        <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse"></div>
-          ))}
-        </div>
+        <DashboardSkeleton />
       </div>
     );
   }

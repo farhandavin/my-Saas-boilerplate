@@ -43,8 +43,7 @@ export async function POST(req: NextRequest) {
     if (!targetTeamId) {
       // Auto-create team if not found (Critical fix for new users)
       const orgName = body.orgName || `Team ${user.email.split('@')[0]}`;
-      console.log('[Onboarding] Auto-creating team for user:', user.userId);
-      
+
       const newTeam = await TeamService.createTeam({
         name: orgName,
         ownerId: user.userId

@@ -6,11 +6,16 @@ import { db } from '@/db';
 import { users, teamMembers, teams } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getErrorMessage } from '@/lib/error-utils';
+import { withCsrfProtection } from '@/lib/csrf';
 
 
 // POST /api/compliance/delete-account - Request account deletion
 export async function POST(req: NextRequest) {
   try {
+    // CSRF Protection - prevent cross-site request forgery
+    const csrfError = withCsrfProtection(req);
+    if (csrfError) return csrfError;
+
     const token = extractToken(req);
     if (!token) return unauthorized();
 
@@ -20,27 +25,27 @@ export async function POST(req: NextRequest) {
     const { confirmation } = await req.json();
 
     if (confirmation !== 'DELETE MY ACCOUNT') {
-      return NextResponse.json({ 
-        error: 'Please type "DELETE MY ACCOUNT" to confirm' 
+      return NextResponse.json({
+        error: 'Please type "DELETE MY ACCOUNT" to confirm'
       }, { status: 400 });
     }
 
     // Check if user is sole owner of any team
     // 1. Get teams where user is owner
     const ownedMemberships = await db.query.teamMembers.findMany({
-        where: and(
-            eq(teamMembers.userId, payload.userId),
-            eq(teamMembers.role, 'ADMIN')
-        ),
-        with: {
-            team: {
-                with: {
-                    // We need all members to check if other owners exist
-                    // Note: 'members' relation name depends on schema
-                    teamMembers: true 
-                }
-            }
+      where: and(
+        eq(teamMembers.userId, payload.userId),
+        eq(teamMembers.role, 'ADMIN')
+      ),
+      with: {
+        team: {
+          with: {
+            // We need all members to check if other owners exist
+            // Note: 'members' relation name depends on schema
+            teamMembers: true
+          }
         }
+      }
     });
 
     for (const tm of ownedMemberships) {
@@ -49,11 +54,11 @@ export async function POST(req: NextRequest) {
       const otherOwners = tm.team.teamMembers.filter(
         (m: any) => m.role === 'ADMIN' && m.userId !== payload.userId
       );
-      
+
       // If no other owners and > 1 total members, cannot delete (orphan team risk)
       if (otherOwners.length === 0 && tm.team.teamMembers.length > 1) {
-        return NextResponse.json({ 
-          error: `You must transfer ownership of team "${tm.team.name}" before deleting your account` 
+        return NextResponse.json({
+          error: `You must transfer ownership of team "${tm.team.name}" before deleting your account`
         }, { status: 400 });
       }
     }
@@ -68,27 +73,27 @@ export async function POST(req: NextRequest) {
       // Drizzle/PG: If schema has ON DELETE CASCADE on ownerId (if exists) or we must delete manually.
       // Since team doesn't direct link to 'owner user' (it uses teamMembers), if we delete all teamMembers of a team, team is empty.
       // We should delete teams where this user was the LAST member.
-      
-      for (const tm of ownedMemberships) {
-         // Logic: if current user is the only member, delete the team object
-         // Note: we already deleted memberships above? No, above is prepared. 
-         // Inside Tx:
-         // Re-check count or rely on payload logic?
-         if (!tm.team || !tm.team.teamMembers) continue;
-         if (!tm.teamId) continue;
 
-         if (tm.team.teamMembers.length === 1) {
-             await tx.delete(teams).where(eq(teams.id, tm.teamId));
-         }
+      for (const tm of ownedMemberships) {
+        // Logic: if current user is the only member, delete the team object
+        // Note: we already deleted memberships above? No, above is prepared. 
+        // Inside Tx:
+        // Re-check count or rely on payload logic?
+        if (!tm.team || !tm.team.teamMembers) continue;
+        if (!tm.teamId) continue;
+
+        if (tm.team.teamMembers.length === 1) {
+          await tx.delete(teams).where(eq(teams.id, tm.teamId));
+        }
       }
 
       // 3. Delete user
       await tx.delete(users).where(eq(users.id, payload.userId));
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Your account has been deleted' 
+    return NextResponse.json({
+      success: true,
+      message: 'Your account has been deleted'
     });
   } catch (error: unknown) {
     console.error('Delete account error:', error);

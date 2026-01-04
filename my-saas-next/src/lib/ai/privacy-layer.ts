@@ -131,7 +131,7 @@ export const PrivacyLayer = {
      * Menghapus field yang mengandung keyword sensitif atau tidak ada di allowlist.
      */
     stripSensitiveFields<T extends Record<string, any>>(data: T, sensitiveKeys: string[] = ['password', 'secret', 'token', 'ssn', 'credit_card']): Partial<T> {
-        const cleanData: any = { ...data };
+        const cleanData: Partial<T> = { ...data };
 
         sensitiveKeys.forEach(key => {
             // Recursive checking could be added here for nested objects

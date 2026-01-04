@@ -168,6 +168,8 @@ export const notifications = pgTable('notifications', {
   // Indexes for notification queries
   userIdIdx: index('notifications_user_id_idx').on(table.userId),
   teamIdReadIdx: index('notifications_team_read_idx').on(table.teamId, table.isRead),
+  // Composite index for sorted unread notifications (fixes audit finding)
+  unreadSortedIdx: index('notifications_unread_sorted_idx').on(table.teamId, table.isRead, table.createdAt),
 }));
 
 // Audit Logs Table
@@ -182,6 +184,8 @@ export const auditLogs = pgTable('audit_logs', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
   teamIdIdx: index('audit_logs_team_id_idx').on(table.teamId),
+  // Composite index for time-based audit log queries (fixes audit finding)
+  teamCreatedIdx: index('audit_logs_team_created_idx').on(table.teamId, table.createdAt),
 }));
 
 // Webhooks Table
@@ -316,7 +320,9 @@ export const usageBillings = pgTable('usage_billings', {
   totalAmount: integer('total_amount').default(0), // in cents
   status: text('status').default('open'), // open, billed
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  billingLookupIdx: index('usage_billings_lookup_idx').on(table.teamId, table.status, table.periodStart),
+}));
 
 // Invoices Table
 export const invoices = pgTable('invoices', {

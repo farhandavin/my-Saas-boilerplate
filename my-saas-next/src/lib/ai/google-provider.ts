@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText as aiGenerateText, embed as aiEmbed } from 'ai';
 import type { AIProvider, AIOptions, AIMessage, AITextResult } from './types';
-import { safeEnv } from '@/lib/env'; // Use our safe env accessor
+import { env } from '@/lib/env'; // Use our safe env accessor
 
 export class GoogleAIProvider implements AIProvider {
     private client;
@@ -12,7 +12,7 @@ export class GoogleAIProvider implements AIProvider {
         // In production, this keys should be strictly validated at startup
         const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
 
-        if (!apiKey && safeEnv.isAIEnabled) {
+        if (!apiKey) {
             console.warn("GoogleAIProvider initialized without API Key. AI calls will fail.");
         }
 

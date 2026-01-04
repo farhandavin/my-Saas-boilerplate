@@ -5,6 +5,8 @@ import Link from 'next/link';
 import axios from 'axios';
 import { useToast } from '@/components/Toast';
 import { motion } from 'framer-motion';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface Project {
   id: string;
@@ -32,7 +34,7 @@ export default function ProjectsPage() {
       const res = await axios.get('/api/team');
       const teams = res.data.teams;
       const currentTeamId = localStorage.getItem('currentTeamId');
-      const activeTeam = teams.find((t: any) => t.id === currentTeamId) || teams[0];
+      const activeTeam = teams.find((t: { id: string; myRole?: string }) => t.id === currentTeamId) || teams[0];
       if (activeTeam?.myRole) {
          setCurrentRole(activeTeam.myRole);
       }
@@ -106,12 +108,14 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      {/* Project Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => (
-            <div key={i} className="h-40 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse ring-1 ring-slate-200 dark:ring-slate-800"></div>
-          ))}
+           <CardSkeleton />
+           <CardSkeleton />
+           <CardSkeleton />
+           <CardSkeleton />
+           <CardSkeleton />
+           <CardSkeleton />
         </div>
       ) : filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -161,24 +165,20 @@ export default function ProjectsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                 <span className="material-symbols-outlined text-3xl text-slate-400">rocket_launch</span>
-            </div>
-            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No projects yet</h3>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
-                Get started by creating your first project to track tasks and collaborate with your team.
-            </p>
-            {['OWNER', 'ADMIN', 'MANAGER'].includes(currentRole) && (
-              <Link 
-                  href="/dashboard/projects/new"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                  <span className="material-symbols-outlined text-[20px]">add</span>
-                  Create Project
-              </Link>
-            )}
-        </div>
+        <EmptyState 
+            title="No projects yet"
+            description="Get started by creating your first project to track tasks and collaborate with your team."
+            icon={<span className="material-symbols-outlined text-3xl text-slate-400">rocket_launch</span>}
+            action={['OWNER', 'ADMIN', 'MANAGER'].includes(currentRole) ? (
+                <Link 
+                    href="/dashboard/projects/new"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-black rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                    <span className="material-symbols-outlined text-[20px]">add</span>
+                    Create Project
+                </Link>
+            ) : null}
+        />
       )}
     </div>
   );

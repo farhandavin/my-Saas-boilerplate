@@ -231,22 +231,25 @@ export const TeamService = {
     };
   },
 
-  // Get team details
+  // Get team details with caching
   async getTeamDetails(teamId: string) {
-    return db.query.teams.findFirst({
-      where: eq(teams.id, teamId),
-      with: {
-        teamMembers: {
-          with: {
-            user: {
-              columns: { id: true, name: true, email: true, image: true }
-            }
-          }
-        },
-        // Drizzle doesn't support _count in "with" directly without setup or extras.
-        // We'll stick to members array availability.
-      }
+    // Import cache helper inline to avoid circular deps
+    const { getCachedTeamSettings } = await import('@/lib/cache');
 
+    return getCachedTeamSettings(teamId, async () => {
+      const result = await db.query.teams.findFirst({
+        where: eq(teams.id, teamId),
+        with: {
+          teamMembers: {
+            with: {
+              user: {
+                columns: { id: true, name: true, email: true, image: true }
+              }
+            }
+          },
+        }
+      });
+      return result as Record<string, unknown> | null;
     });
   },
 

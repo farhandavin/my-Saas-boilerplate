@@ -1,37 +1,37 @@
 // src/services/emailService.ts
 // Centralized Email Service using Resend
 
-import { Resend } from 'resend';
+import { inngest } from '@/lib/inngest/client';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
 
 export const EmailService = {
   /**
+   * Helper queue function
+   */
+  async queueEmail(to: string, subject: string, html: string, text?: string) {
+    await inngest.send({
+      name: "email/send",
+      data: {
+        to,
+        subject,
+        html,
+        from: fromEmail
+      }
+    });
+    return { success: true, queued: true };
+  },
+
+  /**
    * Send welcome email after registration
    */
   async sendWelcomeEmail(to: string, name: string, teamName?: string) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: '🎉 Selamat Datang di Business Operating System!',
-        html: this.getWelcomeEmailTemplate(name, teamName),
-        text: `Halo ${name}!\n\nSelamat datang di Business Operating System${teamName ? ` untuk ${teamName}` : ''}.\n\nMulai explore fitur-fitur unggulan kami:\n- 🤖 AI Assistant dengan RAG Knowledge Base\n- 📊 CEO Digest harian\n- 🔒 Multi-tenancy yang aman\n- 💳 Billing otomatis\n\nLogin sekarang: ${appUrl}/auth`
-      });
-
-      if (error) {
-        console.error('[EmailService] Welcome email error:', error);
-        return { success: false, error };
-      }
-
-      console.log('[EmailService] Welcome email sent:', data?.id);
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] Welcome email exception:', error);
-      return { success: false, error };
-    }
+    return this.queueEmail(
+      to,
+      '🎉 Selamat Datang di Business Operating System!',
+      this.getWelcomeEmailTemplate(name, teamName)
+    );
   },
 
   /**
@@ -39,30 +39,16 @@ export const EmailService = {
    */
   async sendVerificationEmail(to: string, name: string, token: string) {
     const verifyUrl = `${appUrl}/auth/verify-email?token=${token}`;
-
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: '🔒 Verifikasi Email - Business Operating System',
-        html: `
+    return this.queueEmail(
+      to,
+      '🔒 Verifikasi Email - Business Operating System',
+      `
           <h1>Verifikasi Email Anda</h1>
           <p>Halo ${name},</p>
           <p>Silakan klik link berikut untuk memverifikasi email Anda:</p>
           <a href="${verifyUrl}">Verifikasi Email</a>
-        `,
-        text: `Halo ${name},\n\nSilakan verifikasi email Anda: ${verifyUrl}`
-      });
-
-      if (error) {
-        console.error('[EmailService] Verification email error:', error);
-        return { success: false, error };
-      }
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] Verification email exception:', error);
-      return { success: false, error };
-    }
+        `
+    );
   },
 
   /**
@@ -70,27 +56,11 @@ export const EmailService = {
    */
   async sendPasswordResetEmail(to: string, name: string, resetToken: string) {
     const resetUrl = `${appUrl}/auth/reset-password?token=${resetToken}`;
-
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: '🔐 Reset Password - Business Operating System',
-        html: this.getPasswordResetTemplate(name, resetUrl),
-        text: `Halo ${name},\n\nAnda meminta untuk reset password akun Anda.\n\nKlik link berikut untuk reset password (berlaku 1 jam):\n${resetUrl}\n\nJika Anda tidak meminta reset password, abaikan email ini.`
-      });
-
-      if (error) {
-        console.error('[EmailService] Password reset email error:', error);
-        return { success: false, error };
-      }
-
-      console.log('[EmailService] Password reset email sent:', data?.id);
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] Password reset exception:', error);
-      return { success: false, error };
-    }
+    return this.queueEmail(
+      to,
+      '🔐 Reset Password - Business Operating System',
+      this.getPasswordResetTemplate(name, resetUrl)
+    );
   },
 
   /**
@@ -98,79 +68,33 @@ export const EmailService = {
    */
   async sendInvitationEmail(to: string, inviterName: string, teamName: string, role: string, inviteToken: string) {
     const inviteUrl = `${appUrl}/auth/register-invite?token=${inviteToken}`;
-
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: `📬 Undangan untuk bergabung dengan ${teamName}`,
-        html: this.getInvitationTemplate(inviterName, teamName, role, inviteUrl),
-        text: `Halo!\n\n${inviterName} mengundang Anda untuk bergabung dengan tim ${teamName} sebagai ${role}.\n\nKlik link berikut untuk menerima undangan:\n${inviteUrl}\n\nUndangan berlaku 7 hari.`
-      });
-
-      if (error) {
-        console.error('[EmailService] Invitation email error:', error);
-        return { success: false, error };
-      }
-
-      console.log('[EmailService] Invitation email sent:', data?.id);
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] Invitation exception:', error);
-      return { success: false, error };
-    }
+    return this.queueEmail(
+      to,
+      `📬 Undangan untuk bergabung dengan ${teamName}`,
+      this.getInvitationTemplate(inviterName, teamName, role, inviteUrl)
+    );
   },
 
   /**
    * Send CEO Digest email
    */
   async sendCEODigestEmail(to: string, ownerName: string, digestContent: string, teamName: string) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: `📊 CEO Digest - ${new Date().toLocaleDateString('id-ID')}`,
-        html: this.getCEODigestTemplate(ownerName, digestContent, teamName),
-        text: digestContent
-      });
-
-      if (error) {
-        console.error('[EmailService] CEO Digest email error:', error);
-        return { success: false, error };
-      }
-
-      console.log('[EmailService] CEO Digest email sent:', data?.id);
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] CEO Digest exception:', error);
-      return { success: false, error };
-    }
+    return this.queueEmail(
+      to,
+      `📊 CEO Digest - ${new Date().toLocaleDateString('id-ID')}`,
+      this.getCEODigestTemplate(ownerName, digestContent, teamName)
+    );
   },
 
   /**
    * Send billing notification
    */
   async sendBillingNotification(to: string, name: string, subject: string, message: string) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: fromEmail,
-        to: [to],
-        subject: `💳 ${subject}`,
-        html: this.getBillingTemplate(name, message),
-        text: `Halo ${name},\n\n${message}`
-      });
-
-      if (error) {
-        console.error('[EmailService] Billing notification error:', error);
-        return { success: false, error };
-      }
-
-      console.log('[EmailService] Billing notification sent:', data?.id);
-      return { success: true, messageId: data?.id };
-    } catch (error) {
-      console.error('[EmailService] Billing notification exception:', error);
-      return { success: false, error };
-    }
+    return this.queueEmail(
+      to,
+      `💳 ${subject}`,
+      this.getBillingTemplate(name, message)
+    );
   },
 
   // ==================== EMAIL TEMPLATES ====================

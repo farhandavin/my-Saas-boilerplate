@@ -80,8 +80,10 @@ export async function middleware(req: NextRequest) {
   const publicPaths = ['/demo']; // Public demo page
 
   // Check if path contains protected segment and is not a public path
-  const isProtectedPath = protectedPaths.some(path => pathname.includes(path)) &&
-    !publicPaths.some(path => pathname.includes(path));
+  // SECURITY FIX: specific path matching to avoid "/myadmin" bypassing "/admin" checks
+  const isProtectedPath = protectedPaths.some(path =>
+    pathname === path || pathname.startsWith(`${path}/`)
+  ) && !publicPaths.some(path => pathname === path || pathname.startsWith(`${path}/`));
 
   if (isProtectedPath) {
     const token = req.cookies.get('token')?.value ||

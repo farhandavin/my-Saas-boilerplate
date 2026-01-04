@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     await db.insert(webhookDeliveries).values({
       eventId: event.id,
       eventType: event.type,
-      requestBody: JSON.parse(body),
+      requestBody: JSON.parse(body) as Record<string, unknown>,
       responseStatus: 202, // Accepted, processing
       responseBody: 'Processing started',
       duration: 0,
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   StripeLogger.info('Processing event', { eventType: event.type, eventId: event.id });
 
   try {
-    switch (event.type) {
+    switch (event.type as string) {
       // ============================================================================
       // DUNNING MANAGEMENT - Payment Failed
       // ============================================================================
@@ -240,6 +240,55 @@ export async function POST(req: Request) {
         }
         break;
       }
+      // ============================================================================
+      // METERED BILLING
+      // ============================================================================
+      case 'usage_record.summary.updated': {
+        // Define inline type for usage record summary
+        interface UsageRecordSummary {
+          id: string;
+          total_usage: number;
+          subscription_item: string;
+        }
+        const summary = event.data.object as UsageRecordSummary;
+
+        StripeLogger.info('Metered Usage Updated', {
+          usageId: summary.id,
+          totalUsage: summary.total_usage,
+          subscriptionItem: summary.subscription_item
+        });
+
+        // Get subscription to find customer/team
+        if (typeof summary.subscription_item === 'string') {
+          try {
+            const subscriptionItem = await stripe.subscriptionItems.retrieve(summary.subscription_item);
+            const subscription = await stripe.subscriptions.retrieve(subscriptionItem.subscription as string);
+            const customerId = subscription.customer as string;
+
+            // Find team by Stripe customer ID
+            const team = await db.query.teams.findFirst({
+              where: eq(teams.stripeCustomerId, customerId)
+            });
+
+            if (team) {
+              // Update team's AI usage count
+              await db.update(teams)
+                .set({
+                  aiUsageCount: summary.total_usage
+                })
+                .where(eq(teams.id, team.id));
+
+              StripeLogger.info('Usage synced to team', {
+                teamId: team.id,
+                totalUsage: summary.total_usage
+              });
+            }
+          } catch (error) {
+            StripeLogger.error('Failed to sync metered usage', { error });
+          }
+        }
+        break;
+      }
     }
 
     // Update delivery record to mark success
@@ -262,7 +311,7 @@ export async function POST(req: Request) {
       })
       .where(eq(webhookDeliveries.eventId, event.id));
 
-    console.error('[Stripe Webhook] Error processing event:', error);
+    StripeLogger.error('Error processing event', { error });
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

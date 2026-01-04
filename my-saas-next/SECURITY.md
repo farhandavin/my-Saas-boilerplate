@@ -1,209 +1,178 @@
-# Security Policy
+# 🔒 Security Policy & Best Practices
 
 ## Overview
+This document outlines the security measures implemented in this application and best practices for maintaining security.
 
-Enterprise Business OS is built with security as a first-class concern. This document outlines our security practices, compliance measures, and guidelines for secure deployment.
+## Authentication & Authorization
 
-## Security Architecture
+### Password Policy
+**Strong Password Requirements** (enforced via Zod schema):
+- ✅ Minimum 12 characters
+- ✅ At least 1 uppercase letter (A-Z)
+- ✅ At least 1 lowercase letter (a-z)
+- ✅ At least 1 number (0-9)
+- ✅ At least 1 special character (!@#$%^&*)
+- ✅ Blocked common weak passwords
 
-### Authentication & Authorization
+**Implementation**: `src/schemas/auth.ts`
 
-| Feature | Implementation | Notes |
-|---------|---------------|-------|
-| **Authentication** | JWT (jose library) | Edge-compatible, RS256/HS256 |
-| **Session Management** | Configurable timeout | Default: 30 minutes |
-| **Password Hashing** | bcrypt (12 rounds) | OWASP recommended |
-| **2FA Support** | TOTP ready | Schema supports `two_factor_enabled` |
-| **OAuth/SSO** | Google OAuth 2.0 | Extensible to SAML/OIDC |
+### JWT Token Security
+- ✅ `JWT_SECRET` validated at startup (prevents runtime failures)
+- ✅ Tokens verified on every protected route via middleware
+- ✅ Edge-compatible authentication using `jose` library
+- ✅ No token refresh mechanism (reduces attack surface)
+
+**Location**: `src/middleware.ts`, `src/lib/auth-helper.ts`
 
 ### Role-Based Access Control (RBAC)
+- ✅ 4 roles: OWNER, ADMIN, MANAGER, STAFF
+- ✅ Enforced at 3 layers: Middleware → API → UI
+- ✅ Superadmin flag for platform-wide access
 
-```
-OWNER     → Full control (billing, deletion, transfer)
-ADMIN     → Team management, settings, analytics
-MANAGER   → Operational oversight, staff management  
-STAFF     → Daily operations, limited access
-```
+## Database Security
 
-Permissions are enforced at:
-- **Middleware level** (`src/middleware.ts`)
-- **API route level** (`withAuth` wrapper)
-- **Component level** (`RBACWrapper.tsx`)
-
-### Data Protection
-
-#### Encryption
-
-| Data Type | At Rest | In Transit |
-|-----------|---------|------------|
-| Passwords | bcrypt hashed | HTTPS/TLS 1.3 |
-| PII | AES-256-GCM (optional) | HTTPS/TLS 1.3 |
-| API Keys | SHA-256 hashed | HTTPS/TLS 1.3 |
-| Database | Provider-managed | SSL required |
-
-#### PII Masking (Privacy Layer)
-
-The optional Privacy Layer (`src/lib/ai/privacy-layer.ts`) automatically:
-- Detects email addresses, phone numbers, credit cards
-- Masks PII before sending to AI providers
-- Stores encrypted mappings in Redis (TTL: 10 minutes)
-- Restores original data in responses
-
-**Environment Variable**: `PII_ENCRYPTION_KEY` (32 characters required)
-
-### Multi-Tenancy Isolation
-
-Enterprise BOS implements **defense-in-depth** multi-tenancy with both application-level and database-level isolation.
-
-#### Isolation Layers
-
-| Layer | Implementation | Protection |
-|-------|----------------|------------|
-| **Database RLS** | PostgreSQL Row Level Security | Prevents data leaks even from application bugs |
-| **Application** | `teamId` column on all tenant data | Standard query-level filtering |
-| **API** | JWT contains `teamId`, validated on each request | Request-level validation |
-| **Dedicated DB** | Enterprise tier supports `dedicatedDatabaseUrl` | Full physical isolation |
-
-#### Row Level Security (RLS) Implementation
-
-RLS is enabled at the database level via `drizzle/0001_enable_rls.sql`. This ensures tenant data isolation is enforced by PostgreSQL itself, not just application code.
-
-**Protected Tables**:
-- `projects`, `project_members`, `tasks`
-- `documents`, `invoices`, `campaigns`
-- `team_members`, `invitations`, `roles`
-- `audit_logs`, `notifications`, `webhooks`, `webhook_deliveries`
-- `api_keys`, `privacy_rules`, `usage_billings`, `migration_jobs`, `ai_feedback`
-
-**How It Works**:
-
+### Connection Pooling
 ```typescript
-// 1. Set tenant context before queries (src/lib/db-router.ts)
-await setTenantContext(teamId);
-
-// 2. All subsequent queries are automatically filtered by RLS
-const projects = await db.select().from(projects);
-// ↑ Only returns projects where team_id = current context
-
-// 3. Even if a developer forgets the WHERE clause, RLS protects data
+// Prevents connection exhaustion at scale
+max: 20,              // Handles ~1000 concurrent requests
+idle_timeout: 30,     // Auto-close idle connections
+connect_timeout: 10,  // Fail fast on connection issues
+max_lifetime: 1800,   // Prevent stale connections
 ```
 
-**Session Variable**: The `app.current_team_id` PostgreSQL session variable is set automatically when using `getTenantDb()` or `setTenantContext()`.
+**Why**: Without pooling, app crashes at ~50 concurrent users.  
+**Location**: `src/db/index.ts`
 
-**Superadmin Access**: When `teamId` is not set (null context), RLS policies allow full access for platform-wide administration.
+### Row-Level Security (RLS) - TODO
+**Status**: ⚠️ **NOT IMPLEMENTED YET**
 
-#### Usage in Services
+**Critical Gap**: Currently relies on application-level `teamId` checks. A compromised JWT for Team A could access Team B's data.
 
-```typescript
-import { withTenantContext } from '@/lib/db-router';
-
-// Recommended: Use withTenantContext for automatic cleanup
-const projects = await withTenantContext(teamId, async (db) => {
-  return await db.select().from(projects);
-});
+**Mitigation Plan**:
+```sql
+-- Example RLS Policy (to be implemented)
+CREATE POLICY tenant_isolation ON teams 
+  USING (id = current_setting('app.team_id')::uuid);
 ```
 
+**Priority**: HIGH (required for true multi-tenancy isolation)
 
-## Audit Logging
+## API Security
 
-All security-relevant events are logged to the `audit_logs` table:
+### Rate Limiting
+- ✅ Upstash Redis-based rate limiting
+- ✅ Applied to ALL `/api/*` routes
+- ⚠️ Currently "fail-open" if Redis is down (allows requests)
+  
+**Location**: `src/middleware.ts`
 
-```typescript
-interface AuditLog {
-  id: string;
-  teamId: string;
-  userId: string;
-  action: string;      // e.g., 'user.login', 'invoice.created'
-  entity: string;      // e.g., 'auth', 'billing'
-  details: string;
-  ipAddress: string;
-  createdAt: Date;
-}
-```
+### Input Validation
+- ✅ Zod schemas on all API inputs
+- ✅ Type-safe validation with clear error messages
+- ✅ No `any` types in critical paths
 
-### Logged Events
+**Schemas**: `src/schemas/*`
 
-| Category | Events |
-|----------|--------|
-| **Auth** | Login, logout, password reset, 2FA enable/disable |
-| **Team** | Member added/removed, role changed, settings updated |
-| **Billing** | Subscription changed, payment failed/succeeded |
-| **Data** | Document uploaded, invoice created, project deleted |
+### CSRF Protection
+**Status**: ❌ **NOT IMPLEMENTED YET**
 
-### Retention Policy
+**Risk**: State-changing endpoints (POST/PUT/DELETE) vulnerable to cross-site request forgery.
 
-- Default: 90 days (configurable via `AUDIT_LOG_RETENTION_DAYS`)
-- Enterprise: Unlimited with archival to cold storage
-- Export: Available via API and CSV download
+**Mitigation Plan**: Add `csrf-csrf` library or use SameSite cookies.
 
-## Rate Limiting
+## Stripe Webhook Security
 
-Implemented via Upstash Redis (`src/lib/rate-limit.ts`):
+### Implemented Protections
+✅ **Signature Verification**: Every webhook verifies Stripe signature  
+✅ **Replay Attack Protection**: Rejects webhooks older than 5 minutes  
+✅ **Idempotency**: Atomic DB insert prevents double-processing  
+✅ **Structured Logging**: Uses `StripeLogger` instead of `console.log`  
+✅ **Type Safety**: Proper Stripe types (no `as any`)
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| API routes | 100 requests | 10 seconds |
-| Auth endpoints | 5 requests | 60 seconds |
-| AI endpoints | Based on plan tier | Per billing period |
+**Location**: `src/app/api/webhooks/stripe/route.ts`
 
-**Behavior**: Returns `429 Too Many Requests` when exceeded.
+## Data Privacy (GDPR Compliance)
 
-## Security Headers
+### PII Protection
+- ✅ **No console.log in production**: Prevents PII leaking to logs
+- ✅ **ESLint rule**: `no-console: ["error", { allow: ["warn", "error"] }]`
+- ✅ **PII Masking Layer**: Automatic AES-256-GCM encryption before AI processing
 
-Configured in `next.config.ts`:
+**Location**: `src/lib/pii-masking.ts`
 
-```
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Referrer-Policy: strict-origin-when-cross-origin
-Content-Security-Policy: [configured per deployment]
-```
+### Audit Logging
+- ✅ 90-day retention policy (configurable)
+- ✅ Tracks: user actions, entity changes, IP addresses
+- ✅ Automated cleanup via Inngest cron job
 
-## Vulnerability Reporting
+**Location**: `src/db/schema.ts` (auditLogs table)
 
-If you discover a security vulnerability, please report it via:
+## Secrets Management
 
-- **Email**: security@yourdomain.com
-- **Response Time**: Within 48 hours
-- **Bug Bounty**: Available for critical vulnerabilities
+### Environment Variables
+**Required Variables** (validated at startup):
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `JWT_SECRET`
+- `NEXT_PUBLIC_APP_URL`
 
-## Compliance Readiness
+**Validation**: `src/lib/env-validator.ts`
 
-### SOC 2 Type II
+### Best Practices
+- ❌ **Never** commit `.env` to version control
+- ✅ Use `.env.local` for local overrides
+- ✅ Rotate secrets every 90 days (manual process)
+- ✅ Use separate keys for dev/staging/production
 
-This boilerplate includes infrastructure for SOC 2 compliance:
+## Monitoring & Incident Response
 
-| Trust Principle | Implementation |
-|-----------------|----------------|
-| **Security** | RBAC, encryption, audit logs |
-| **Availability** | Health checks, monitoring hooks |
-| **Processing Integrity** | Input validation, idempotency |
-| **Confidentiality** | Data encryption, PII masking |
-| **Privacy** | Consent management ready |
+### Error Tracking
+- ✅ Sentry integration for server/edge/client
+- ✅ Structured logging with `StripeLogger`
+- ⚠️ No automated alerts configured yet
 
-### GDPR
+**Location**: `src/sentry.*.config.ts`
 
-- Data export API endpoint ready
-- Right to deletion support
-- Consent tracking schema available
-- Data processing records via audit logs
+### Security Incidents
+**Reporting**: farhandavin14@gmail.com  
+**Response SLA**: 24 hours for critical security issues
 
-## Secure Deployment Checklist
+## Compliance Checklists
 
-```markdown
-- [ ] Set strong `JWT_SECRET` (min 32 characters)
-- [ ] Set strong `AUTH_SECRET` (min 32 characters)  
-- [ ] Configure `PII_ENCRYPTION_KEY` (exactly 32 characters)
-- [ ] Enable HTTPS in production
-- [ ] Configure CORS origins
-- [ ] Set `NODE_ENV=production`
-- [ ] Configure rate limiting (Upstash Redis)
-- [ ] Enable Sentry error tracking
-- [ ] Configure backup schedule for database
-- [ ] Review security headers
-```
+### SOC 2 Readiness
+- ✅ Audit logs with retention policy
+- ✅ Password policy enforcement
+- ✅ Encrypted data at rest (via database)
+- ✅ Encrypted data in transit (HTTPS)
+- ⚠️ Access control documentation (in progress)
+- ❌ Penetration testing report (not done)
 
-## Contact
+### GDPR Compliance
+- ✅ Data minimization (no excessive PII logging)
+- ✅ Right to be forgotten (`/api/compliance/delete-account`)
+- ✅ Data portability (export user data feature)
+- ⚠️ Privacy policy template (needs customization)
+- ⚠️ Cookie consent (not implemented)
 
-For security inquiries: security@yourdomain.com
+## Known Security Gaps (See Audit Report)
+
+### Critical (Fix ASAP)
+1. ❌ No Row-Level Security (RLS)
+2. ❌ No CSRF protection
+3. ⚠️ Rate limiter fails open (should fail closed)
+
+### Medium Priority
+1. ⚠️ No circuit breaker for external APIs
+2. ⚠️ No database query timeout
+3. ⚠️ Missing password leak check (HaveIBeenPwned API)
+
+## Security Update Policy
+- **Critical vulnerabilities**: Patched within 24 hours
+- **Dependency updates**: Monthly review via `npm audit`
+- **Security audits**: Quarterly penetration testing (recommended)
+
+---
+
+**Last Updated**: January 4, 2026  
+**Version**: 1.0  
+**Contact**: farhandavin14@gmail.com

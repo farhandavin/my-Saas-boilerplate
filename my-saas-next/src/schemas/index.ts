@@ -4,3 +4,4 @@
 export * from './invoice';
 export * from './team';
 export * from './project';
+export * from './auth';

@@ -1,32 +1,44 @@
-/**
- * Safe Environment Accessor for Edge Runtime
- * 
- * This file avoids importing Zod or heavy validation logic to ensure
- * lightweight execution in Middleware and Edge functions.
- */
+import { z } from 'zod';
 
-export const safeEnv = {
-    // Public keys are safe to access anywhere
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+const envSchema = z.object({
+    // Database - REQUIRED
+    DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-    // Auth - Critical for Middleware
-    // Note: In Edge, we trust the deployment platform to provide these.
-    // We do NOT validate them here to avoid crashing if one is missing during a cold start
-    // (validation happens in instrumentation.ts or during build)
-    AUTH_SECRET: process.env.AUTH_SECRET,
+    // Authentication - REQUIRED
+    AUTH_SECRET: z.string().min(1, 'AUTH_SECRET is required'),
+    // AUTH_URL: z.string().optional(), // Optional in Vercel
 
-    // Feature Flags (derived)
-    isProduction: process.env.NODE_ENV === 'production',
-    isStripeEnabled: !!process.env.STRIPE_SECRET_KEY,
-    isAIEnabled: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY),
-};
+    // App Settings
+    NEXT_PUBLIC_APP_URL: z.string().min(1).default('http://localhost:3000'),
+    NEXT_PUBLIC_ROOT_DOMAIN: z.string().min(1).default('localhost:3000'),
 
-// No-op for Edge compatibility if accidentally imported
-export function validateEnv() {
-    // This function is deprecated in favor of @/lib/env.server.ts
-    // We leave it here as a no-op just in case, or to log a warning.
-    if (process.env.NODE_ENV !== 'production') {
-        console.warn("⚠️  Warning: strict `validateEnv` called from Edge-safe module. Use `@/lib/env.server` for validation.");
-    }
-    return true;
+    // Stripe - OPTIONAL (graceful degradation without billing)
+    STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+
+    // AI & Privacy - OPTIONAL (graceful degradation without AI)
+    GEMINI_API_KEY: z.string().optional(),
+    PII_MASKING_ENABLED: z.string().default('true'),
+
+    // Security - OPTIONAL (uses default in dev)
+    CRON_SECRET: z.string().min(16).optional(),
+
+    // Rate Limiting - OPTIONAL (graceful degradation without rate limiting)
+    UPSTASH_REDIS_REST_URL: z.string().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+    // Node
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+});
+
+// Validate process.env
+const parsedEnv = envSchema.safeParse(process.env);
+
+if (!parsedEnv.success) {
+    console.error('❌ Invalid environment variables:');
+    console.error(JSON.stringify(parsedEnv.error.flatten().fieldErrors, null, 2));
+    throw new Error('Invalid environment configuration');
 }
+
+export const env = parsedEnv.data;
