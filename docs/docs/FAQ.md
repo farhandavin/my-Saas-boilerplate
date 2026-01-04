@@ -428,7 +428,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 **Email**: farhandavin14@gmail.com  
 **Live Demo**: https://my-saas-boilerplate.vercel.app/id  
-**Documentation**: [Browse all docs](./)
+**Documentation**: [Browse all docs](./installation.md)
 
 **Response Time**: 48 hours for standard questions, 24 hours for purchase/license inquiries.
 
